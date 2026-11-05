@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local embedded database
+/.data
+
+# end-to-end screenshots
+/.e2e
