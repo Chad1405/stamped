@@ -3,6 +3,12 @@ export const ROUNDS_PER_DAY = 5;
 export const MAX_DAY_SCORE = 500;
 export const PREVIEW_MS = 3000;
 export const ROUND_MS = 30000;
+/** The country step: three tries, with a clue after each miss, so it gets longer. */
+export const COUNTRY_MS = 45000;
+export const COUNTRY_TRIES = 3;
+/** Each extra try at the country takes this off the stop, never below one Tourist stamp's worth. */
+export const TRY_COST = 10;
+export const stepMs = (step: string) => step === "country" ? COUNTRY_MS : ROUND_MS;
 /** Extra time the server allows past a deadline for network latency. */
 export const GRACE_MS = 3000;
 
@@ -14,7 +20,7 @@ export const TIERS: Record<TierId, { name: string; score: number; emoji: string;
   backpacker: { name: "Backpacker",    score: 30,  emoji: "🏳️", blurb: "Right country. Passport stamped." },
   lost:       { name: "Lost Luggage",  score: 15,  emoji: "🧳", blurb: "Went deeper and got lost. Half a stamp." },
   tourist:    { name: "Tourist",       score: 10,  emoji: "🌍", blurb: "Right continent. You've seen the brochure." },
-  miss:       { name: "Missed Flight", score: 0,   emoji: "⬛", blurb: "Wrong continent entirely." },
+  miss:       { name: "Window Seat",   score: 0,   emoji: "⬛", blurb: "Watched it fly by. Now you know it." },
 };
 export const LADDER: TierId[] = ["native", "local", "traveller", "backpacker", "lost", "tourist"];
 export const SCORE_BANDS = [

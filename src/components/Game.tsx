@@ -11,7 +11,7 @@ import { Done, Friends, Home, Passport } from "./screens";
 import { StopScreen } from "./StopScreen";
 
 type View = "home" | "stop" | "done" | "passport" | "friends";
-const scoreOf = (d: Day) => d.stops.reduce((n, s) => n + (s.state.tier ? TIERS[s.state.tier].score : 0), 0);
+const scoreOf = (d: Day) => d.stops.reduce((n, s) => n + s.state.points, 0);
 const allDone = (d: Day) => d.stops.every(s => s.state.phase === "done");
 
 export default function Game() {

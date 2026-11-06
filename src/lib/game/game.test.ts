@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import days from "@/content/itineraries.json";
 import citiesData from "@/content/cities.json";
-import { applyAction, freshStop, type Round, type StopState } from "./engine";
+import { applyAction, countryClues, freshStop, stopPoints, type Round, type StopState } from "./engine";
 import { COUNTRIES, match, norm } from "./match";
-import { GRACE_MS, kmBetween, legFlown, PREVIEW_MS, ROUND_MS } from "./rules";
+import { COUNTRY_MS, GRACE_MS, kmBetween, legFlown, PREVIEW_MS, ROUND_MS } from "./rules";
 import { addDays, streakInfo, weekOf } from "./streak";
 
 const rounds = (days as { rounds: Round[] }[]).flatMap(d => d.rounds);
@@ -41,8 +41,9 @@ describe("the stop engine", () => {
     const r = rounds.find(x => x.country === "Chile")!, t = T0 + 5000;
     expect(play(r, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Chile" } }, { t, a: { type: "decide", deeper: false } }]).state.tier).toBe("backpacker");
     expect(play(r, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Chile" } }, { t, a: { type: "decide", deeper: true } }, { t, a: { type: "guess", text: "Santiago" } }]).state.tier).toBe("lost");
-    expect(play(r, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Peru" } }]).state.tier).toBe("tourist");
-    expect(play(r, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Japan" } }]).state.tier).toBe("miss");
+    const tries = (...names: string[]) => play(r, [{ t: T0, a: { type: "start" } }, ...names.map(text => ({ t, a: { type: "guess" as const, text } }))]);
+    expect(tries("Peru", "Bolivia", "Ecuador").state.tier).toBe("tourist");   // three misses, on the right continent
+    expect(tries("Japan", "China", "India").state.tier).toBe("miss");
   });
   it("a correction or unknown word costs nothing", () => {
     const r = rounds.find(x => x.country === "Chile")!;
@@ -51,7 +52,7 @@ describe("the stop engine", () => {
     expect(o.state.phase).toBe("input");
   });
   it("the server clock wins: a late guess is a timeout, an early timeout is ignored", () => {
-    const r = rounds.find(x => x.country === "Chile")!, deadline = T0 + PREVIEW_MS + ROUND_MS;
+    const r = rounds.find(x => x.country === "Chile")!, deadline = T0 + PREVIEW_MS + COUNTRY_MS;
     expect(play(r, [{ t: T0, a: { type: "start" } }, { t: T0 + 5000, a: { type: "timeout" } }]).events[1]).toBe("ignored");
     expect(play(r, [{ t: T0, a: { type: "start" } }, { t: deadline + GRACE_MS + 1, a: { type: "guess", text: "Chlie" } }]).state.phase).toBe("decide");   // forced: near-match accepted
     expect(play(r, [{ t: T0, a: { type: "start" } }, { t: deadline, a: { type: "timeout" } }]).state.tier).toBe("miss");
@@ -62,6 +63,49 @@ describe("the stop engine", () => {
     expect(o.state.endsAt).toBeNull();
     const later = applyAction(r, o.state, { type: "decide", deeper: true }, T0 + 120000);
     expect(later.state.endsAt).toBe(T0 + 120000 + ROUND_MS);
+  });
+});
+
+describe("three tries at the country", () => {
+  const r = rounds.find(x => x.country === "Chile")!, t = T0 + 5000;
+  const go = (...names: string[]) => play(r, [{ t: T0, a: { type: "start" } }, ...names.map(text => ({ t, a: { type: "guess" as const, text } }))]);
+  it("a miss earns a clue and another try; the third miss ends the stop", () => {
+    const one = go("Spain");
+    expect(one.events.at(-1)).toBe("wrong");
+    expect(one.state.phase).toBe("input");
+    const c = countryClues(r, one.state)!;
+    expect(c.tries[0]).toEqual(expect.objectContaining({ name: "Spain", capital: "Madrid", dir: "south-west", arrow: "↙" }));
+    expect(c.tries[0].km! > 10_000).toBe(true);
+    expect(c.continent).toBeNull();
+    expect(countryClues(r, go("Spain", "Mexico").state)!.continent).toBe("South America");   // after the second miss
+    expect(go("Spain", "Mexico", "Japan").state.phase).toBe("done");
+    expect(countryClues(r, go("Spain", "Mexico", "Japan").state)).toBeNull();
+  });
+  it("trying the same country twice costs nothing", () => {
+    const o = go("Spain", "Spain");
+    expect(o.events.slice(-2)).toEqual(["wrong", "rejected"]);
+    expect(o.state.misses).toBe(1);
+  });
+  it("each extra try takes 10 off, never below 10; you can still go deeper", () => {
+    const two = go("Peru", "Chile");
+    expect(two.state.phase).toBe("decide");
+    expect(stopPoints({ tier: "backpacker", misses: 1 })).toBe(20);
+    expect(stopPoints({ tier: "local", misses: 2 })).toBe(65);
+    expect(stopPoints({ tier: "lost", misses: 2 })).toBe(10);
+    expect(stopPoints({ tier: "tourist", misses: 2 })).toBe(10);
+    expect(stopPoints({ tier: "native" })).toBe(100);   // stops saved before tries existed
+  });
+  it("the clock runs out after a miss: the Tourist stamp if a try was on the right continent", () => {
+    const deadline = T0 + PREVIEW_MS + COUNTRY_MS;
+    const o = play(r, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Peru" } }, { t: deadline, a: { type: "timeout" } }]);
+    expect(o.state.tier).toBe("tourist");
+  });
+  it("every sample day runs from the most-named country to the least", () => {
+    for (const d of days as { offset: number; rounds: Round[] }[]) {
+      const named = d.rounds.map(x => x.crowd[0]);
+      expect(named, `day ${d.offset}`).toEqual(named.toSorted((a, b) => b - a));
+      expect(named[0] >= 60, `day ${d.offset} should open with a stop most players get`).toBe(true);
+    }
   });
 });
 

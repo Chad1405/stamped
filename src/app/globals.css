@@ -693,3 +693,18 @@ footer p { max-width: 65ch; }
   .is-playing .clock > span:first-child { display: none; }
   .is-playing .field label { font-size: var(--text-sm); }
 }
+
+/* ---- Easier for everyone: three tries at the country, with clues ---- */
+.clues { border: var(--rule-bar, 2px) solid var(--color-ink); background: var(--color-paper-3); padding: var(--space-sm, 12px) var(--space-md, 16px); display: grid; gap: 8px; }
+.clues ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.clues li { display: grid; gap: 2px; }
+.clues .c-name { font-weight: 700; text-decoration: line-through; text-decoration-thickness: 2px; color: var(--color-ink-2); }
+.clues .c-dir { font-size: var(--text-sm); }
+.clues .c-dir b { display: inline-block; min-width: 1.2em; text-align: center; font-size: 1.2em; color: var(--color-plate); }
+.clues .c-left { margin: 0; font-size: var(--text-sm); color: var(--color-muted); }
+.clues .c-left strong { color: var(--color-plate); }
+/* the reveal leads with something worth knowing, and a miss says it is a common one */
+.fact-lead { font-size: var(--text-lg); line-height: 1.45; animation: arrive-in 480ms var(--ease-out) 380ms both; }
+.company { margin: 0; padding-left: 12px; border-left: 3px solid var(--color-plate); color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
+.visited { margin-top: 8px; color: var(--color-ink-2); }
+@media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }
