@@ -19,7 +19,7 @@ function Chat({ p, reply }: { p: NonNullable<StopData["postcard"]>; reply?: stri
       <div className="chat-body">
         <p className="chat-day">Today {time}</p>
         <div className="typing" aria-hidden="true"><i /><i /><i /></div>
-        <p className="bubble bubble--in" lang={p.lang ?? "en"}>{p.text}<span className="b-time">{time}</span></p>
+        <p className="bubble bubble--in" lang={p.lang ?? "en"} dir="auto">{p.text}<span className="b-time">{time}</span></p>
         {reply && <><p className="bubble bubble--out">See you in {reply}!</p><span className="chat-status">Delivered</span></>}
       </div>
       <div className="chat-bar" aria-hidden="true"><span>Message</span><b>↑</b></div>
