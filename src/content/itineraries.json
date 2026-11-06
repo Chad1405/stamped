@@ -1,0 +1,857 @@
+[
+ {
+  "offset": -3,
+  "flight": "001",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this blue alley?",
+    "img": "/clues/d1s1.jpg",
+    "alt": "A steep alley of stairs and walls painted in deep blue, with potted plants and tiled steps",
+    "country": "Morocco",
+    "regionName": "Tanger-Tetouan-Al Hoceima",
+    "region": [
+     "tanger tetouan al hoceima",
+     "tangier tetouan al hoceima",
+     "tanger tetouan",
+     "tangier tetouan",
+     "rif"
+    ],
+    "cityName": "Chefchaouen",
+    "city": [
+     "chefchaouen",
+     "chaouen",
+     "chefchaouene",
+     "xauen"
+    ],
+    "spotLabel": "Name the old walled quarter",
+    "spotName": "The medina",
+    "spot": [
+     "medina",
+     "the medina",
+     "old medina",
+     "old town",
+     "medina of chefchaouen"
+    ],
+    "airport": "TNG",
+    "fact": "Chefchaouen was founded in 1471 in the Rif mountains. Its blue wash has several origin stories, from Jewish tradition to keeping mosquitoes away, and nobody agrees on one.",
+    "crowd": [
+     41,
+     17,
+     9
+    ],
+    "credit": {
+     "title": "Blue alley in Chfchaouen",
+     "author": "Galanda23",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Blue_alley_in_Chfchaouen.jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this noodle soup come from?",
+    "img": "/clues/d1s2.jpg",
+    "alt": "A bowl of curry noodle soup topped with a nest of crispy fried noodles, with chopsticks and a spoon",
+    "country": "Thailand",
+    "regionName": "Chiang Mai Province",
+    "region": [
+     "chiang mai province",
+     "northern thailand",
+     "lanna"
+    ],
+    "cityName": "Chiang Mai",
+    "city": [
+     "chiang mai",
+     "chiangmai"
+    ],
+    "spotLabel": "Name the dish",
+    "spotName": "Khao soi",
+    "spot": [
+     "khao soi",
+     "khao soy",
+     "khao sawy",
+     "khao soi gai",
+     "khao soi kai"
+    ],
+    "airport": "CNX",
+    "fact": "Khao soi is a coconut curry noodle soup crowned with crispy fried noodles, the signature dish of Chiang Mai and northern Thailand. Its roots are usually traced to Chinese Muslim traders from Yunnan.",
+    "crowd": [
+     52,
+     21,
+     14
+    ],
+    "credit": {
+     "title": "Khao Soi 01",
+     "author": "Douglas Perkins",
+     "license": "CC BY 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Khao_Soi_01.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this structure?",
+    "img": "/clues/d1s3.jpg",
+    "alt": "Huge steel spheres lit with small lights, joined by tubes, seen from below at dusk",
+    "country": "Belgium",
+    "regionName": "Brussels-Capital Region",
+    "region": [
+     "brussels capital region",
+     "brussels region",
+     "bruxelles capitale",
+     "region de bruxelles capitale"
+    ],
+    "cityName": "Brussels",
+    "city": [
+     "brussels",
+     "bruxelles",
+     "brussel"
+    ],
+    "spotLabel": "Name the landmark",
+    "spotName": "The Atomium",
+    "spot": [
+     "atomium",
+     "the atomium"
+    ],
+    "airport": "BRU",
+    "fact": "The Atomium was built for the 1958 World's Fair: nine steel spheres arranged like a cell of an iron crystal, magnified 165 billion times.",
+    "crowd": [
+     61,
+     55,
+     47
+    ],
+    "credit": {
+     "title": "Atomium, Bruselas, Bélgica, 2021-12-15, DD 148-150 HDR",
+     "author": "Diego Delso",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Atomium,_Bruselas,_B%C3%A9lgica,_2021-12-15,_DD_148-150_HDR.jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where would you find this little figure?",
+    "img": "/clues/d1s4.jpg",
+    "alt": "A small bronze figure with outstretched arms standing at the foot of a white wall",
+    "country": "Poland",
+    "regionName": "Lower Silesian Voivodeship",
+    "region": [
+     "lower silesia",
+     "lower silesian voivodeship",
+     "dolnoslaskie",
+     "silesia"
+    ],
+    "cityName": "Wrocław",
+    "city": [
+     "wroclaw",
+     "breslau"
+    ],
+    "spotLabel": "Name what these little statues are called",
+    "spotName": "Wrocław's dwarfs (krasnale)",
+    "spot": [
+     "dwarfs",
+     "dwarves",
+     "dwarf",
+     "krasnale",
+     "krasnal",
+     "krasnoludki",
+     "gnomes",
+     "gnome",
+     "wroclaw dwarfs"
+    ],
+    "airport": "WRO",
+    "fact": "Hundreds of bronze dwarfs hide around Wrocław. They began as a nod to the Orange Alternative, a 1980s movement that mocked the communist government with absurd street happenings and painted dwarfs.",
+    "crowd": [
+     38,
+     24,
+     19
+    ],
+    "credit": {
+     "title": "Krasnal Teatralny (Theatre Dwarf) Wroclaw dwarf 02",
+     "author": "Pnapora",
+     "license": "CC BY-SA 3.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Krasnal_Teatralny_(Theatre_Dwarf)_Wroclaw_dwarf_02.JPG"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Che, nos vemos el domingo en La Bombonera. Llevá la camiseta azul y oro.",
+     "from": "+54 9 11 •••• ••••",
+     "note": "Text message, 19:40",
+     "lang": "es"
+    },
+    "country": "Argentina",
+    "regionName": "Autonomous City of Buenos Aires",
+    "region": [
+     "caba",
+     "ciudad autonoma de buenos aires",
+     "capital federal"
+    ],
+    "cityName": "Buenos Aires",
+    "city": [
+     "buenos aires",
+     "bs as",
+     "baires"
+    ],
+    "spotLabel": "Name the stadium",
+    "spotName": "La Bombonera (Boca Juniors)",
+    "spot": [
+     "la bombonera",
+     "bombonera",
+     "estadio alberto j armando",
+     "la boca",
+     "boca juniors stadium",
+     "boca"
+    ],
+    "airport": "EZE",
+    "fact": "\"Hey, see you Sunday at La Bombonera. Bring the blue and gold shirt.\" La Bombonera, the chocolate box, is Boca Juniors' stadium in La Boca, named for its steep, boxy stands.",
+    "crowd": [
+     47,
+     40,
+     31
+    ]
+   }
+  ]
+ },
+ {
+  "offset": -2,
+  "flight": "002",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this street?",
+    "img": "/clues/d2s1.jpg",
+    "alt": "A worn street of tall colonnaded buildings with a green 1950s car driving past",
+    "country": "Cuba",
+    "regionName": "Havana Province",
+    "region": [
+     "havana province",
+     "la habana province",
+     "ciudad de la habana"
+    ],
+    "cityName": "Havana",
+    "city": [
+     "havana",
+     "la habana",
+     "habana"
+    ],
+    "spotLabel": "Name the neighbourhood",
+    "spotName": "Centro Habana",
+    "spot": [
+     "centro habana",
+     "centro havana",
+     "central havana"
+    ],
+    "airport": "HAV",
+    "fact": "Cuba's 1950s American cars have been kept running for decades through the trade embargo with improvised parts, and many now work as taxis. Centro Habana sits between Old Havana and Vedado.",
+    "crowd": [
+     63,
+     51,
+     7
+    ],
+    "credit": {
+     "title": "Vintage car driving in Centro Havana (Unsplash)",
+     "author": "Eva Blue",
+     "license": "CC0",
+     "url": "https://commons.wikimedia.org/wiki/File:Vintage_car_driving_in_Centro_Havana_(Unsplash).jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this pizza come from?",
+    "img": "/clues/d2s2.jpg",
+    "alt": "A blistered round pizza with tomato, melted white cheese and a few basil leaves",
+    "country": "Italy",
+    "regionName": "Campania",
+    "region": [
+     "campania"
+    ],
+    "cityName": "Naples",
+    "city": [
+     "naples",
+     "napoli",
+     "neapel"
+    ],
+    "spotLabel": "Name the pizza",
+    "spotName": "Pizza margherita",
+    "spot": [
+     "margherita",
+     "pizza margherita",
+     "margarita",
+     "margherita pizza",
+     "neapolitan pizza",
+     "pizza napoletana"
+    ],
+    "airport": "NAP",
+    "fact": "The margherita is said to be named after Queen Margherita of Savoy, who visited Naples in 1889. The craft of the Neapolitan pizzaiuolo is on UNESCO's intangible heritage list.",
+    "crowd": [
+     88,
+     62,
+     58
+    ],
+    "credit": {
+     "title": "Pizza Margherita in Naples 2015",
+     "author": "Kos88",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Pizza_Margherita_in_Naples_2015.JPG"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where are these towers?",
+    "img": "/clues/d2s3.jpg",
+    "alt": "Two identical steel skyscrapers joined by a bridge, between other towers under a blue sky",
+    "country": "Malaysia",
+    "regionName": "Federal Territory of Kuala Lumpur",
+    "region": [
+     "federal territory of kuala lumpur",
+     "wilayah persekutuan",
+     "klang valley"
+    ],
+    "cityName": "Kuala Lumpur",
+    "city": [
+     "kuala lumpur",
+     "kl"
+    ],
+    "spotLabel": "Name the towers",
+    "spotName": "Petronas Twin Towers",
+    "spot": [
+     "petronas towers",
+     "petronas twin towers",
+     "petronas",
+     "klcc",
+     "menara berkembar petronas",
+     "twin towers"
+    ],
+    "airport": "KUL",
+    "fact": "At 452 m, the Petronas Towers were the world's tallest buildings from 1998 to 2004. A two-storey skybridge joins them at the 41st and 42nd floors.",
+    "crowd": [
+     72,
+     66,
+     60
+    ],
+    "credit": {
+     "title": "2016 Kuala Lumpur, Petronas Towers (26)",
+     "author": "Marcin Konsek",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:2016_Kuala_Lumpur,_Petronas_Towers_(26).jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where is this balcony?",
+    "img": "/clues/d2s4.jpg",
+    "alt": "A weathered stone corner building with a long enclosed wooden balcony on carved stone brackets",
+    "country": "Malta",
+    "regionName": "Southern Harbour",
+    "region": [
+     "southern harbour",
+     "southern harbour district"
+    ],
+    "cityName": "Valletta",
+    "city": [
+     "valletta",
+     "valetta",
+     "il belt"
+    ],
+    "spotLabel": "Name these enclosed balconies",
+    "spotName": "Gallariji (Maltese balconies)",
+    "spot": [
+     "gallariji",
+     "gallarija",
+     "gallerija",
+     "maltese balconies",
+     "maltese balcony",
+     "balconies",
+     "balcony"
+    ],
+    "airport": "MLA",
+    "fact": "Valletta's closed wooden balconies, gallariji, let people watch the street unseen while keeping out the sun. The city was built by the Knights of St John after the Great Siege of 1565.",
+    "crowd": [
+     29,
+     22,
+     8
+    ],
+    "credit": {
+     "title": "Balkong i Valetta 1",
+     "author": "Väsk",
+     "license": "CC BY-SA 3.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Balkong_i_Valetta_1.jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "道頓堀のグリコの看板の前で7時に会おう！",
+     "from": "+81 90 •••• ••••",
+     "note": "Text message, 18:05",
+     "lang": "ja"
+    },
+    "country": "Japan",
+    "regionName": "Osaka Prefecture",
+    "region": [
+     "osaka prefecture",
+     "kansai",
+     "kinki"
+    ],
+    "cityName": "Osaka",
+    "city": [
+     "osaka",
+     "osaka shi"
+    ],
+    "spotLabel": "Name the district",
+    "spotName": "Dōtonbori",
+    "spot": [
+     "dotonbori",
+     "dotombori",
+     "dotonbori canal",
+     "glico sign",
+     "glico running man",
+     "glico",
+     "namba"
+    ],
+    "airport": "KIX",
+    "fact": "\"Let's meet at 7 in front of the Glico sign on Dōtonbori!\" The Glico running man has lit up the Dōtonbori canal in Osaka since 1935.",
+    "crowd": [
+     35,
+     30,
+     22
+    ]
+   }
+  ]
+ },
+ {
+  "offset": -1,
+  "flight": "003",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this canal?",
+    "img": "/clues/d3s1.jpg",
+    "alt": "Brightly painted houses along a canal with wooden mooring posts and a tall leaning bell tower behind",
+    "country": "Italy",
+    "regionName": "Veneto",
+    "region": [
+     "veneto"
+    ],
+    "cityName": "Venice",
+    "city": [
+     "venice",
+     "venezia",
+     "venedig"
+    ],
+    "spotLabel": "Name the island",
+    "spotName": "Burano",
+    "spot": [
+     "burano",
+     "isola di burano"
+    ],
+    "airport": "VCE",
+    "fact": "Burano is a lagoon island of Venice where every house is painted a bright colour, and owners ask permission before repainting. The bell tower of San Martino leans visibly.",
+    "crowd": [
+     57,
+     44,
+     26
+    ],
+    "credit": {
+     "title": "Burano Venice 4",
+     "author": "kallerna",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Burano_Venice_4.jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this dish come from?",
+    "img": "/clues/d3s2.jpg",
+    "alt": "Sliced roast duck with glossy skin beside a bamboo steamer of thin pancakes, dark sauce, spring onion and cucumber",
+    "country": "China",
+    "regionName": "Beijing Municipality",
+    "region": [
+     "beijing municipality"
+    ],
+    "cityName": "Beijing",
+    "city": [
+     "beijing",
+     "peking",
+     "beijing shi"
+    ],
+    "spotLabel": "Name the dish",
+    "spotName": "Peking duck",
+    "spot": [
+     "peking duck",
+     "beijing duck",
+     "beijing roast duck",
+     "peking roast duck",
+     "roast duck",
+     "kao ya",
+     "beijing kaoya"
+    ],
+    "airport": "PEK",
+    "fact": "Peking duck is roasted until the skin turns glassy, then carved at the table and wrapped in thin pancakes with spring onion, cucumber and sweet bean sauce. Beijing's oldest duck restaurants date back to the 1400s.",
+    "crowd": [
+     66,
+     58,
+     49
+    ],
+    "credit": {
+     "title": "2016-08-27 Peking Duck at Great Wall Restaurant Beijing anagoria",
+     "author": "Anagoria",
+     "license": "CC BY 3.0",
+     "url": "https://commons.wikimedia.org/wiki/File:2016-08-27_Peking_Duck_at_Great_Wall_Restaurant_Beijing_anagoria.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this statue?",
+    "img": "/clues/d3s3.jpg",
+    "alt": "A statue with outstretched arms on a mountain peak above a sea of clouds at sunrise",
+    "country": "Brazil",
+    "regionName": "Rio de Janeiro State",
+    "region": [
+     "rio de janeiro state",
+     "estado do rio de janeiro",
+     "rj"
+    ],
+    "cityName": "Rio de Janeiro",
+    "city": [
+     "rio de janeiro",
+     "rio"
+    ],
+    "spotLabel": "Name the statue",
+    "spotName": "Christ the Redeemer",
+    "spot": [
+     "christ the redeemer",
+     "cristo redentor",
+     "corcovado",
+     "cristo",
+     "christ"
+    ],
+    "airport": "GIG",
+    "fact": "Christ the Redeemer has stood 30 m tall on Corcovado mountain since 1931, made of reinforced concrete clad in soapstone tiles.",
+    "crowd": [
+     86,
+     81,
+     74
+    ],
+    "credit": {
+     "title": "Redentor Over Clouds 1",
+     "author": "Donatas Dabravolskas",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Redentor_Over_Clouds_1.jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where are these wooden houses?",
+    "img": "/clues/d3s4.jpg",
+    "alt": "A row of tall, narrow wooden gabled houses painted ochre, white and red",
+    "country": "Norway",
+    "regionName": "Vestland",
+    "region": [
+     "vestland",
+     "hordaland",
+     "western norway"
+    ],
+    "cityName": "Bergen",
+    "city": [
+     "bergen",
+     "bjorgvin"
+    ],
+    "spotLabel": "Name this wharf",
+    "spotName": "Bryggen",
+    "spot": [
+     "bryggen",
+     "tyske bryggen",
+     "hanseatic wharf",
+     "the hanseatic wharf"
+    ],
+    "airport": "BGO",
+    "fact": "Bryggen's wooden warehouses were the Hanseatic League's trading post in Bergen, dealing mostly in dried cod. Rebuilt after many fires on the old pattern, they are a UNESCO World Heritage Site.",
+    "crowd": [
+     41,
+     33,
+     25
+    ],
+    "credit": {
+     "title": "Fassaden in Bryggen, Bergen N",
+     "author": "JoachimKohler-HB",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Fassaden_in_Bryggen,_Bergen_N.jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Tukutane Forodhani saa kumi na mbili jioni, tule mishkaki baharini.",
+     "from": "+255 7•• ••• •••",
+     "note": "Text message, 16:30",
+     "lang": "sw"
+    },
+    "country": "Tanzania",
+    "regionName": "Zanzibar Urban/West",
+    "region": [
+     "zanzibar urban west",
+     "unguja",
+     "zanzibar island",
+     "mjini magharibi"
+    ],
+    "cityName": "Zanzibar City",
+    "city": [
+     "zanzibar city",
+     "zanzibar town",
+     "zanzibar"
+    ],
+    "spotLabel": "Name the old quarter",
+    "spotName": "Stone Town (Forodhani Gardens)",
+    "spot": [
+     "stone town",
+     "forodhani",
+     "forodhani gardens",
+     "mji mkongwe"
+    ],
+    "airport": "ZNZ",
+    "fact": "\"Let's meet at Forodhani at six this evening and eat skewers by the sea.\" Forodhani Gardens on Stone Town's waterfront turns into a street-food market every evening.",
+    "crowd": [
+     19,
+     14,
+     11
+    ]
+   }
+  ]
+ },
+ {
+  "offset": 0,
+  "flight": "004",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this hillside?",
+    "img": "/clues/r1.jpg",
+    "alt": "A hillside crowded with brightly painted houses under a grey sky",
+    "country": "Chile",
+    "regionName": "Valparaíso Region",
+    "region": [
+     "valparaiso region",
+     "region de valparaiso",
+     "region of valparaiso",
+     "v region",
+     "quinta region"
+    ],
+    "cityName": "Valparaíso",
+    "city": [
+     "valparaiso",
+     "valpo"
+    ],
+    "spotLabel": "Name one of the city's hills (cerros)",
+    "spotName": "Any of its 40-odd cerros, like Cerro Alegre",
+    "spot": [
+     "alegre",
+     "concepcion",
+     "bellavista",
+     "artilleria",
+     "florida",
+     "baron",
+     "cordillera",
+     "panteon",
+     "polanco",
+     "playa ancha",
+     "yungay",
+     "mariposas",
+     "larrain",
+     "esperanza",
+     "toro",
+     "santo domingo",
+     "monjas",
+     "carcel",
+     "san juan de dios"
+    ],
+    "spotStrip": "^cerro ",
+    "airport": "SCL",
+    "fact": "Valparaíso is built on more than 40 hills, linked by century-old funicular lifts called ascensores. Its historic quarter is a UNESCO World Heritage Site.",
+    "crowd": [
+     58,
+     31,
+     6
+    ],
+    "credit": {
+     "title": "Valparaíso",
+     "author": "Fraenerys",
+     "license": "CC BY 3.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Valpara%C3%ADso_(178426945).jpeg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this dish come from?",
+    "img": "/clues/r2.jpg",
+    "alt": "A boat-shaped bread filled with melted cheese, a runny egg yolk and a pat of butter",
+    "country": "Georgia",
+    "regionName": "Adjara",
+    "region": [
+     "adjara",
+     "ajara",
+     "adjaria",
+     "achara",
+     "autonomous republic of adjara"
+    ],
+    "cityName": "Batumi",
+    "city": [
+     "batumi",
+     "batum"
+    ],
+    "spotLabel": "Name the dish",
+    "spotName": "Adjaruli khachapuri",
+    "spot": [
+     "adjaruli khachapuri",
+     "acharuli khachapuri",
+     "adjarian khachapuri",
+     "khachapuri adjaruli",
+     "khachapuri acharuli",
+     "adjaruli",
+     "acharuli",
+     "khachapuri"
+    ],
+    "airport": "BUS",
+    "fact": "Adjaruli khachapuri comes from Adjara on Georgia's Black Sea coast. The boat shape is no accident: you tear off the crust and stir the egg and butter into the cheese.",
+    "crowd": [
+     44,
+     12,
+     9
+    ],
+    "credit": {
+     "title": "Khachapuri Adjaruli with egg and butter",
+     "author": "Eugene Krasnaok",
+     "license": "CC BY 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Khachapuri_Adjaruli_with_egg_and_butter_2016.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this church?",
+    "img": "/clues/r3.jpg",
+    "alt": "A tall pale concrete church with stepped columns, a bronze statue in front and snow on the ground",
+    "country": "Iceland",
+    "regionName": "Capital Region",
+    "region": [
+     "capital region",
+     "hofudborgarsvaedid",
+     "greater reykjavik"
+    ],
+    "cityName": "Reykjavík",
+    "city": [
+     "reykjavik"
+    ],
+    "spotLabel": "Name the landmark",
+    "spotName": "Hallgrímskirkja",
+    "spot": [
+     "hallgrimskirkja",
+     "hallgrims church",
+     "hallgrim s church",
+     "hallgrimur s church",
+     "church of hallgrimur",
+     "hallgrimskirkja church"
+    ],
+    "airport": "KEF",
+    "fact": "Hallgrímskirkja's 74.5 m tower was designed to echo the basalt columns that form when lava cools. The statue out front is Leif Erikson, a gift from the United States in 1930.",
+    "crowd": [
+     83,
+     77,
+     52
+    ],
+    "credit": {
+     "title": "Hallgrímskirkja",
+     "author": "Andreas Tille",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Hallgr%C3%ADmskirkja.jpeg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where are these tiled walls?",
+    "img": "/clues/r4.jpg",
+    "alt": "Two buildings covered in teal and patterned ceramic tiles on a wet cobbled street",
+    "country": "Portugal",
+    "regionName": "Lisbon District",
+    "region": [
+     "lisbon district",
+     "lisboa district",
+     "distrito de lisboa",
+     "lisbon metropolitan area",
+     "area metropolitana de lisboa",
+     "greater lisbon"
+    ],
+    "cityName": "Lisbon",
+    "city": [
+     "lisbon",
+     "lisboa"
+    ],
+    "spotLabel": "Name the neighbourhood",
+    "spotName": "Graça",
+    "spot": [
+     "graca",
+     "bairro da graca",
+     "largo da graca",
+     "sao vicente"
+    ],
+    "airport": "LIS",
+    "fact": "Graça is one of Lisbon's oldest neighbourhoods, high on one of the city's seven hills. Glazed azulejo tiles became popular on façades in the 1800s because they shrug off damp and heat.",
+    "crowd": [
+     69,
+     51,
+     4
+    ],
+    "credit": {
+     "title": "Lisbon. Azulejo-covered houses in Graça.",
+     "author": "Vernaccia",
+     "license": "CC BY 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Lisbon._Azulejo-covered_houses_in_Gra%C3%A7a._(41941933691).jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Tere! Kohtume kell kuus Raekoja platsil, Vana Toomase all.",
+     "from": "+372 5••• ••••",
+     "note": "Text message, 17:12",
+     "lang": "et"
+    },
+    "country": "Estonia",
+    "regionName": "Harju County",
+    "region": [
+     "harju",
+     "harju county",
+     "harjumaa"
+    ],
+    "cityName": "Tallinn",
+    "city": [
+     "tallinn",
+     "reval"
+    ],
+    "spotLabel": "Name the square",
+    "spotName": "Town Hall Square (Raekoja plats)",
+    "spot": [
+     "raekoja plats",
+     "town hall square",
+     "tallinn town hall square",
+     "tallinn town hall",
+     "town hall",
+     "raekoda",
+     "old town",
+     "vanalinn",
+     "tallinn old town"
+    ],
+    "airport": "TLL",
+    "fact": "\"Hi! Let's meet at six on Town Hall Square, under Old Thomas.\" Vana Toomas is the weathervane guard on top of Tallinn Town Hall, keeping watch over the square since 1530.",
+    "crowd": [
+     22,
+     18,
+     11
+    ]
+   }
+  ]
+ }
+]
