@@ -853,5 +853,842 @@
     ]
    }
   ]
+ },
+ {
+  "offset": -7,
+  "flight": "005",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this railway street?",
+    "img": "/clues/d7s1.jpg",
+    "alt": "A railway line running down a narrow lane, with houses and doorways right up against the tracks",
+    "country": "Vietnam",
+    "regionName": "Red River Delta",
+    "region": [
+     "red river delta",
+     "northern vietnam",
+     "bac bo",
+     "tonkin"
+    ],
+    "cityName": "Hanoi",
+    "city": [
+     "hanoi",
+     "ha noi"
+    ],
+    "spotLabel": "Name the street",
+    "spotName": "Train Street (off Lê Duẩn and Phùng Hưng)",
+    "spot": [
+     "train street",
+     "hanoi train street",
+     "pho duong tau",
+     "duong tau",
+     "le duan",
+     "phung hung",
+     "kham thien",
+     "tran phu"
+    ],
+    "airport": "HAN",
+    "fact": "Hanoi's Train Street is a row of houses built right up to a working railway laid by the French in the early 1900s. When a train squeezes through, residents step back into their doorways.",
+    "crowd": [
+     55,
+     38,
+     22
+    ],
+    "credit": {
+     "title": "Train street in Hanoi",
+     "author": "Kris Martyn",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Train_street_in_Hanoi.jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this fish stew come from?",
+    "img": "/clues/d7s2.jpg",
+    "alt": "A bowl of orange fish stew with a mussel, pieces of white fish and chopped herbs",
+    "country": "France",
+    "regionName": "Provence-Alpes-Côte d'Azur",
+    "region": [
+     "provence alpes cote d azur",
+     "provence",
+     "paca",
+     "bouches du rhone"
+    ],
+    "cityName": "Marseille",
+    "city": [
+     "marseille",
+     "marseilles"
+    ],
+    "spotLabel": "Name the dish",
+    "spotName": "Bouillabaisse",
+    "spot": [
+     "bouillabaisse",
+     "bouillabaise",
+     "bouillabesso",
+     "bouillabaisse marseillaise"
+    ],
+    "airport": "MRS",
+    "fact": "Bouillabaisse began as the stew Marseille fishermen made from the bony rockfish they couldn't sell. In 1980 the city's chefs signed a charter setting out what a true one must contain.",
+    "crowd": [
+     61,
+     35,
+     28
+    ],
+    "credit": {
+     "title": "20250903 Bouillabaisse in Khimki (90108)",
+     "author": "Sergey A. Demidov",
+     "license": "CC BY 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:20250903_Bouillabaisse_in_Khimki_(90108).jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this facade carved into the rock?",
+    "img": "/clues/d7s3.jpg",
+    "alt": "A tall classical facade with columns, carved straight out of a pink sandstone cliff",
+    "country": "Jordan",
+    "regionName": "Ma'an Governorate",
+    "region": [
+     "maan governorate",
+     "maan",
+     "ma an governorate"
+    ],
+    "cityName": "Petra",
+    "city": [
+     "petra",
+     "wadi musa",
+     "wadi mousa"
+    ],
+    "spotLabel": "Name the monument",
+    "spotName": "Al-Khazneh (the Treasury)",
+    "spot": [
+     "al khazneh",
+     "khazneh",
+     "al khazna",
+     "treasury",
+     "khaznat al firaun",
+     "pharaoh s treasury"
+    ],
+    "airport": "AQJ",
+    "fact": "Al-Khazneh was carved out of the sandstone by the Nabataeans around the 1st century AD, probably as a royal tomb. Its name, the Treasury, comes from a legend that pirates hid gold in the urn at the top.",
+    "crowd": [
+     79,
+     70,
+     58
+    ],
+    "credit": {
+     "title": "Al-Khazneh (The Treasury) 2, Petra, Jordan",
+     "author": "Vyacheslav Argenberg",
+     "license": "CC BY 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Al-Khazneh_(The_Treasury)_2,_Petra,_Jordan.jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where is this doorway?",
+    "img": "/clues/d7s4.jpg",
+    "alt": "A pale green panelled door between white columns, under a fanlight window in a red brick wall",
+    "country": "Ireland",
+    "regionName": "County Dublin",
+    "region": [
+     "county dublin",
+     "co dublin",
+     "leinster"
+    ],
+    "cityName": "Dublin",
+    "city": [
+     "dublin",
+     "baile atha cliath"
+    ],
+    "spotLabel": "Name the street",
+    "spotName": "Henrietta Street",
+    "spot": [
+     "henrietta street",
+     "henrietta st"
+    ],
+    "airport": "DUB",
+    "fact": "Dublin's Georgian doors, framed by columns and topped with fanlights, date from its 18th-century building boom. Henrietta Street, laid out in the 1720s, is the oldest Georgian street in the city.",
+    "crowd": [
+     48,
+     36,
+     3
+    ],
+    "credit": {
+     "title": "Doors Of Dublin - Henrietta Street 4282282527",
+     "author": "William Murphy",
+     "license": "CC BY-SA 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Doors_Of_Dublin_-_Henrietta_Street_4282282527.jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Servus! Treffen wir uns um acht beim Riesenrad im Prater?",
+     "from": "+43 664 ••• ••••",
+     "note": "Text message, 18:20",
+     "lang": "de"
+    },
+    "country": "Austria",
+    "regionName": "Vienna (state)",
+    "region": [
+     "vienna state",
+     "bundesland wien",
+     "eastern austria"
+    ],
+    "cityName": "Vienna",
+    "city": [
+     "vienna",
+     "wien"
+    ],
+    "spotLabel": "Name the park",
+    "spotName": "The Prater (by the Riesenrad)",
+    "spot": [
+     "prater",
+     "wiener prater",
+     "wurstelprater",
+     "riesenrad",
+     "wiener riesenrad",
+     "giant ferris wheel"
+    ],
+    "airport": "VIE",
+    "fact": "\"Hi! Shall we meet at eight by the Ferris wheel in the Prater?\" German is spoken in several countries, but +43 is Austria. Vienna's Riesenrad has turned over the Prater since 1897.",
+    "crowd": [
+     25,
+     22,
+     17
+    ]
+   }
+  ]
+ },
+ {
+  "offset": -6,
+  "flight": "006",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where are these balconies?",
+    "img": "/clues/d6s1.jpg",
+    "alt": "A narrow street of pink and yellow colonial houses with wooden balconies and bougainvillea",
+    "country": "Colombia",
+    "regionName": "Bolívar Department",
+    "region": [
+     "bolivar department",
+     "departamento de bolivar",
+     "bolivar",
+     "caribbean region"
+    ],
+    "cityName": "Cartagena",
+    "city": [
+     "cartagena",
+     "cartagena de indias"
+    ],
+    "spotLabel": "Name the walled part of the city",
+    "spotName": "The walled old town (Ciudad Amurallada)",
+    "spot": [
+     "ciudad amurallada",
+     "walled city",
+     "old town",
+     "old city",
+     "centro historico",
+     "ciudad vieja",
+     "centro",
+     "san diego"
+    ],
+    "airport": "CTG",
+    "fact": "Cartagena's old town sits inside about 11 km of stone walls built against pirates and rival navies. Its wooden balconies date mostly from the colonial era, when it was Spain's great Caribbean port.",
+    "crowd": [
+     41,
+     30,
+     24
+    ],
+    "credit": {
+     "title": "Balconies, Street scene in Cartagena, Colombia (24745444421)",
+     "author": "Joe Ross from Lansing, Michigan",
+     "license": "CC BY-SA 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Balconies,_Street_scene_in_Cartagena,_Colombia_(24745444421).jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this rice bowl come from?",
+    "img": "/clues/d6s2.jpg",
+    "alt": "A hot stone bowl of rice topped with vegetables, sprouts, a raw egg yolk and sesame",
+    "country": "South Korea",
+    "regionName": "North Jeolla (Jeonbuk)",
+    "region": [
+     "north jeolla",
+     "jeollabuk do",
+     "jeonbuk",
+     "jeonbuk state",
+     "honam"
+    ],
+    "cityName": "Jeonju",
+    "city": [
+     "jeonju",
+     "chonju"
+    ],
+    "spotLabel": "Name the dish",
+    "spotName": "Bibimbap (Jeonju bibimbap)",
+    "spot": [
+     "bibimbap",
+     "bibimbab",
+     "bi bim bap",
+     "bibim bap",
+     "dolsot bibimbap",
+     "jeonju bibimbap"
+    ],
+    "airport": "KUV",
+    "fact": "Bibimbap means \"mixed rice\": rice topped with vegetables, chilli paste and often an egg, stirred together at the table. Jeonju is its most famous home and holds a bibimbap festival every year.",
+    "crowd": [
+     72,
+     9,
+     7
+    ],
+    "credit": {
+     "title": "Korean.food-Bibimbap-02",
+     "author": "abex (a flickr user)",
+     "license": "CC BY-SA 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Korean.food-Bibimbap-02.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this temple?",
+    "img": "/clues/d6s3.jpg",
+    "alt": "A weathered stone temple gallery with a tall, carved tower rising behind it",
+    "country": "Cambodia",
+    "regionName": "Siem Reap Province",
+    "region": [
+     "siem reap province",
+     "khaet siem reab"
+    ],
+    "cityName": "Siem Reap",
+    "city": [
+     "siem reap",
+     "siemreap",
+     "siem riep"
+    ],
+    "spotLabel": "Name the temple",
+    "spotName": "Angkor Wat",
+    "spot": [
+     "angkor wat",
+     "angkor",
+     "angkor vat",
+     "nokor wat"
+    ],
+    "airport": "SAI",
+    "fact": "Angkor Wat was built in the early 12th century for King Suryavarman II, first as a Hindu temple to Vishnu, later Buddhist. It is the largest religious monument in the world, and it appears on Cambodia's flag.",
+    "crowd": [
+     74,
+     52,
+     48
+    ],
+    "credit": {
+     "title": "2016 Angkor, Angkor Wat, Brama Angkor Wat (30)",
+     "author": "Marcin Konsek",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:2016_Angkor,_Angkor_Wat,_Brama_Angkor_Wat_(30).jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where is this mosaic?",
+    "img": "/clues/d6s4.jpg",
+    "alt": "A wall of broken white tiles set with square panels of patterned ceramic, under pink roses",
+    "country": "Spain",
+    "regionName": "Catalonia",
+    "region": [
+     "catalonia",
+     "catalunya",
+     "cataluna"
+    ],
+    "cityName": "Barcelona",
+    "city": [
+     "barcelona",
+     "bcn"
+    ],
+    "spotLabel": "Name the park",
+    "spotName": "Park Güell",
+    "spot": [
+     "park guell",
+     "parc guell",
+     "parque guell",
+     "guell park"
+    ],
+    "airport": "BCN",
+    "fact": "This patchwork of broken tiles is trencadís, the mosaic style Antoni Gaudí made famous. He covered Park Güell's benches, walls and dragon in it between 1900 and 1914.",
+    "crowd": [
+     63,
+     55,
+     41
+    ],
+    "credit": {
+     "title": "Trencadís. Park Güell",
+     "author": "Andrew Moore from Johannesburg, South Africa",
+     "license": "CC BY-SA 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Trencad%C3%ADs._Park_G%C3%BCell.jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Akşam yedide Galata Kulesi'nin önünde buluşalım mı? Sonra Karaköy'de balık yeriz.",
+     "from": "+90 5•• ••• •• ••",
+     "note": "Text message, 17:45",
+     "lang": "tr"
+    },
+    "country": "Turkey",
+    "regionName": "Marmara Region",
+    "region": [
+     "marmara region",
+     "marmara",
+     "istanbul province"
+    ],
+    "cityName": "Istanbul",
+    "city": [
+     "istanbul",
+     "constantinople",
+     "stamboul"
+    ],
+    "spotLabel": "Name the tower",
+    "spotName": "Galata Tower",
+    "spot": [
+     "galata tower",
+     "galata kulesi",
+     "galata"
+    ],
+    "airport": "IST",
+    "fact": "\"Shall we meet in front of Galata Tower at seven? Then we'll eat fish in Karaköy.\" The stone tower has stood over the Golden Horn since the Genoese built it in 1348.",
+    "crowd": [
+     44,
+     39,
+     33
+    ]
+   }
+  ]
+ },
+ {
+  "offset": -5,
+  "flight": "007",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where are these painted houses?",
+    "img": "/clues/d5s1.jpg",
+    "alt": "A terrace of flat-roofed houses painted pink, mint, lilac and yellow on a sloping street",
+    "country": "South Africa",
+    "regionName": "Western Cape",
+    "region": [
+     "western cape",
+     "wes kaap",
+     "western cape province"
+    ],
+    "cityName": "Cape Town",
+    "city": [
+     "cape town",
+     "kaapstad",
+     "ikapa"
+    ],
+    "spotLabel": "Name the neighbourhood",
+    "spotName": "Bo-Kaap",
+    "spot": [
+     "bo kaap",
+     "bokaap",
+     "malay quarter",
+     "bo kaap malay quarter"
+    ],
+    "airport": "CPT",
+    "fact": "Bo-Kaap, on the slopes of Signal Hill, grew from the 1760s as home to Cape Malay families, many descended from people enslaved from Southeast Asia. Its brightly painted houses are among Cape Town's oldest.",
+    "crowd": [
+     46,
+     41,
+     30
+    ],
+    "credit": {
+     "title": "Bo-Kaap - Cape Town, South Africa (3883775540)",
+     "author": "South African Tourism from South Africa",
+     "license": "CC BY 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Bo-Kaap_-_Cape_Town,_South_Africa_(3883775540).jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where do these tacos come from?",
+    "img": "/clues/d5s2.jpg",
+    "alt": "A hand holding a paper tray of small soft tacos filled with marinated pork, onion and coriander",
+    "country": "Mexico",
+    "regionName": "Valley of Mexico",
+    "region": [
+     "valley of mexico",
+     "valle de mexico",
+     "central mexico"
+    ],
+    "cityName": "Mexico City",
+    "city": [
+     "mexico city",
+     "ciudad de mexico",
+     "cdmx",
+     "mexico df",
+     "df"
+    ],
+    "spotLabel": "Name the taco",
+    "spotName": "Tacos al pastor",
+    "spot": [
+     "al pastor",
+     "tacos al pastor",
+     "taco al pastor",
+     "pastor",
+     "tacos de trompo",
+     "trompo"
+    ],
+    "airport": "MEX",
+    "fact": "Tacos al pastor grew from the shawarma Lebanese immigrants brought to Mexico: pork marinated in chilli and achiote, cooked on a vertical spit and served with pineapple. They became a Mexico City staple in the 1960s.",
+    "crowd": [
+     77,
+     39,
+     33
+    ],
+    "credit": {
+     "title": "(El Flaco) Al Pastor Tacos",
+     "author": "City Foodsters",
+     "license": "CC BY 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:(El_Flaco)_Al_Pastor_Tacos.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this castle?",
+    "img": "/clues/d5s3.jpg",
+    "alt": "A white castle with slender towers on a forested crag, below a steep grey cliff",
+    "country": "Germany",
+    "regionName": "Bavaria",
+    "region": [
+     "bavaria",
+     "bayern",
+     "freistaat bayern",
+     "allgau",
+     "swabia"
+    ],
+    "cityName": "Schwangau",
+    "city": [
+     "schwangau",
+     "fussen",
+     "hohenschwangau"
+    ],
+    "spotLabel": "Name the castle",
+    "spotName": "Neuschwanstein Castle",
+    "spot": [
+     "neuschwanstein",
+     "neuschwanstein castle",
+     "schloss neuschwanstein"
+    ],
+    "airport": "FMM",
+    "fact": "King Ludwig II of Bavaria began Neuschwanstein in 1869 as a private retreat and died before it was finished. It opened to visitors weeks after his death in 1886 and is said to have inspired Disney's Sleeping Beauty castle.",
+    "crowd": [
+     81,
+     28,
+     26
+    ],
+    "credit": {
+     "title": "Neuschwanstein Castle 2024",
+     "author": "Wilfredor",
+     "license": "CC0",
+     "url": "https://commons.wikimedia.org/wiki/File:Neuschwanstein_Castle_2024.jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where are these gates?",
+    "img": "/clues/d5s4.jpg",
+    "alt": "Two paths running through tunnels of closely spaced vermilion gates with black bases",
+    "country": "Japan",
+    "regionName": "Kyoto Prefecture",
+    "region": [
+     "kyoto prefecture",
+     "kyoto fu",
+     "kansai",
+     "kinki"
+    ],
+    "cityName": "Kyoto",
+    "city": [
+     "kyoto",
+     "kyouto"
+    ],
+    "spotLabel": "Name the shrine",
+    "spotName": "Fushimi Inari Taisha",
+    "spot": [
+     "fushimi inari",
+     "fushimi inari taisha",
+     "fushimi inari shrine",
+     "inari taisha",
+     "senbon torii",
+     "fushimi"
+    ],
+    "airport": "ITM",
+    "fact": "Fushimi Inari Taisha is lined with thousands of vermilion torii gates, each donated by a business or person whose name is written on the back. The paths climb about 4 km up Mount Inari.",
+    "crowd": [
+     86,
+     64,
+     55
+    ],
+    "credit": {
+     "title": "Double torii path at Fushimi Inari Taisha Shrine, Kyoto, Japan",
+     "author": "Basile Morin",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Double_torii_path_at_Fushimi_Inari_Taisha_Shrine,_Kyoto,_Japan.jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "نتقابل في خان الخليلي الساعة سبعة؟ هنشرب شاي في الفيشاوي.",
+     "from": "+20 10 •••• ••••",
+     "note": "Text message, 18:50",
+     "lang": "ar"
+    },
+    "country": "Egypt",
+    "regionName": "Cairo Governorate",
+    "region": [
+     "cairo governorate",
+     "al qahirah governorate",
+     "greater cairo"
+    ],
+    "cityName": "Cairo",
+    "city": [
+     "cairo",
+     "al qahirah",
+     "el qahira"
+    ],
+    "spotLabel": "Name the bazaar",
+    "spotName": "Khan el-Khalili",
+    "spot": [
+     "khan el khalili",
+     "khan al khalili",
+     "khan khalili",
+     "el khalili",
+     "khan el khalily"
+    ],
+    "airport": "CAI",
+    "fact": "\"Shall we meet at Khan el-Khalili at seven? We'll have tea at El Fishawy.\" Arabic is spoken in over 20 countries, but +20 is Egypt. Cairo's great bazaar dates from the 14th century.",
+    "crowd": [
+     19,
+     16,
+     12
+    ]
+   }
+  ]
+ },
+ {
+  "offset": -4,
+  "flight": "008",
+  "rounds": [
+   {
+    "type": "Street",
+    "prompt": "Where is this stone street?",
+    "img": "/clues/d4s1.jpg",
+    "alt": "A wide street paved with polished pale stone between uniform stone houses, with a bell tower at the far end",
+    "country": "Croatia",
+    "regionName": "Dubrovnik-Neretva County",
+    "region": [
+     "dubrovnik neretva county",
+     "dubrovacko neretvanska",
+     "dalmatia",
+     "southern dalmatia"
+    ],
+    "cityName": "Dubrovnik",
+    "city": [
+     "dubrovnik",
+     "ragusa"
+    ],
+    "spotLabel": "Name the street",
+    "spotName": "Stradun (Placa)",
+    "spot": [
+     "stradun",
+     "placa",
+     "stradone",
+     "stradun street"
+    ],
+    "airport": "DBV",
+    "fact": "Stradun, the main street of Dubrovnik's walled old town, was rebuilt after the great earthquake of 1667, which is why its houses look so alike. Its limestone is polished smooth by centuries of footsteps.",
+    "crowd": [
+     52,
+     44,
+     31
+    ],
+    "credit": {
+     "title": "Main street-Dubrovnik-1",
+     "author": "László Szalai (Beyond silence)",
+     "license": "Public domain",
+     "url": "https://commons.wikimedia.org/wiki/File:Main_street-Dubrovnik-1.jpg"
+    }
+   },
+   {
+    "type": "Food",
+    "prompt": "Where does this pizza come from?",
+    "img": "/clues/d4s2.jpg",
+    "alt": "A thick-crusted pizza in a deep pan, with tomato and pepperoni over a tall golden edge",
+    "country": "United States",
+    "regionName": "Illinois",
+    "region": [
+     "illinois",
+     "midwest"
+    ],
+    "cityName": "Chicago",
+    "city": [
+     "chicago",
+     "chi town",
+     "chitown",
+     "windy city"
+    ],
+    "spotLabel": "Name the style",
+    "spotName": "Deep-dish pizza",
+    "spot": [
+     "deep dish",
+     "deep dish pizza",
+     "chicago deep dish",
+     "chicago style",
+     "chicago style pizza",
+     "pan pizza",
+     "stuffed pizza"
+    ],
+    "airport": "ORD",
+    "fact": "Chicago deep-dish is baked in a tall, oiled pan, with the cheese under a layer of chunky tomato so it doesn't burn in the long bake. Pizzeria Uno claims to have invented it in 1943.",
+    "crowd": [
+     74,
+     62,
+     51
+    ],
+    "credit": {
+     "title": "Deep Dish Pizza PD",
+     "author": "Telluride",
+     "license": "CC BY-SA 3.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Deep_Dish_Pizza_PD.jpg"
+    }
+   },
+   {
+    "type": "Landmark",
+    "prompt": "Where is this golden pagoda?",
+    "img": "/clues/d4s3.jpg",
+    "alt": "Gilded spires and tiered pavilions around a marble terrace, with people walking barefoot",
+    "country": "Myanmar",
+    "regionName": "Yangon Region",
+    "region": [
+     "yangon region",
+     "rangoon division",
+     "yangon division"
+    ],
+    "cityName": "Yangon",
+    "city": [
+     "yangon",
+     "rangoon"
+    ],
+    "spotLabel": "Name the pagoda",
+    "spotName": "Shwedagon Pagoda",
+    "spot": [
+     "shwedagon",
+     "shwedagon pagoda",
+     "shwedagon zedi daw",
+     "great dagon pagoda",
+     "golden pagoda"
+    ],
+    "airport": "RGN",
+    "fact": "The Shwedagon's main stupa rises about 99 m over Yangon, its gold plates crowned with thousands of diamonds and rubies. Legend says it holds eight hairs of the Buddha.",
+    "crowd": [
+     58,
+     47,
+     42
+    ],
+    "credit": {
+     "title": "Shwedagon Zedi Daw Yangon 4",
+     "author": "kallerna",
+     "license": "CC BY-SA 4.0",
+     "url": "https://commons.wikimedia.org/wiki/File:Shwedagon_Zedi_Daw_Yangon_4.jpg"
+    }
+   },
+   {
+    "type": "Detail",
+    "prompt": "Where are these canal houses?",
+    "img": "/clues/d4s4.jpg",
+    "alt": "Tall, narrow brick houses with stepped and bell-shaped gables along a canal with a moored boat",
+    "country": "Netherlands",
+    "regionName": "North Holland",
+    "region": [
+     "north holland",
+     "noord holland"
+    ],
+    "cityName": "Amsterdam",
+    "city": [
+     "amsterdam",
+     "mokum"
+    ],
+    "spotLabel": "Name the canal belt",
+    "spotName": "The canal ring (Grachtengordel)",
+    "spot": [
+     "grachtengordel",
+     "canal ring",
+     "canal belt",
+     "herengracht",
+     "keizersgracht",
+     "prinsengracht",
+     "singel",
+     "canals",
+     "grachten"
+    ],
+    "airport": "AMS",
+    "fact": "Amsterdam's 17th-century canal ring is lined with tall, narrow merchant houses that lean slightly forward, so goods hoisted on the beam at the top swing clear of the windows. It became a World Heritage Site in 2010.",
+    "crowd": [
+     77,
+     69,
+     36
+    ],
+    "credit": {
+     "title": "DSC00288, Canal Cruise, Amsterdam, Netherlands (338955340)",
+     "author": "Lyn Gateley from Silicon Valley, CA, USA",
+     "license": "CC BY 2.0",
+     "url": "https://commons.wikimedia.org/wiki/File:DSC00288,_Canal_Cruise,_Amsterdam,_Netherlands_(338955340).jpg"
+    }
+   },
+   {
+    "type": "Wildcard",
+    "prompt": "A friend who lives there sends you this. Where are you meeting?",
+    "postcard": {
+     "text": "Allô! On se rejoint au marché Jean-Talon vers midi? J'apporte des beignes.",
+     "from": "+1 514 ••• ••••",
+     "note": "Text message, 11:05",
+     "lang": "fr"
+    },
+    "country": "Canada",
+    "regionName": "Quebec",
+    "region": [
+     "quebec",
+     "quebec province",
+     "province de quebec",
+     "la belle province"
+    ],
+    "cityName": "Montreal",
+    "city": [
+     "montreal",
+     "mtl"
+    ],
+    "spotLabel": "Name the market",
+    "spotName": "Jean-Talon Market",
+    "spot": [
+     "jean talon",
+     "jean talon market",
+     "marche jean talon"
+    ],
+    "airport": "YUL",
+    "fact": "\"Hi! Shall we meet at Jean-Talon Market around noon? I'll bring doughnuts.\" +1 covers the US and Canada, but 514 is Montreal, and beignes is Quebec French. The market has run in Little Italy since 1933.",
+    "crowd": [
+     21,
+     15,
+     10
+    ]
+   }
+  ]
  }
 ]

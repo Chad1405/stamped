@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Chivo_Mono } from "next/font/google";
 import "./globals.css";
 
-const chivo = Chivo_Mono({ subsets: ["latin"], weight: ["400", "500", "800"], variable: "--font-chivo", display: "swap" });
+// Chivo Mono is self-hosted from public/fonts (see the @font-face rules at the top of globals.css), so builds never fetch from Google Fonts.
 
 export const metadata: Metadata = {
   title: "Stamped",
@@ -12,7 +11,10 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={chivo.variable}>
+    <html lang="en">
+      <head>
+        <link rel="preload" href="/fonts/chivo-mono-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       {/* browser extensions write attributes onto <body> before React loads (e.g. style="isolation:isolate"); that is not our markup */}
       <body suppressHydrationWarning>{children}</body>
     </html>

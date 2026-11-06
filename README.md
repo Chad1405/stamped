@@ -40,13 +40,14 @@ To start from a clean slate locally, stop the server and delete `.data/pglite`.
 
 ## Deploy (Vercel + Neon)
 
-1. Create a Postgres database on [Neon](https://neon.tech) (or Supabase). Copy its **pooled** connection string.
-2. Push this repo to GitHub and import it in [Vercel](https://vercel.com).
+1. The Neon project is linked in `.neon` and declared in `neon.ts`. With the [Neon CLI](https://neon.com/docs/cli) (`npm i -g neon`), `neon login` then `neon deploy` provisions it and writes `DATABASE_URL` and `DATABASE_URL_UNPOOLED` to `.env.local`, so `npm run dev` / `next start` use Neon. Delete those lines to go back to the embedded PGlite.
+2. Push this repo to GitHub and import it in [Vercel](https://vercel.com) (Fluid compute, the default, reuses the `pg` pool across requests).
 3. Set environment variables in Vercel:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | the pooled Postgres connection string |
+| `DATABASE_URL` | Neon's **pooled** connection string (host ends in `-pooler`), used for app queries |
+| `DATABASE_URL_UNPOOLED` | Neon's direct connection string, used only to run migrations (falls back to `DATABASE_URL` if unset) |
 | `GAME_TIMEZONE` | the time zone the daily flight changes over in, e.g. `Africa/Johannesburg` (default `UTC`) |
 | `SEED_SAMPLE` | `true` to load the four sample flights into an empty database; `false` once real content is loaded |
 

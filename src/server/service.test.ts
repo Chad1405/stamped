@@ -16,13 +16,15 @@ beforeAll(async () => { db = await createDb(); await seedSamples(db, TODAY); });
 describe("sample flights", () => {
   it("rotate so every new day has a flight, without touching earlier ones", async () => {
     const fresh = await createDb(), next = addDays(TODAY, 1), pid = await ensurePlayer(fresh, undefined);
+    const samples = (seedDays as { offset: number; rounds: { prompt: string }[] }[]).toSorted((a, b) => a.offset - b.offset), n = samples.length;
+    const flightNo = (k: number) => String(k).padStart(3, "0");
     await seedSamples(fresh, TODAY);
-    expect((await getDay(fresh, pid, TODAY, TODAY)).flight).toBe("004");
+    expect((await getDay(fresh, pid, TODAY, TODAY)).flight).toBe(flightNo(n));   // the first seed puts the newest sample on today
     await seedSamples(fresh, next); await seedSamples(fresh, next);   // a second call the same day adds nothing
-    const tomorrow = await getDay(fresh, pid, next, next), oldest = (seedDays as { offset: number; rounds: { prompt: string }[] }[]).find(d => d.offset === -3)!;
-    expect(tomorrow.flight).toBe("005");
-    expect(tomorrow.stops[0].prompt).toBe(oldest.rounds[0].prompt);
-    expect((await getDay(fresh, pid, TODAY, next)).flight).toBe("004");
+    const tomorrow = await getDay(fresh, pid, next, next);
+    expect(tomorrow.flight).toBe(flightNo(n + 1));
+    expect(tomorrow.stops[0].prompt).toBe(samples[0].rounds[0].prompt);   // then the rotation starts again from the oldest
+    expect((await getDay(fresh, pid, TODAY, next)).flight).toBe(flightNo(n));
   });
   it("pick up edits to the sample file, and never touch a real flight", async () => {
     const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;

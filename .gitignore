@@ -45,3 +45,4 @@ next-env.d.ts
 
 # end-to-end screenshots
 /.e2e
+.neon
