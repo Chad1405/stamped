@@ -1,7 +1,7 @@
 "use client";
 // The screens around play: start, the day's passport, the lifetime passport, and friend leagues.
 import { useEffect, useState } from "react";
-import { confetti, sfx } from "@/lib/client/fx";
+import { sfx } from "@/lib/client/fx";
 import type { Day, League, Me } from "@/lib/client/api";
 import { band, classFor, CLASSES, CONT, LADDER, legFlown, MAX_DAY_SCORE, nextClass, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
@@ -88,7 +88,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   // each stamp thuds as it slams into the passport, then the fanfare
   useEffect(() => {
     const ts = day.stops.map((_, i) => setTimeout(() => sfx("stamp"), (i + 1) * 180 + 280));
-    ts.push(setTimeout(() => { sfx("finale"); if (s >= 300 || si?.milestone) confetti(undefined, 180); }, (day.stops.length + 1) * 180 + 500));
+    ts.push(setTimeout(() => { sfx("finale"); }, (day.stops.length + 1) * 180 + 500));
     return () => ts.forEach(clearTimeout);
   }, [day.date]); // eslint-disable-line react-hooks/exhaustive-deps -- once per flight shown
   const copy = () => navigator.clipboard.writeText(share).then(() => setCopied("Copied to your clipboard."), () => setCopied("Select the text and copy it."));

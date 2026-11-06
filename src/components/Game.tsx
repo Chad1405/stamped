@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type League, type Me } from "@/lib/client/api";
-import { TIERS } from "@/lib/game/rules";
-import { isMuted, setMuted, sfx, toTop } from "@/lib/client/fx";
+import { legFlown, TIERS } from "@/lib/game/rules";
+import { isMuted, reducedMotion, setMuted, sfx, toTop } from "@/lib/client/fx";
+import { FlightBand } from "./Flight";
 import { CountUp } from "./bits";
 import { Done, Friends, Home, Passport } from "./screens";
 import { StopScreen } from "./StopScreen";
@@ -22,6 +23,7 @@ export default function Game() {
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [invite, setInvite] = useState("");
+  const [flight, setFlight] = useState<{ from: number; to: number } | null>(null);   // a leg in the air: the next stop's clock starts on landing
   const [muted, setMute] = useState(false);
   useEffect(() => setMute(isMuted()), []);
   const backTo = useRef<View>("home");
@@ -62,11 +64,18 @@ export default function Game() {
     }
   }, [merge]);
 
-  const board = () => { if (!day) return; sfx("board"); const i = day.stops.findIndex(s => s.state.phase !== "done"); if (i < 0) setView("done"); else void startStop(day, i); };
-  const next = () => { if (!day) return; if (idx >= day.stops.length - 1) setView("done"); else void startStop(day, idx + 1); };
+  // boarding a stop flies the leg first; a stop already under way (a reload) or reduced motion goes straight there
+  const takeOff = (d: Day, to: number, from: number) => {
+    if (reducedMotion() || d.stops[to].state.phase !== "ready") { void startStop(d, to); return; }
+    setIdx(to); setView("stop"); setFlight({ from, to });
+  };
+  const arrive = () => { const f = flight; setFlight(null); if (f && day) void startStop(day, f.to); };
+  const board = () => { if (!day) return; sfx("board"); const i = day.stops.findIndex(s => s.state.phase !== "done"); if (i < 0) setView("done"); else takeOff(day, i, i - 1); };
+  const next = () => { if (!day) return; if (idx >= day.stops.length - 1) setView("done"); else takeOff(day, idx + 1, idx); };
+  const flownKm = day ? day.stops.reduce((n, s) => n + (legFlown(s.state.tier) ? s.reveal?.leg?.km ?? 0 : 0), 0) : 0;
   const open = (v: View) => { backTo.current = view; setView(v); };
   const back = () => setView(backTo.current === "stop" || !day ? (day && allDone(day) ? "done" : "home") : backTo.current);
-  const playing = view === "stop" && !!day && ["input", "decide"].includes(day.stops[idx]?.state.phase);
+  const playing = view === "stop" && !!day && (!!flight || ["input", "decide"].includes(day.stops[idx]?.state.phase));
 
   // every screen change starts at the top: one place, after the new screen is in the DOM, so no route can miss it
   const scene = `${view}-${view === "stop" ? idx : day?.date}`;
@@ -102,9 +111,13 @@ export default function Game() {
       <main aria-live="polite">
         {error && <p className="help is-error" role="alert">{error} <button className="linkish" type="button" onClick={() => void load(day?.date)}>Try again</button></p>}
         {!day && !error && <p className="small">Loading today’s flight…</p>}
+        {day && view === "stop" && <FlightBand stops={day.stops} at={idx} flight={flight} flownKm={flownKm} onArrive={arrive} />}
         <div className="scene" key={scene}>
         {day && view === "home" && <Home day={day} me={me} leagues={leagues} onBoard={board} onOpenDay={d => void load(d)} onFriends={() => open("friends")} />}
-        {day && view === "stop" && <StopScreen key={`${day.date}-${idx}`} day={day} idx={idx} offset={offset} onResult={merge} onNext={next} onError={setError} />}
+        {day && view === "stop" && flight && (
+          <section className="arriving"><span className="small">Next stop</span><h1>Stop {flight.to + 1}: {day.stops[flight.to].type}</h1><p className="lead">Destination unknown. The clue opens as you land.</p></section>
+        )}
+        {day && view === "stop" && !flight && <StopScreen key={`${day.date}-${idx}`} day={day} idx={idx} offset={offset} onResult={merge} onNext={next} onError={setError} />}
         {day && view === "done" && <Done day={day} me={me} onPassport={() => open("passport")} onFriends={() => open("friends")} onOpenDay={d => void load(d)} />}
         {me && view === "passport" && <Passport me={me} onBack={back} />}
         {me && view === "friends" && (

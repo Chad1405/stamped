@@ -400,7 +400,7 @@ footer p { max-width: 65ch; }
   .route li span:last-child { font-size: var(--text-lg); }
 }
 
-/* ============ Game feel: ambient life, feedback and reward (after Krillion's scene, sound and confetti) ============ */
+/* ============ Game feel: ambient life, feedback and reward (after Krillion's scene and sound) ============ */
 :root { --plane: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath transform='rotate(90 12 12)' d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z'/%3E%3C/svg%3E"); }
 .shell { position: relative; z-index: 1; }
 
@@ -453,12 +453,7 @@ footer p { max-width: 65ch; }
 .clock.is-low { animation: urgent 1s steps(2, jump-none) infinite, nudge 1s var(--ease-out) infinite; }
 @keyframes nudge { 0%, 100% { transform: none; } 8% { transform: scale(1.06); } 16% { transform: none; } }
 
-/* the depth ladder: the plane descends a step each time you go deeper */
 .ladder { display: flex; flex-direction: column; }
-.alt { position: relative; height: 36px; }
-.alt::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; border-top: 2px dashed var(--color-rule); }
-.alt-plane { position: absolute; z-index: 1; left: calc((var(--at) + 0.5) * 33.333%); top: calc(var(--at) * 5px); translate: -50% 0; color: var(--color-accent); transition: left 1s var(--ease-in-out), top 1s var(--ease-in-out); }
-.alt-plane svg { animation: hover-bob 1.6s var(--ease-in-out) infinite; }
 .route li.is-just { animation: flash 600ms var(--ease-out), glow 900ms var(--ease-out); }
 @keyframes glow { from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent-2) 80%, transparent); } to { box-shadow: 0 0 0 14px transparent; } }
 .choices .choice { animation: deal 440ms var(--ease-out) both; }
@@ -599,3 +594,62 @@ footer p { max-width: 65ch; }
 .fl-code { font-weight: 800; }
 .fl-meta { font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; }
 @media (max-width: 40rem) { .fl-track { height: 6rem; } .fl-chart { gap: var(--space-xs); } .fl-pts { font-size: var(--text-lg); } }
+
+
+/* ============ The flight band: the route as a strip of sky; the plane flies sideways between stops and comes down as far as you earned ============ */
+.flight { position: relative; height: 172px; overflow: hidden; border: var(--rule-bar) solid var(--color-ink); background: var(--color-paper-3); }
+.flight::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: var(--color-paper-2); border-top: var(--rule-bar) solid var(--color-ink); z-index: 0; }
+.fl-clouds i { position: absolute; left: 0; height: 9px; border-radius: 999px; background: var(--color-paper-2); will-change: transform; }
+.fl-lines span { position: absolute; left: 0; right: 0; border-top: var(--rule-hair) dashed var(--color-rule); padding: 2px var(--space-sm) 0 0; text-align: right; font-size: var(--text-xs); color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.fl-lines em { font-style: normal; }
+.fl-world { position: absolute; inset: 0; z-index: 1; will-change: transform; }
+.fl-runway { position: absolute; bottom: 0; width: 132px; height: 34px; translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fl-strip { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 8px; margin-top: -5px; padding: 0 10px; background: var(--color-ink); }
+.fl-strip b { width: 6px; height: 2px; background: var(--color-paper-2); }
+.fl-runway.is-done .fl-strip, .fl-runway.is-deep .fl-strip { background: var(--color-plate); }
+.fl-runway.is-top .fl-strip { background: var(--color-accent); }
+.fl-runway.is-here .fl-label { color: var(--color-ink); font-weight: 800; }
+.fl-runway.is-touchdown .fl-strip b { animation: runway-lights 900ms var(--ease-out) both; animation-delay: calc(var(--n, 0) * 90ms); }
+.fl-strip b:nth-child(2) { --n: 1; } .fl-strip b:nth-child(3) { --n: 2; } .fl-strip b:nth-child(4) { --n: 3; } .fl-strip b:nth-child(5) { --n: 4; }
+@keyframes runway-lights { 0% { background: var(--color-paper-2); } 30% { background: var(--color-accent-2); box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-accent-2) 40%, transparent); } 100% { background: var(--color-accent-2); } }
+.fl-label { font-size: var(--text-xs); font-weight: 500; color: var(--color-muted); white-space: nowrap; }
+.fl-plane { position: absolute; left: 0; top: 0; z-index: 2; color: var(--color-plate); will-change: transform; }
+.fl-hud { position: absolute; left: var(--space-md); top: var(--space-sm); z-index: 3; display: flex; flex-direction: column; gap: 2px; }
+.fl-km { font-size: var(--text-xl); font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fl-status { font-size: var(--text-sm); color: var(--color-ink-2); }
+.fl-alt { position: absolute; right: var(--space-sm); top: var(--space-sm); z-index: 3; font-size: var(--text-xs); color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.fl-alt span { color: var(--color-ink); font-weight: 800; }
+.arriving { display: flex; flex-direction: column; gap: var(--space-xs); padding: var(--space-2xl) 0; min-height: 30vh; }
+@media (max-width: 40rem) {
+  .flight { height: 150px; }
+  .fl-lines em, .fl-type { display: none; }
+  .fl-runway { width: 104px; }
+  .fl-km { font-size: var(--text-lg); }
+}
+/* band layout: the plane owns the left of the sky, the readings sit top right, each altitude line is labelled above it */
+.fl-hud { left: auto; right: var(--space-md); align-items: flex-end; text-align: right; }
+.fl-km small { font-size: var(--text-xs); font-weight: 500; color: var(--color-muted); }
+.fl-lines span { border-top: 0; border-bottom: var(--rule-hair) dashed var(--color-rule); translate: 0 -100%; padding: 0 0 2px var(--space-sm); text-align: left; }
+.fl-plane { display: flex; align-items: center; gap: 6px; }
+.fl-plane-alt { font-size: var(--text-xs); font-weight: 800; color: var(--color-ink); background: var(--color-paper-3); padding: 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fl-l-country { top: 30%; } .fl-l-city { top: 60%; }
+@media (max-width: 40rem) {
+  .fl-l-country { top: 44%; } .fl-l-city { top: 70%; }
+  .fl-hud { left: var(--space-sm); right: var(--space-sm); top: 6px; flex-direction: row; justify-content: space-between; align-items: baseline; gap: var(--space-sm); }
+  .fl-km { order: 2; flex: none; }
+  .fl-status { order: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: var(--text-xs); }
+}
+/* room to breathe: a gap below the band, a taller sky on wide screens, and labels the clouds pass behind */
+.flight { margin-bottom: var(--space-lg); height: 208px; }
+.fl-l-country { top: 30%; } .fl-l-city { top: 58%; }
+.fl-lines span { z-index: 1; }
+.fl-lines b { position: relative; z-index: 1; padding: 0 4px; background: var(--color-paper-3); font-weight: 500; }
+.fl-clouds { position: absolute; inset: 0; z-index: 0; }
+@media (max-width: 40rem) { .flight { height: 156px; margin-bottom: var(--space-md); } .fl-l-country { top: 44%; } .fl-l-city { top: 70%; } }
+/* clouds: a flat base with two puffs on top, a shade darker than the sky */
+.fl-clouds i { --cloud: color-mix(in oklab, var(--pal-stone) 38%, var(--color-paper-3)); height: 14px; border-radius: 999px; background: var(--cloud); }
+.fl-clouds i::before, .fl-clouds i::after { content: ""; position: absolute; bottom: 35%; border-radius: 50%; background: var(--cloud); }
+.fl-clouds i::before { left: 16%; width: 40%; aspect-ratio: 1; }
+.fl-clouds i::after { left: 46%; width: 30%; aspect-ratio: 1; }
+.fl-clouds i:nth-child(3n + 2)::before { left: 26%; width: 34%; }
+.fl-clouds i:nth-child(3n + 2)::after { left: 52%; width: 26%; }
