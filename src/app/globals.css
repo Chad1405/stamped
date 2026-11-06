@@ -551,3 +551,18 @@ footer p { max-width: 65ch; }
   .count--chat .count-label { display: none; }
 }
 .chat-head .chat-from { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; white-space: nowrap; }
+
+/* the answer box's own suggestion list: works the same on phones, where <datalist> shows nothing */
+.suggest { position: relative; flex: 1 1 240px; min-width: 0; display: flex; }
+.suggest > .input { flex: 1 1 auto; width: 100%; }
+.suggest-list { position: absolute; z-index: var(--z-dropdown); top: calc(100% - var(--rule-bar)); left: 0; right: 0; max-height: min(18rem, 45vh); overflow-y: auto; overscroll-behavior: contain;
+  margin: 0; padding: 0; list-style: none; background: var(--color-paper-3); border: var(--rule-bar) solid var(--color-ink); box-shadow: var(--shadow-card); animation: arrive-in 160ms var(--ease-out) both; }
+.suggest-list li { padding: var(--space-sm) var(--space-md); min-height: 44px; display: flex; align-items: center; cursor: pointer; border-top: var(--rule-hair) solid var(--color-rule); }
+.suggest-list li:first-child { border-top: 0; }
+.suggest-list li:hover, .suggest-list li.is-active { background: var(--color-plate); color: var(--color-plate-ink); }
+
+/* the risk choice: what you would have to name is the headline, not the small print */
+.choice .c-tag { font-size: var(--text-sm); font-weight: 500; }
+.choice .c-title { font-size: var(--text-xl); line-height: 1.15; padding-right: var(--space-xl); }
+.choice .c-pts span { font-size: var(--text-md); font-weight: 500; }
+.choice .c-risk { font-size: var(--text-md); }

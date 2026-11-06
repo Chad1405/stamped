@@ -2,7 +2,7 @@
 // One stop: the clue, the clock, the depth ladder, and the guess or the risk choice. Every move goes to the server.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
-import { COUNTRIES } from "@/lib/game/match";
+import { COUNTRIES, norm } from "@/lib/game/match";
 import { ROUND_MS, TIERS } from "@/lib/game/rules";
 import { confetti, sfx, shake, toTop } from "@/lib/client/fx";
 import { CrowdBars, EntryStamp, Strip, useReplay } from "./bits";
@@ -39,6 +39,39 @@ function Frame({ s, overlay, caption, reply }: { s: StopData; overlay?: React.Re
       </div>
       <figcaption>{caption}</figcaption>
     </figure>
+  );
+}
+
+/** The answer box with its own suggestion list (a combobox): the browser's <datalist> shows nothing on many phones and in-app browsers. */
+function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disabled, invalid }: {
+  inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (v: string) => void; options: string[]; openOnFocus: boolean; disabled: boolean; invalid: boolean;
+}) {
+  const [open, setOpen] = useState(false), [active, setActive] = useState(-1);
+  const q = norm(value);
+  const matches = !q ? (openOnFocus ? options : [])
+    : [...options.filter(o => norm(o).startsWith(q)), ...options.filter(o => !norm(o).startsWith(q) && norm(o).includes(q))];
+  const shown = open && matches.length > 0 && !matches.some(o => norm(o) === q) ? matches.slice(0, 40) : [];
+  const pick = (o: string) => { onChange(o); setOpen(false); setActive(-1); };
+  return (
+    <div className="suggest">
+      <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false}
+        role="combobox" aria-autocomplete="list" aria-expanded={shown.length > 0} aria-controls="guess-list" aria-activedescendant={active >= 0 && shown[active] ? `guess-opt-${active}` : undefined}
+        aria-describedby="msg" aria-invalid={invalid || undefined} disabled={disabled}
+        onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onBlur={() => setOpen(false)}
+        onKeyDown={e => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setOpen(true); const n = shown.length || matches.length; if (n) setActive(a => (a + (e.key === "ArrowDown" ? 1 : n - 1)) % n); }
+          else if (e.key === "Enter" && active >= 0 && shown[active]) { e.preventDefault(); pick(shown[active]); }   // Enter on a highlighted name fills it in; otherwise it submits
+          else if (e.key === "Escape") { setOpen(false); setActive(-1); }
+        }} />
+      {shown.length > 0 && (
+        <ul className="suggest-list" id="guess-list" role="listbox" aria-label="Suggestions">
+          {shown.map((o, k) => (
+            <li key={o} id={`guess-opt-${k}`} role="option" aria-selected={k === active} className={k === active ? "is-active" : undefined}
+              onMouseDown={e => e.preventDefault()} onClick={() => pick(o)}>{o}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -148,7 +181,10 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     );
   }
 
-  const question = st.step === "country" ? s.prompt : st.step === "city" ? "Which city?" : `${s.spotLabel}.`;
+  // the heading always says what to do now: the clue's question, then the choice, then the next thing to name
+  const nextThing = st.next === "city" ? "the city" : "the exact spot";
+  const question = st.phase === "decide" ? `${st.guesses.at(-1)} is right! Can you name ${nextThing}?`
+    : st.step === "country" ? s.prompt : st.step === "city" ? `Now name the city in ${st.guesses[0]}.` : `${s.spotLabel}.`;
   const label = st.step === "country" ? "Country" : st.step === "city" ? "City" : "Exact spot";
   const nextScore = st.next === "city" ? TIERS.local.score : TIERS.native.score, dropScore = st.next === "city" ? TIERS.lost.score : TIERS.traveller.score;
   const secs = Math.ceil(remaining / 1000);
@@ -173,27 +209,23 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             <form className="field" autoComplete="off" noValidate onSubmit={e => { e.preventDefault(); if (draft.trim()) void send({ type: "guess", text: draft }); }}>
               <label htmlFor="guess">{label}</label>
               <div className="entry-row" ref={rowRef}>
-                <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={draft} onChange={e => setDraft(e.target.value)} maxLength={80}
-                  list={st.step === "country" ? "countries" : st.step === "city" ? "cities" : undefined} autoCapitalize="words" spellCheck={false}
-                  aria-describedby="msg" aria-invalid={msg?.warn || undefined} disabled={busy} />
+                <SuggestInput inputRef={inputRef} value={draft} onChange={setDraft} disabled={busy} invalid={!!msg?.warn}
+                  options={st.step === "country" ? COUNTRY_NAMES : st.step === "city" ? s.cities : []} openOnFocus={st.step === "city"} />
                 <button className="btn btn--primary" type="submit" disabled={busy}>Stamp it</button>
               </div>
               <p className={`help${msg?.warn ? " is-error" : ""}`} id="msg" role="status">{msg?.text}</p>
-              {st.step === "country" && <datalist id="countries">{COUNTRY_NAMES.map(c => <option key={c} value={c} />)}</datalist>}
-              {st.step === "city" && <datalist id="cities">{s.cities.map(c => <option key={c} value={c} />)}</datalist>}
             </form>
           )}
           {st.phase === "decide" && (
             <>
-              <p className="right">{st.guesses.at(-1)} is right. Risk it, or bank it?</p>
               <div className="choices">
                 <button className="choice choice--risk" type="button" aria-keyshortcuts="D" disabled={busy} onClick={() => send({ type: "decide", deeper: true })}>
-                  <span className="c-key" aria-hidden="true">D</span><span className="c-title">Go deeper</span><span className="c-pts">{nextScore}</span>
-                  <span className="c-odds">Name {st.next === "city" ? "the city" : "the exact spot"}</span><span className="c-risk">Miss and you drop to {dropScore}</span>
+                  <span className="c-key" aria-hidden="true">D</span><span className="c-tag">Risk it</span><span className="c-title">Name {nextThing}</span>
+                  <span className="c-pts">{nextScore} <span>points</span></span><span className="c-risk">Miss and you drop to {dropScore}</span>
                 </button>
                 <button className="choice" type="button" aria-keyshortcuts="B" disabled={busy} onClick={() => send({ type: "decide", deeper: false })}>
-                  <span className="c-key" aria-hidden="true">B</span><span className="c-title">Bank it</span><span className="c-pts">{TIERS[st.banked!].score}</span>
-                  <span className="c-odds">Take the {TIERS[st.banked!].name} stamp</span><span className="c-risk">Safe</span>
+                  <span className="c-key" aria-hidden="true">B</span><span className="c-tag">Play safe</span><span className="c-title">Bank it</span>
+                  <span className="c-pts">{TIERS[st.banked!].score} <span>points</span></span><span className="c-risk">Keep the {TIERS[st.banked!].name} stamp</span>
                 </button>
               </div>
             </>
