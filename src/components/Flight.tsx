@@ -42,7 +42,7 @@ export function FlightBand({ stops, at, flight, flownKm, onArrive }: Props) {
   // drawing: the world slides under a plane that keeps its place on screen; clouds drift at their own depths
   const draw = () => {
     const { w, h, step, px } = geo.current, { cam, alt: a } = pos.current;
-    const narrow = w < 600, yTop = h * (narrow ? 0.44 : 0.3), yMid = h * (narrow ? 0.7 : 0.58), yRun = h - 40;   // on a phone the readings take the top row, so the sky starts lower
+    const narrow = w < 600, yTop = h * (narrow ? 0.42 : 0.3), yMid = h * (narrow ? 0.66 : 0.58), yRun = h - (narrow ? 36 : 40);   // on a phone the readings take the top row, so the sky starts lower
     const y = a >= 2000 ? yMid + (yTop - yMid) * (a - 2000) / 8000 : yRun + (yMid - yRun) * a / 2000;
     if (world.current) world.current.style.transform = `translateX(${px - cam * step}px)`;
     if (plane.current) plane.current.style.transform = `translate(${px - 14}px, ${y - 14}px)`;

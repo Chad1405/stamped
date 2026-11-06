@@ -102,3 +102,15 @@ describe("kilometres flown", () => {
     });
   });
 });
+
+describe("how close a wrong guess was", () => {
+  it("every country has a capital with real coordinates", async () => {
+    const caps = (await import("@/content/capitals.json")).default as unknown as Record<string, [string, number, number]>;
+    for (const c of COUNTRIES) {
+      const cap = caps[c.name];
+      expect(cap, c.name).toBeDefined();
+      expect(Math.abs(cap[1]) <= 90 && Math.abs(cap[2]) <= 180, c.name).toBe(true);
+    }
+    expect(kmBetween({ lat: caps.Spain[1], lng: caps.Spain[2] }, { lat: caps.Portugal[1], lng: caps.Portugal[2] })).toBe(500);   // Madrid to Lisbon, about 503 km
+  });
+});

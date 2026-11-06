@@ -85,7 +85,7 @@ export default function Game() {
   useEffect(() => { shownScore.current = hudScore; }, [hudScore]);
 
   return (
-    <div className="shell">
+    <div className={`shell${playing ? " is-playing" : ""}`}>
       <header className="bar">
         <Link className="mark" href="/" aria-label="Stamped, back to today's flight" onClick={e => { e.preventDefault(); if (!playing) void load(); }}>
           <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2.5" /><ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M3 16h26" stroke="currentColor" strokeWidth="2" /></svg>

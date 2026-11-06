@@ -36,7 +36,7 @@ function Chat({ p, reply }: { p: NonNullable<StopData["postcard"]>; reply?: stri
 
 function Frame({ s, overlay, caption, reply }: { s: StopData; overlay?: React.ReactNode; caption: React.ReactNode; reply?: string }) {
   return (
-    <figure className="frame">
+    <figure className="frame" id="clue">
       <div className="pane">
         {s.postcard
           ? <Chat p={s.postcard} reply={reply} />
@@ -50,6 +50,12 @@ function Frame({ s, overlay, caption, reply }: { s: StopData; overlay?: React.Re
 }
 
 /** The answer box with its own suggestion list (a combobox): the browser's <datalist> shows nothing on many phones and in-app browsers. */
+/** On a phone, tapping the box opens the keyboard over half the screen: line the clue up with the top so the photo and the box are both in view. (On tap, not on focus: the game focuses the box itself when typing opens, with no keyboard.) */
+function keepClueInView() {
+  if (!matchMedia("(max-width: 40rem)").matches) return;
+  setTimeout(() => document.getElementById("clue")?.scrollIntoView({ block: "start", behavior: "instant" }), 320);   // after the keyboard has opened
+}
+
 function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disabled, invalid }: {
   inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (v: string) => void; options: string[]; openOnFocus: boolean; disabled: boolean; invalid: boolean;
 }) {
@@ -64,7 +70,7 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
       <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false}
         role="combobox" aria-autocomplete="list" aria-expanded={shown.length > 0} aria-controls="guess-list" aria-activedescendant={active >= 0 && shown[active] ? `guess-opt-${active}` : undefined}
         aria-describedby="msg" aria-invalid={invalid || undefined} readOnly={disabled} aria-busy={disabled || undefined}   // read-only, not disabled, while a guess is checked: a disabled box drops keyboard focus
-        onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onBlur={() => setOpen(false)}
+        onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => { setOpen(true); keepClueInView(); }} onBlur={() => setOpen(false)}
         onKeyDown={e => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setOpen(true); const n = shown.length || matches.length; if (n) setActive(a => (a + (e.key === "ArrowDown" ? 1 : n - 1)) % n); }
           else if (e.key === "Enter" && active >= 0 && shown[active]) { e.preventDefault(); pick(shown[active]); }   // Enter on a highlighted name fills it in; otherwise it submits
@@ -192,6 +198,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             <dl className="facts">
               <dt>Region</dt><dd>{r.regionName}</dd><dt>Exact spot</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
               {r.leg && <><dt>Flight in</dt><dd>{r.leg.km.toLocaleString("en-GB")} km from {r.leg.from}{legFlown(st.tier) ? ", flown" : ", not flown: name the city to count it"}</dd></>}
+              {r.off && <><dt>How close</dt><dd>{r.off.guess}: {r.off.capital} is {r.off.km.toLocaleString("en-GB")} km from {r.cityName}</dd></>}
               {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
             </dl>
             <p>{r.fact}</p>
