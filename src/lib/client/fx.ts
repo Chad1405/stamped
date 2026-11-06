@@ -1,4 +1,4 @@
-// Game feel: synthesized sound effects (Web Audio, no files, the way Krillion does it), a confetti burst, and a screen shake.
+// Game feel: synthesized sound effects (Web Audio, no files, the way Krillion does it), and a screen shake.
 // Cue timings and envelopes follow the measurements in the open-source OpenKrillion fidelity audit (MIT): sounds start from silence
 // with a linear attack (an exponential one sounds soft), decay exponentially, and the clock's warning is a double pulse.
 const MUTE_KEY = "stamped:muted", MASTER = 0.6;
@@ -57,6 +57,8 @@ export const CUES = {
   miss: [{ f: 220, to: 52, dur: 0.7, vol: 0.24 }, { noise: true, dur: 0.5, lp: 400, vol: 0.14, at: 0.05 }],
   stamp: [{ f: 140, to: 45, dur: 0.22, vol: 0.5 }, { noise: true, dur: 0.09, vol: 0.25, lp: 1400 }],   // the thud of a rubber stamp
   finale: [...[C5, E5, G5].map((f, i) => ({ f, dur: 0.9, at: 0.05 * i, type: "triangle" as const, vol: 0.11 })), { f: C6, dur: 1.1, at: 0.3, type: "triangle", vol: 0.13 }],
+  takeoff: [{ noise: true, dur: 1.6, lp: 300, lpTo: 1800, vol: 0.12 }, { f: 90, to: 150, dur: 1.6, vol: 0.08 }],   // engines spooling up for the next leg
+  touchdown: [{ f: 120, to: 60, dur: 0.18, vol: 0.3, lp: 500 }, { noise: true, dur: 0.25, lp: 2500, lpTo: 400, vol: 0.12, at: 0.02 }],   // wheels on the runway
 } satisfies Record<string, Voice[]>;
 export const MASTER_GAIN = MASTER;
 export type Sfx = keyof typeof CUES;
@@ -73,31 +75,4 @@ export const toTop = () => { scrollTo({ top: 0, left: 0, behavior: "instant" });
 export function shake(el: Element | null, cls = "jolt") {
   if (!el || reducedMotion()) return;
   el.classList.remove(cls); void (el as HTMLElement).offsetWidth; el.classList.add(cls);
-}
-
-/** A short burst of paper confetti in the palette, from a point on screen (defaults to the top centre). */
-export function confetti(origin?: { x: number; y: number }, count = 120) {
-  if (typeof document === "undefined" || reducedMotion()) return;
-  const cs = getComputedStyle(document.documentElement), colors = ["--pal-teal", "--pal-leather", "--color-accent-2", "--pal-stone"].map(v => cs.getPropertyValue(v).trim() || "#245F73");
-  const c = document.createElement("canvas"), dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
-  c.width = W * dpr; c.height = H * dpr; c.setAttribute("aria-hidden", "true");
-  Object.assign(c.style, { position: "fixed", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: "700" });
-  document.body.appendChild(c);
-  const g = c.getContext("2d")!; g.scale(dpr, dpr);
-  const o = origin ?? { x: W / 2, y: H * 0.3 };
-  const bits = Array.from({ length: count }, () => {
-    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = 6 + Math.random() * 9;
-    return { x: o.x, y: o.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: 6 + Math.random() * 6, h: 4 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, col: colors[(Math.random() * colors.length) | 0] };
-  });
-  const t0 = performance.now();
-  const step = (now: number) => {
-    const k = (now - t0) / 1800;
-    g.clearRect(0, 0, W, H); g.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.6) / 0.4);
-    for (const b of bits) {
-      b.vx *= 0.985; b.vy = b.vy * 0.985 + 0.32; b.x += b.vx; b.y += b.vy; b.r += b.vr;
-      g.save(); g.translate(b.x, b.y); g.rotate(b.r); g.scale(1, Math.cos(b.r * 2)); g.fillStyle = b.col; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); g.restore();
-    }
-    if (k < 1) requestAnimationFrame(step); else c.remove();
-  };
-  requestAnimationFrame(step);
 }

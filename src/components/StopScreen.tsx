@@ -4,14 +4,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
 import { COUNTRIES, norm } from "@/lib/game/match";
 import { ROUND_MS, TIERS } from "@/lib/game/rules";
-import { confetti, reducedMotion, sfx, shake, toTop } from "@/lib/client/fx";
+import { reducedMotion, sfx, shake, toTop } from "@/lib/client/fx";
 import { legFlown } from "@/lib/game/rules";
 
 // as measured on Krillion: the question leaves in 650 ms, and the top answer turns gold about a second after it lands
 const DEPART_MS = 650, GOLD_MS = 1100;
 type Weight = "miss" | "light" | "big" | "top";
 const weightOf = (tier: string | null): Weight | null => !tier ? null : tier === "miss" ? "miss" : tier === "tourist" || tier === "lost" ? "light" : tier === "native" ? "top" : "big";
-import { CrowdBars, EntryStamp, Strip, useReplay } from "./bits";
+import { CrowdBars, EntryStamp, useReplay } from "./bits";
+import { DESCENT_MS } from "./Flight";
 
 type Props = { day: Day; idx: number; offset: number; onResult: (r: ActResult) => void; onNext: () => void; onError: (m: string) => void };
 const COUNTRY_NAMES = COUNTRIES.map(c => c.name);
@@ -86,7 +87,6 @@ function Ladder({ s }: { s: StopData }) {
   const steps: [string, number][] = [["Country", 30], ["City", 85], ["Exact spot", 100]];
   return (
     <div className="ladder">
-    <div className="alt" aria-hidden="true"><span className="alt-plane" style={{ ["--at" as string]: Math.min(at, 2) }}><Plane /></span></div>
     <ol className="route" aria-label="How deep you are">
       {steps.map(([label, pts], k) => {
         const state = k < at ? "is-done" : k === at && s.state.phase === "input" ? "is-live" : "";
@@ -98,9 +98,6 @@ function Ladder({ s }: { s: StopData }) {
   );
 }
 
-export function Plane() {
-  return <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)" /></svg>;
-}
 
 export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Props) {
   const s = day.stops[idx], st = s.state;
@@ -130,7 +127,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       }
       onResult(r);
       if (ev.kind === "rejected") sfx("reject");
-      else if (ev.kind === "right") { sfx("correct"); const el = document.querySelector(".route li.is-live")?.getBoundingClientRect(); if (el) confetti({ x: el.left + el.width / 2, y: el.top }, 28); }
+      else if (ev.kind === "right") { sfx("correct"); }
       else if (ev.kind === "advanced") sfx("deeper");
       else if (ev.kind === "finished" && action.type === "decide") sfx("bank");   // the landing itself sounds when the stamp lands
       if (r.event.kind === "correction") { setDraft(r.event.suggestion); setMsg({ text: `Did you mean ${r.event.suggestion}? Press Enter to confirm.`, warn: false }); }
@@ -161,18 +158,15 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const nextRef = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => { if (landed) { toTop(); nextRef.current?.focus({ preventScroll: true }); } }, [landed]);   // the reveal opens at the top too
   // the deeper you landed, the bigger the landing: a light thud, a heavy one, or the heavy one and then gold
-  const weight = weightOf(landed ? st.tier : null);
+  const weight = weightOf(landed ? st.tier : null), descent = landed && st.tier ? DESCENT_MS[st.tier] ?? 0 : 0;
   useEffect(() => {
     if (!weight) return;
-    const light = weight === "light" || weight === "miss", peak = light ? 230 : 350;   // the slam peaks at 55% of its run
-    const ts = [setTimeout(() => {
-      sfx(weight === "miss" ? "miss" : light ? "land" : "landBig"); shake(stopRef.current, light ? "jolt" : "jolt-big");
-      const el = st.tier === "local" && document.querySelector(".result-head .entry")?.getBoundingClientRect();
-      if (el) confetti({ x: el.left + el.width / 2, y: el.top }, 40);
-    }, peak)];
-    if (weight === "top") ts.push(setTimeout(() => { setGold(true); sfx("gold"); confetti(undefined, 160); }, GOLD_MS));
+    // the plane comes down first (see the flight band); the stamp is pressed once it has landed
+    const light = weight === "light" || weight === "miss", peak = descent + (light ? 230 : 350);   // the slam peaks at 55% of its run
+    const ts = [setTimeout(() => { sfx(weight === "miss" ? "miss" : light ? "land" : "landBig"); shake(stopRef.current, light ? "jolt" : "jolt-big"); }, peak)];
+    if (weight === "top") ts.push(setTimeout(() => { setGold(true); sfx("gold"); }, descent + GOLD_MS));
     return () => ts.forEach(clearTimeout);
-  }, [weight, st.tier]);
+  }, [weight, st.tier, descent]);
   // D and B answer the risk choice
   useEffect(() => {
     if (st.phase !== "decide") return;
@@ -186,13 +180,12 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     const r = s.reveal, t = TIERS[st.tier!], last = idx === day.stops.length - 1;
     return (
       <div className="play">
-        <Strip stops={day.stops} current={idx} total={day.score} />
         <section className="stop" ref={stopRef}>
           <Frame s={s} reply={r.cityName} overlay={s.postcard ? undefined : <div className="over plate"><span className="figure flap" aria-label={r.airport}>{[...r.airport].map((ch, k) => <span key={k} aria-hidden="true" style={{ ["--k" as string]: k }}>{ch}</span>)}</span><span>{r.cityName}</span></div>}
             caption={<>{caption}.{r.credit && <> Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</>}</>} />
           <div className="panel">
             <div className="result-head">
-              <EntryStamp s={s} i={idx} date={day.date} motion={`slam slam--${weight}${gold ? " is-gold" : ""}`} />
+              <EntryStamp s={s} i={idx} date={day.date} motion={`slam slam--${weight}${gold ? " is-gold" : ""}`} delay={descent / 180} />
               {t.score > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{t.score}</span>}
               <div><h1>{r.cityName}, {r.country}</h1><p className="small">{st.note}</p></div>
             </div>
@@ -219,7 +212,6 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const secs = Math.ceil(remaining / 1000);
   return (
     <div className="play">
-      <Strip stops={day.stops} current={idx} total={day.score} />
       <section className="stop">
         <Frame s={s} caption={caption} overlay={preview && st.endsAt !== null ? (
           <div className={`count${s.postcard ? " count--chat" : ""}`} aria-live="off"><div><div className="count-dial"><svg viewBox="0 0 120 120" aria-hidden="true"><circle className="ring-track" cx="60" cy="60" r="54" /><circle className="ring" key={countN} cx="60" cy="60" r="54" /></svg><span className="count-n" key={countN}>{countN}</span></div><span className="count-label">Typing opens in</span></div></div>) : null} />
