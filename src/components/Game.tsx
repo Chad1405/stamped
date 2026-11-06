@@ -1,10 +1,10 @@
 "use client";
 // The app shell: loads the day and the player, routes between screens, and keeps the HUD current.
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type League, type Me } from "@/lib/client/api";
 import { TIERS } from "@/lib/game/rules";
-import { isMuted, setMuted, sfx } from "@/lib/client/fx";
+import { isMuted, setMuted, sfx, toTop } from "@/lib/client/fx";
 import { CountUp } from "./bits";
 import { Done, Friends, Home, Passport } from "./screens";
 import { StopScreen } from "./StopScreen";
@@ -55,7 +55,7 @@ export default function Game() {
   }, [refreshPlayer]);
 
   const startStop = useCallback(async (d: Day, i: number) => {
-    setIdx(i); setView("stop"); scrollTo(0, 0);
+    setIdx(i); setView("stop");
     if (d.stops[i].state.phase === "ready") {
       try { merge(await api.play(d.date, i, { type: "start" })); }
       catch (e) { setError(e instanceof ApiError ? e.message : "Could not start the stop."); }
@@ -63,10 +63,14 @@ export default function Game() {
   }, [merge]);
 
   const board = () => { if (!day) return; sfx("board"); const i = day.stops.findIndex(s => s.state.phase !== "done"); if (i < 0) setView("done"); else void startStop(day, i); };
-  const next = () => { if (!day) return; if (idx >= day.stops.length - 1) { setView("done"); scrollTo(0, 0); } else void startStop(day, idx + 1); };
-  const open = (v: View) => { backTo.current = view; setView(v); scrollTo(0, 0); };
+  const next = () => { if (!day) return; if (idx >= day.stops.length - 1) setView("done"); else void startStop(day, idx + 1); };
+  const open = (v: View) => { backTo.current = view; setView(v); };
   const back = () => setView(backTo.current === "stop" || !day ? (day && allDone(day) ? "done" : "home") : backTo.current);
   const playing = view === "stop" && !!day && ["input", "decide"].includes(day.stops[idx]?.state.phase);
+
+  // every screen change starts at the top: one place, after the new screen is in the DOM, so no route can miss it
+  const scene = `${view}-${view === "stop" ? idx : day?.date}`;
+  useLayoutEffect(toTop, [scene]);
 
   const hudScore = day?.score ?? 0, fromScore = shownScore.current;
   useEffect(() => { shownScore.current = hudScore; }, [hudScore]);
@@ -98,7 +102,7 @@ export default function Game() {
       <main aria-live="polite">
         {error && <p className="help is-error" role="alert">{error} <button className="linkish" type="button" onClick={() => void load(day?.date)}>Try again</button></p>}
         {!day && !error && <p className="small">Loading today’s flight…</p>}
-        <div className="scene" key={`${view}-${view === "stop" ? idx : day?.date}`}>
+        <div className="scene" key={scene}>
         {day && view === "home" && <Home day={day} me={me} leagues={leagues} onBoard={board} onOpenDay={d => void load(d)} onFriends={() => open("friends")} />}
         {day && view === "stop" && <StopScreen key={`${day.date}-${idx}`} day={day} idx={idx} offset={offset} onResult={merge} onNext={next} onError={setError} />}
         {day && view === "done" && <Done day={day} me={me} onPassport={() => open("passport")} onFriends={() => open("friends")} onOpenDay={d => void load(d)} />}

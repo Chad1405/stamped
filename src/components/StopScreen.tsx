@@ -1,21 +1,38 @@
 "use client";
 // One stop: the clue, the clock, the depth ladder, and the guess or the risk choice. Every move goes to the server.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
 import { COUNTRIES } from "@/lib/game/match";
 import { ROUND_MS, TIERS } from "@/lib/game/rules";
-import { confetti, sfx, shake } from "@/lib/client/fx";
+import { confetti, sfx, shake, toTop } from "@/lib/client/fx";
 import { CrowdBars, EntryStamp, Strip, useReplay } from "./bits";
 
 type Props = { day: Day; idx: number; offset: number; onResult: (r: ActResult) => void; onNext: () => void; onError: (m: string) => void };
 const COUNTRY_NAMES = COUNTRIES.map(c => c.name);
 
-function Frame({ s, overlay, caption }: { s: StopData; overlay?: React.ReactNode; caption: React.ReactNode }) {
+/** The text-message clue as a chat thread: they type, the message lands; once the stop is played your answer goes back. */
+function Chat({ p, reply }: { p: NonNullable<StopData["postcard"]>; reply?: string }) {
+  const time = p.note.split(", ").at(-1) ?? "";
+  return (
+    <div className="chat" role="group" aria-label={p.from ? `${p.note}, from a number starting ${p.from.replace(/[ •]+$/, "").replace(/ •.*$/, "")}` : p.note}>
+      <div className="chat-head" aria-hidden="true"><span className="avatar">?</span><div><strong className="chat-from">{p.from ?? "Unknown number"}</strong><span>Mobile</span></div></div>
+      <div className="chat-body">
+        <p className="chat-day">Today {time}</p>
+        <div className="typing" aria-hidden="true"><i /><i /><i /></div>
+        <p className="bubble bubble--in" lang={p.lang ?? "en"}>{p.text}<span className="b-time">{time}</span></p>
+        {reply && <><p className="bubble bubble--out">See you in {reply}!</p><span className="chat-status">Delivered</span></>}
+      </div>
+      <div className="chat-bar" aria-hidden="true"><span>Message</span><b>↑</b></div>
+    </div>
+  );
+}
+
+function Frame({ s, overlay, caption, reply }: { s: StopData; overlay?: React.ReactNode; caption: React.ReactNode; reply?: string }) {
   return (
     <figure className="frame">
       <div className="pane">
         {s.postcard
-          ? <div className="note-card"><blockquote lang={s.postcard.lang ?? "en"}>{s.postcard.text}</blockquote><p className="small">{s.postcard.note}</p></div>
+          ? <Chat p={s.postcard} reply={reply} />
           // eslint-disable-next-line @next/next/no-img-element -- clue photos are fixed-size local files; next/image adds nothing here
           : <img src={s.img!} alt={s.alt ?? ""} width={960} height={720} />}
         {overlay}
@@ -83,7 +100,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   useEffect(() => {
     if (st.phase === "input" && st.endsAt !== null && now >= st.endsAt && !sentTimeout.current) { sentTimeout.current = true; void send({ type: "timeout", text: draft.trim() || undefined }); }
   }, [now, st.phase, st.endsAt, draft, send]);
-  useEffect(() => { if (st.phase === "input" && !preview) inputRef.current?.focus(); }, [st.phase, st.step, preview]);
+  useEffect(() => { if (st.phase === "input" && !preview) inputRef.current?.focus({ preventScroll: true }); }, [st.phase, st.step, preview]);   // focusing must not drag the page away from the clue
   const countN = preview && st.endsAt !== null ? Math.max(1, Math.ceil((st.endsAt - ROUND_MS - now) / 1000)) : 0;
   const secsLeft = st.phase === "input" && !preview ? Math.ceil(remaining / 1000) : null;
   const wasPreview = useRef(preview);
@@ -92,6 +109,8 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   useEffect(() => { if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) sfx("tick"); }, [secsLeft]);
   // the stamp lands: a thud and a jolt, timed to the slam
   const stopRef = useRef<HTMLElement>(null), landed = st.phase === "done";
+  const nextRef = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => { if (landed) { toTop(); nextRef.current?.focus({ preventScroll: true }); } }, [landed]);   // the reveal opens at the top too
   useEffect(() => { if (!landed) return; const t = setTimeout(() => { sfx("stamp"); shake(stopRef.current); }, 280); return () => clearTimeout(t); }, [landed]);
   // D and B answer the risk choice
   useEffect(() => {
@@ -108,7 +127,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       <div className="play">
         <Strip stops={day.stops} current={idx} total={day.score} />
         <section className="stop" ref={stopRef}>
-          <Frame s={s} overlay={<div className="over plate"><span className="figure flap" aria-label={r.airport}>{[...r.airport].map((ch, k) => <span key={k} aria-hidden="true" style={{ ["--k" as string]: k }}>{ch}</span>)}</span><span>{r.cityName}</span></div>}
+          <Frame s={s} reply={r.cityName} overlay={s.postcard ? undefined : <div className="over plate"><span className="figure flap" aria-label={r.airport}>{[...r.airport].map((ch, k) => <span key={k} aria-hidden="true" style={{ ["--k" as string]: k }}>{ch}</span>)}</span><span>{r.cityName}</span></div>}
             caption={<>{caption}.{r.credit && <> Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</>}</>} />
           <div className="panel">
             <div className="result-head">
@@ -122,7 +141,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             </dl>
             <p>{r.fact}</p>
             <CrowdBars crowd={r.crowd} />
-            <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} autoFocus>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
+            <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
           </div>
         </section>
       </div>
@@ -138,7 +157,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       <Strip stops={day.stops} current={idx} total={day.score} />
       <section className="stop">
         <Frame s={s} caption={caption} overlay={preview && st.endsAt !== null ? (
-          <div className="count"><div className="plate"><span>Typing opens in</span><span className="figure pop" key={countN}>{countN}</span></div></div>) : null} />
+          <div className={`count${s.postcard ? " count--chat" : ""}`} aria-live="off"><div><div className="count-dial"><svg viewBox="0 0 120 120" aria-hidden="true"><circle className="ring-track" cx="60" cy="60" r="54" /><circle className="ring" key={countN} cx="60" cy="60" r="54" /></svg><span className="count-n" key={countN}>{countN}</span></div><span className="count-label">Typing opens in</span></div></div>) : null} />
         <div className="panel">
           <div className="clockline">
             <h1>{question}</h1>

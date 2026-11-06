@@ -47,6 +47,12 @@ export async function seedSamples(db: Db, today: string) {
     return { date, flight: String(n + 1).padStart(3, "0"), rounds: SAMPLES[n % SAMPLES.length].rounds };
   });
   await db.insert(itineraries).values(rows).onConflictDoNothing({ target: itineraries.date });   // never replaces a flight that already exists
+  // flights copied from a sample follow later edits to the sample file; a real flight never shares a sample's prompts, so it is never touched
+  // ponytail: reads every flight once a day per server; drop this when real itineraries replace the samples
+  for (const row of await db.select({ date: itineraries.date, rounds: itineraries.rounds }).from(itineraries)) {
+    const rounds = row.rounds as Round[], same = SAMPLES.find(x => x.rounds.length === rounds.length && x.rounds.every((r, i) => r.prompt === rounds[i].prompt));
+    if (same && JSON.stringify(same.rounds) !== JSON.stringify(rounds)) await db.update(itineraries).set({ rounds: same.rounds }).where(eq(itineraries.date, row.date));
+  }
 }
 async function itinerary(db: Db, date: string, today: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) throw new HttpError(404, "No flight on that date.");

@@ -4,6 +4,8 @@ import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
 import { act, createLeague, ensurePlayer, getDay, getMe, HttpError, joinLeague, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
+import { itineraries } from "@/db/schema";
+import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
 
 const TODAY = "2026-11-05";
@@ -21,6 +23,16 @@ describe("sample flights", () => {
     expect(tomorrow.flight).toBe("005");
     expect(tomorrow.stops[0].prompt).toBe(oldest.rounds[0].prompt);
     expect((await getDay(fresh, pid, TODAY, next)).flight).toBe("004");
+  });
+  it("pick up edits to the sample file, and never touch a real flight", async () => {
+    const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;
+    const stale = sample.rounds.map(r => ({ ...r, fact: "old copy" })), real = sample.rounds.map(r => ({ ...r, prompt: `${r.prompt} (real)` }));
+    await fresh.insert(itineraries).values([{ date: TODAY, flight: "004", rounds: stale }, { date: addDays(TODAY, -1), flight: "003", rounds: real }]);
+    await seedSamples(fresh, TODAY);
+    const rows = Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r.rounds as Round[]]));
+    expect(rows[TODAY]).toEqual(sample.rounds);
+    expect(rows[addDays(TODAY, -1)]).toEqual(real);
+    expect((await getDay(fresh, pid, TODAY, TODAY)).stops.find(s => s.postcard)?.postcard?.from).toMatch(/^\+372/);
   });
 });
 

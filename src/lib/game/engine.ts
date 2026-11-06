@@ -4,7 +4,7 @@ import { COUNTRIES, countryByName, isContinent, match, norm, type Entry } from "
 import { GRACE_MS, PREVIEW_MS, ROUND_MS, type TierId } from "./rules";
 
 export type Round = {
-  type: string; prompt: string; img?: string; alt?: string; postcard?: { text: string; note: string; lang?: string };
+  type: string; prompt: string; img?: string; alt?: string; postcard?: { text: string; note: string; lang?: string; from?: string };   // from: the sender's number, masked past its country and area code
   country: string; regionName: string; region: string[]; cityName: string; city: string[];
   spotLabel: string; spotName: string; spot: string[]; spotStrip?: string;
   airport: string; fact: string; crowd: number[];

@@ -176,6 +176,7 @@
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Che, nos vemos el domingo en La Bombonera. Llevá la camiseta azul y oro.",
+     "from": "+54 9 11 •••• ••••",
      "note": "Text message, 19:40",
      "lang": "es"
     },
@@ -383,6 +384,7 @@
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "道頓堀のグリコの看板の前で7時に会おう！",
+     "from": "+81 90 •••• ••••",
      "note": "Text message, 18:05",
      "lang": "ja"
     },
@@ -584,6 +586,7 @@
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Tukutane Forodhani saa kumi na mbili jioni, tule mishkaki baharini.",
+     "from": "+255 7•• ••• •••",
      "note": "Text message, 16:30",
      "lang": "sw"
     },
@@ -812,6 +815,7 @@
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Tere! Kohtume kell kuus Raekoja platsil, Vana Toomase all.",
+     "from": "+372 5••• ••••",
      "note": "Text message, 17:12",
      "lang": "et"
     },

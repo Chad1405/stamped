@@ -53,6 +53,9 @@ const SOUNDS = {
 export type Sfx = keyof typeof SOUNDS;
 export function sfx(name: Sfx) { if (!isMuted()) try { SOUNDS[name](); } catch { /* audio unavailable */ } }
 
+/** Jumps to the top of the page at once (no smooth scroll, which a new screen would fight). */
+export const toTop = () => { scrollTo({ top: 0, left: 0, behavior: "instant" }); };
+
 /** Shakes an element briefly: the stamp hitting the desk. */
 export function shake(el: Element | null, cls = "jolt") {
   if (!el || reducedMotion()) return;
