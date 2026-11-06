@@ -7,6 +7,7 @@ export type Round = {
   type: string; prompt: string; img?: string; alt?: string; postcard?: { text: string; note: string; lang?: string; from?: string };   // from: the sender's number, masked past its country and area code
   country: string; regionName: string; region: string[]; cityName: string; city: string[];
   spotLabel: string; spotName: string; spot: string[]; spotStrip?: string;
+  lat?: number; lng?: number;   // the answer city, for the distance flown between stops (sent only once a stop is played)
   airport: string; fact: string; crowd: number[];
   credit?: { title: string; author: string; license: string; url: string };
 };

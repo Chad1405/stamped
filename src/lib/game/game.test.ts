@@ -3,7 +3,7 @@ import days from "@/content/itineraries.json";
 import citiesData from "@/content/cities.json";
 import { applyAction, freshStop, type Round, type StopState } from "./engine";
 import { COUNTRIES, match, norm } from "./match";
-import { GRACE_MS, PREVIEW_MS, ROUND_MS } from "./rules";
+import { GRACE_MS, kmBetween, legFlown, PREVIEW_MS, ROUND_MS } from "./rules";
 import { addDays, streakInfo, weekOf } from "./streak";
 
 const rounds = (days as { rounds: Round[] }[]).flatMap(d => d.rounds);
@@ -83,5 +83,22 @@ describe("streaks and the lounge pass", () => {
   it("milestones and the Monday week", () => {
     expect(streakInfo(days(0, 1, 2, 3, 4, 5, 6), [], today).milestone).toBe(7);
     expect(weekOf(today)).toBe("2026-11-02");
+  });
+});
+
+describe("kilometres flown", () => {
+  it("measures great-circle distance, rounded to 10 km", () => {
+    expect(kmBetween({ lat: 51.5074, lng: -0.1278 }, { lat: 48.8566, lng: 2.3522 })).toBe(340);   // London to Paris, about 344 km
+    expect(kmBetween({ lat: 1, lng: 1 }, { lat: undefined, lng: 2 })).toBeNull();
+  });
+  it("counts a leg only when you name the city it lands in", () => {
+    expect(["native", "local"].every(t => legFlown(t as never))).toBe(true);
+    expect(["traveller", "backpacker", "lost", "tourist", "miss"].some(t => legFlown(t as never))).toBe(false);
+  });
+  it("every sample stop has coordinates, and every leg is a real flight", () => {
+    for (const d of days as { rounds: Round[] }[]) d.rounds.forEach((r, i) => {
+      expect(typeof r.lat === "number" && typeof r.lng === "number", r.cityName).toBe(true);
+      if (i) { const km = kmBetween(d.rounds[i - 1], r)!; expect(km > 50 && km < 20_040, `${d.rounds[i - 1].cityName} to ${r.cityName}: ${km}`).toBe(true); }
+    });
   });
 });

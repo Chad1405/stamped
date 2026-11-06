@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:e2e": "node scripts/e2e.mjs",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test:sound": "vite-node --config vitest.config.ts scripts/sound-check.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.7",

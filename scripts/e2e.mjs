@@ -13,9 +13,9 @@ const fails = [], ok = (c, m) => { if (c) console.log("ok  " + m); else { fails.
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe" });
-async function player(width = 1440) {
+async function player(width = 1440, phone = false) {
   const ctx = await browser.createBrowserContext(), p = await ctx.newPage();
-  await p.setViewport({ width, height: 900 });
+  await p.setViewport(phone ? { width, height: 844, isMobile: true, hasTouch: true } : { width, height: 900 });
   p.errors = []; p.on("pageerror", e => p.errors.push(e.message)); p.on("console", m => m.type() === "error" && p.errors.push(m.text()));
   return p;
 }
@@ -67,6 +67,8 @@ await wait(1600);
 const done = await text(alice);
 ok(done.includes("500") && done.includes("Citizen of the world"), "a perfect day scores 500");
 ok(done.includes("5 new countries"), "the passport counts 5 new countries");
+const flew = done.match(/You flew ([\d,]+) km of today's ([\d,]+) km route/);
+ok(flew && flew[1] === flew[2] && done.includes("km flown"), `a perfect day flies the whole route (${flew?.[1]} of ${flew?.[2]} km) and shares it`);
 await alice.screenshot({ path: `${OUT}/4-done.png`, fullPage: true });
 
 // reload: the server remembers, and the stops cannot be replayed
@@ -96,7 +98,38 @@ ok(board.length === 2 && board[0].startsWith("1st Alice") && board[0].includes("
 ok(!(await bob.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "phone: no sideways scroll");
 await bob.screenshot({ path: `${OUT}/5-league-phone.png`, fullPage: true });
 
-ok(alice.errors.length === 0 && bob.errors.length === 0, "no page errors " + [...alice.errors, ...bob.errors].join(" | "));
+// --- Carol plays the whole day on a phone, by touch: suggestions tapped, some risks taken, some banked ---
+const carol = await player(390, true);
+await carol.goto(BASE, { waitUntil: "networkidle0" });
+const atTop = () => carol.evaluate(() => Math.round(scrollY) === 0 && document.documentElement.scrollWidth <= innerWidth);
+const tapOption = async name => { await carol.waitForSelector(".suggest-list li"); const opts = await carol.$$(".suggest-list li");
+  for (const o of opts) if ((await o.evaluate(e => e.textContent)) === name) return o.tap(); throw new Error(`no suggestion ${name}`); };
+let phoneTop = true;
+await clickText(carol, "Board flight");
+for (let i = 0; i < 5; i++) {
+  const r = answers[i], risk = i % 2 === 0;   // stops 1, 3, 5: risk it and name the city, then bank; stops 2, 4: bank the country
+  await carol.waitForSelector("#guess:not([disabled])", { timeout: 9000 });
+  phoneTop &&= await atTop();
+  await carol.tap("#guess"); await carol.type("#guess", r.country.slice(0, 3)); await tapOption(r.country); await carol.tap("button[type=submit]");
+  await carol.waitForSelector(".choice--risk");
+  if (risk) {
+    await carol.tap(".choice--risk"); await carol.waitForSelector("#guess:not([disabled])");
+    await carol.tap("#guess"); await tapOption(r.cityName); await carol.tap("button[type=submit]");
+    await carol.waitForSelector(".choice--risk");
+  }
+  await carol.tap(".choice:not(.choice--risk)");
+  await carol.waitForFunction(() => /Board stop|Open your passport/.test(document.body.innerText));
+  phoneTop &&= await atTop();
+  await clickText(carol, i < 4 ? "Board stop" : "Open your passport");
+}
+await carol.waitForFunction(() => document.body.innerText.includes("Flight log"));
+phoneTop &&= await atTop();
+ok(phoneTop, "phone: every stop, reveal and the passport open at the top, with no sideways scroll");
+const carolDone = await text(carol), carolKm = carolDone.match(/You flew ([\d,]+) km of today's ([\d,]+) km route/);
+ok(carolDone.includes("315") && carolKm && +carolKm[1].replace(/,/g, "") < +carolKm[2].replace(/,/g, ""), `phone: a mixed day scores 315 and flies part of the route (${carolKm?.[1]} of ${carolKm?.[2]} km)`);
+await carol.screenshot({ path: `${OUT}/6-phone-done.png`, fullPage: true });
+
+ok([alice, bob, carol].every(p => p.errors.length === 0), "no page errors " + [...alice.errors, ...bob.errors, ...carol.errors].join(" | "));
 await browser.close();
 console.log(fails.length ? `\n${fails.length} FAILED` : "\nall end-to-end checks passed");
 process.exit(fails.length ? 1 : 0);

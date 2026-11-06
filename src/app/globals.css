@@ -566,3 +566,36 @@ footer p { max-width: 65ch; }
 .choice .c-title { font-size: var(--text-xl); line-height: 1.15; padding-right: var(--space-xl); }
 .choice .c-pts span { font-size: var(--text-md); font-weight: 500; }
 .choice .c-risk { font-size: var(--text-md); }
+
+/* ============ Landing weight (after Krillion's measured timings): a light stamp, a heavy one, or a heavy one that turns gold ============ */
+.entry.slam--light, .entry.slam--miss { animation-duration: 420ms; }
+.entry.slam--big, .entry.slam--top { animation-duration: 640ms; }
+.jolt-big { animation: jolt-big 440ms var(--ease-out); }
+@keyframes jolt-big { 0%, 100% { transform: none; } 15% { transform: translate(6px, 4px); } 35% { transform: translate(-6px, -3px); } 55% { transform: translate(3px, -2px); } 75% { transform: translate(-2px, 1px); } }
+.entry.is-gold { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); animation: gold-pop 620ms var(--ease-out), gold-breathe 2.4s var(--ease-in-out) 620ms infinite; }
+.entry.is-gold .e-code, .entry.is-gold .e-meta { color: var(--color-accent-ink); }
+@keyframes gold-pop { 0% { transform: scale(1); } 35% { transform: scale(1.12) rotate(-2deg); } 100% { transform: none; } }
+@keyframes gold-breathe { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent-2) 0%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent-2) 45%, transparent), 0 0 32px color-mix(in oklab, var(--color-accent-2) 40%, transparent); } }
+
+/* the question leaves before the next one arrives (650 ms), and each new heading eases in */
+.panel.is-departing h1, .panel.is-departing .field, .panel.is-departing .choices { animation: q-depart 650ms var(--ease-in) forwards; }
+@keyframes q-depart { to { opacity: 0; filter: blur(1px); transform: translateY(-22px) scale(0.97); } }
+.q-arrive { animation: q-arrive 460ms var(--ease-out) both; }
+@keyframes q-arrive { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
+
+/* the last three seconds: the answer box throbs red with the double beep */
+.panel.is-final .input { border-color: var(--color-error); animation: danger-throb 1s var(--ease-in-out) infinite; }
+@keyframes danger-throb { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-error) 0%, transparent); } 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-error) 30%, transparent); } }
+
+/* ============ Flight log: points at each stop, rising in turn ============ */
+.flightlog { display: flex; flex-direction: column; gap: var(--space-lg); }
+.fl-chart { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-sm); }
+.fl-chart li { display: flex; flex-direction: column; gap: var(--space-2xs); min-width: 0; }
+.fl-track { position: relative; display: block; height: 9rem; background: var(--color-paper-2); border: var(--rule-bar) solid var(--color-ink); overflow: hidden; }
+.fl-bar { position: absolute; left: 0; right: 0; bottom: 0; height: var(--h); background: var(--color-plate); transform-origin: bottom; animation: fl-rise 760ms var(--ease-out) both; animation-delay: calc(var(--i) * 140ms + 300ms); }
+.fl-chart li.is-top .fl-bar { background: var(--color-accent); }
+@keyframes fl-rise { from { transform: scaleY(0); } }
+.fl-pts { font-size: var(--text-xl); font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fl-code { font-weight: 800; }
+.fl-meta { font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; }
+@media (max-width: 40rem) { .fl-track { height: 6rem; } .fl-chart { gap: var(--space-xs); } .fl-pts { font-size: var(--text-lg); } }
