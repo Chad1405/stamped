@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
 import { COUNTRIES } from "@/lib/game/match";
 import { ROUND_MS, TIERS } from "@/lib/game/rules";
+import { confetti, sfx, shake } from "@/lib/client/fx";
 import { CrowdBars, EntryStamp, Strip, useReplay } from "./bits";
 
 type Props = { day: Day; idx: number; offset: number; onResult: (r: ActResult) => void; onNext: () => void; onError: (m: string) => void };
@@ -28,6 +29,8 @@ function Ladder({ s }: { s: StopData }) {
   const order = ["country", "city", "spot"] as const, at = order.indexOf(s.state.phase === "decide" ? s.state.next! : s.state.step);
   const steps: [string, number][] = [["Country", 30], ["City", 85], ["Exact spot", 100]];
   return (
+    <div className="ladder">
+    <div className="alt" aria-hidden="true"><span className="alt-plane" style={{ ["--at" as string]: Math.min(at, 2) }}><Plane /></span></div>
     <ol className="route" aria-label="How deep you are">
       {steps.map(([label, pts], k) => {
         const state = k < at ? "is-done" : k === at && s.state.phase === "input" ? "is-live" : "";
@@ -35,7 +38,12 @@ function Ladder({ s }: { s: StopData }) {
         return <li key={label} className={`${state}${just ? " is-just" : ""}`} data-gain={just ? `+${pts}` : undefined} aria-current={state === "is-live" ? "step" : undefined}><span>{label}</span><span>{pts}</span></li>;
       })}
     </ol>
+    </div>
   );
+}
+
+export function Plane() {
+  return <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)" /></svg>;
 }
 
 export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Props) {
@@ -55,6 +63,11 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     try {
       const r = await api.play(day.date, idx, action);
       onResult(r);
+      const ev = r.event;
+      if (ev.kind === "rejected") sfx("reject");
+      else if (ev.kind === "right") { sfx("correct"); const el = document.querySelector(".route li.is-live")?.getBoundingClientRect(); if (el) confetti({ x: el.left + el.width / 2, y: el.top }, 28); }
+      else if (ev.kind === "advanced") sfx("deeper");
+      else if (ev.kind === "finished") { if (action.type === "decide") sfx("bank"); if (ev.tier === "native") setTimeout(() => { sfx("top"); confetti(); }, 320); else if (ev.tier === "miss" || ev.tier === "lost") setTimeout(() => sfx("miss"), 320); }
       if (r.event.kind === "correction") { setDraft(r.event.suggestion); setMsg({ text: `Did you mean ${r.event.suggestion}? Press Enter to confirm.`, warn: false }); }
       else if (r.event.kind === "rejected") { setMsg({ text: r.event.message, warn: true }); setShakeKey(k => (k ?? 0) + 1); }
       else { setMsg(null); setDraft(""); }
@@ -71,6 +84,15 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     if (st.phase === "input" && st.endsAt !== null && now >= st.endsAt && !sentTimeout.current) { sentTimeout.current = true; void send({ type: "timeout", text: draft.trim() || undefined }); }
   }, [now, st.phase, st.endsAt, draft, send]);
   useEffect(() => { if (st.phase === "input" && !preview) inputRef.current?.focus(); }, [st.phase, st.step, preview]);
+  const countN = preview && st.endsAt !== null ? Math.max(1, Math.ceil((st.endsAt - ROUND_MS - now) / 1000)) : 0;
+  const secsLeft = st.phase === "input" && !preview ? Math.ceil(remaining / 1000) : null;
+  const wasPreview = useRef(preview);
+  useEffect(() => { if (countN) sfx("count"); }, [countN]);
+  useEffect(() => { if (wasPreview.current && !preview && st.phase === "input") sfx("go"); wasPreview.current = preview; }, [preview, st.phase]);
+  useEffect(() => { if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) sfx("tick"); }, [secsLeft]);
+  // the stamp lands: a thud and a jolt, timed to the slam
+  const stopRef = useRef<HTMLElement>(null), landed = st.phase === "done";
+  useEffect(() => { if (!landed) return; const t = setTimeout(() => { sfx("stamp"); shake(stopRef.current); }, 280); return () => clearTimeout(t); }, [landed]);
   // D and B answer the risk choice
   useEffect(() => {
     if (st.phase !== "decide") return;
@@ -85,8 +107,8 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     return (
       <div className="play">
         <Strip stops={day.stops} current={idx} total={day.score} />
-        <section className="stop">
-          <Frame s={s} overlay={<div className="over plate"><span className="figure">{r.airport}</span><span>{r.cityName}</span></div>}
+        <section className="stop" ref={stopRef}>
+          <Frame s={s} overlay={<div className="over plate"><span className="figure flap" aria-label={r.airport}>{[...r.airport].map((ch, k) => <span key={k} aria-hidden="true" style={{ ["--k" as string]: k }}>{ch}</span>)}</span><span>{r.cityName}</span></div>}
             caption={<>{caption}.{r.credit && <> Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</>}</>} />
           <div className="panel">
             <div className="result-head">
@@ -116,13 +138,14 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       <Strip stops={day.stops} current={idx} total={day.score} />
       <section className="stop">
         <Frame s={s} caption={caption} overlay={preview && st.endsAt !== null ? (
-          <div className="count"><div className="plate"><span>Typing opens in</span><span className="figure pop" key={Math.ceil((st.endsAt - ROUND_MS - now) / 1000)}>{Math.max(1, Math.ceil((st.endsAt - ROUND_MS - now) / 1000))}</span></div></div>) : null} />
+          <div className="count"><div className="plate"><span>Typing opens in</span><span className="figure pop" key={countN}>{countN}</span></div></div>) : null} />
         <div className="panel">
           <div className="clockline">
             <h1>{question}</h1>
             <div className={`clock plate${st.phase === "input" && !preview && remaining < 8000 ? " is-low" : ""}`} role="timer" aria-label={st.phase === "decide" ? "Clock stopped while you decide" : "Time left"}>
               <span>{st.phase === "decide" ? "Clock stopped" : "Time left"}</span>
               <span className="figure">0:{String(st.phase === "input" && !preview ? secs : ROUND_MS / 1000).padStart(2, "0")}</span>
+              <span className="fuse" aria-hidden="true"><span style={{ transform: `scaleX(${st.phase === "input" && !preview ? remaining / ROUND_MS : 1})` }} /></span>
             </div>
           </div>
           <Ladder s={s} />

@@ -13,7 +13,8 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={chivo.variable}>
-      <body>{children}</body>
+      {/* browser extensions write attributes onto <body> before React loads (e.g. style="isolation:isolate"); that is not our markup */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

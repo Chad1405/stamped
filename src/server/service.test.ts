@@ -2,14 +2,27 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, ensurePlayer, getDay, getMe, HttpError, joinLeague, myLeagues, seedIfEmpty, setName } from "./service";
+import { act, createLeague, ensurePlayer, getDay, getMe, HttpError, joinLeague, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { PREVIEW_MS } from "@/lib/game/rules";
 
 const TODAY = "2026-11-05";
 const rounds = (seedDays as { offset: number; rounds: { country: string; cityName: string; spot: string[] }[] }[]).find(d => d.offset === 0)!.rounds;
 let db: Db;
-beforeAll(async () => { db = await createDb(); await seedIfEmpty(db, TODAY); });
+beforeAll(async () => { db = await createDb(); await seedSamples(db, TODAY); });
+
+describe("sample flights", () => {
+  it("rotate so every new day has a flight, without touching earlier ones", async () => {
+    const fresh = await createDb(), next = addDays(TODAY, 1), pid = await ensurePlayer(fresh, undefined);
+    await seedSamples(fresh, TODAY);
+    expect((await getDay(fresh, pid, TODAY, TODAY)).flight).toBe("004");
+    await seedSamples(fresh, next); await seedSamples(fresh, next);   // a second call the same day adds nothing
+    const tomorrow = await getDay(fresh, pid, next, next), oldest = (seedDays as { offset: number; rounds: { prompt: string }[] }[]).find(d => d.offset === -3)!;
+    expect(tomorrow.flight).toBe("005");
+    expect(tomorrow.stops[0].prompt).toBe(oldest.rounds[0].prompt);
+    expect((await getDay(fresh, pid, TODAY, next)).flight).toBe("004");
+  });
+});
 
 async function playDay(pid: string, date: string, how: "perfect" | "bank", t0 = Date.now()) {
   const day = await getDay(db, pid, date, TODAY);

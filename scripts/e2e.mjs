@@ -6,7 +6,9 @@ const require = createRequire(import.meta.url);
 const puppeteer = require(process.env.PUPPETEER_CORE || "puppeteer-core");
 const BASE = process.argv[2] || "http://localhost:3100", OUT = process.argv[3] || ".e2e";
 fs.mkdirSync(OUT, { recursive: true });
-const answers = JSON.parse(fs.readFileSync(new URL("../src/content/itineraries.json", import.meta.url))).find(d => d.offset === 0).rounds;
+// the sample flights rotate (see seedSamples): flight n carries sample (n - 1) mod 4, oldest first
+const samples = JSON.parse(fs.readFileSync(new URL("../src/content/itineraries.json", import.meta.url))).toSorted((a, b) => a.offset - b.offset);
+let answers;
 const fails = [], ok = (c, m) => { if (c) console.log("ok  " + m); else { fails.push(m); console.log("FAIL " + m); } };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -34,7 +36,9 @@ process.on("unhandledRejection", async e => {
 });
 await alice.goto(BASE, { waitUntil: "networkidle0" });
 await alice.waitForFunction(() => document.body.innerText.includes("Board flight"));
-ok((await text(alice)).includes("Board flight 004"), "start screen shows today's flight");
+const flightNo = (await text(alice)).match(/Board flight (\d{3})/)?.[1];
+ok(!!flightNo, `start screen shows today's flight (${flightNo})`);
+answers = samples[(Number(flightNo) - 1) % samples.length].rounds;
 await alice.screenshot({ path: `${OUT}/1-start.png`, fullPage: true });
 await clickText(alice, "Board flight");
 await alice.waitForSelector(".count", { timeout: 5000 });
@@ -43,7 +47,8 @@ for (let i = 0; i < 5; i++) {
   const r = answers[i];
   const html = await alice.content();
   ok(!html.includes(r.cityName) || i > 0 && false, `stop ${i + 1}: the answer is not in the page before it is played`);
-  await guess(alice, i === 0 ? "Chlie" : r.country);
+  const typo = r.country[0] + r.country[2] + r.country[1] + r.country.slice(3);   // two letters swapped, e.g. Chlie
+  await guess(alice, i === 0 ? typo : r.country);
   if (i === 0) {
     await alice.waitForFunction(() => document.querySelector("#msg")?.innerText.includes("Did you mean"));
     ok(true, "a typo gets a correction"); await alice.keyboard.press("Enter");
@@ -53,7 +58,7 @@ for (let i = 0; i < 5; i++) {
   await guess(alice, r.cityName); await alice.waitForSelector(".choice--risk"); await alice.click(".choice--risk");
   await guess(alice, r.spot[0]);
   await alice.waitForFunction(() => /Board stop|Open your passport/.test(document.body.innerText));
-  if (i === 0) { await wait(700); await alice.screenshot({ path: `${OUT}/3-reveal.png`, fullPage: true }); ok((await text(alice)).includes("Valparaíso, Chile"), "the reveal names the place"); }
+  if (i === 0) { await wait(700); await alice.screenshot({ path: `${OUT}/3-reveal.png`, fullPage: true }); ok((await text(alice)).includes(`${r.cityName}, ${r.country}`), "the reveal names the place"); }
   await clickText(alice, i < 4 ? "Board stop" : "Open your passport");
   if (i < 4) await alice.waitForSelector(".count", { timeout: 5000 }).catch(() => {});
 }

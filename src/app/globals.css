@@ -4,7 +4,7 @@
 /* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: P and H, the old page argued nothing; each screen now leads with one object (the board, the photo, the stamp, the score) and everything else is a table or a plate */
 /* Hallmark · finish-review: subagent, fix · 8 findings · 8 resolved (live strip through play, flat joined stamps, swatches cut, dark board edge, framed share, legend indent, bordered message, full-width legend) · impeccable critique 25/40 before fixes */
 /* Hallmark · waive 64 · the theme's material is mono, Chivo Mono on every role · Chivo Mono is the Wayfind material on every label, figure and line of this travel board */
-/* Hallmark · dropped #${id}, fuse, g, globe, ink, plane, route, rp, rpd ·the SVG stamp textPath, the fuse bar, the grain filter, the drawn flight path and its plane were costume the old build added; the board and the clock plate replace them */
+/* Hallmark · dropped #${id}, g, globe, ink, rp, rpd · the SVG stamp textPath and the grain filter stay out. The fuse, the plane and the drift came back by request: the owner asked for a game that feels alive, so motion is part of the system now (see "Game feel" at the end) */
 :root {
   color-scheme: light;
   --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
@@ -49,7 +49,7 @@ button, input, select, textarea { font: inherit; }
 [data-slot]:has(> img) > :not(img):not([data-keep]) { display: none !important; }
 @media (max-width: 60rem) { :root { --gutter: 24px; --section-gap-s: 80px; --section-gap: 96px; --section-gap-l: 120px; } }
 @media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; --section-gap: 72px; --section-gap-l: 96px; --gap-columns: 16px; } }
-@media (prefers-reduced-motion: reduce) { *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: reduce) { *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 /* photographs: natural sat=-12 con=10 */
 [data-slot] > img { filter: saturate(0.88) contrast(1.1); }
 
@@ -404,3 +404,96 @@ footer p { max-width: 65ch; }
   .note-card blockquote { font-size: var(--text-lg); padding: var(--space-sm) var(--space-md); }
   .route li span:last-child { font-size: var(--text-lg); }
 }
+
+/* ============ Game feel: ambient life, feedback and reward (after Krillion's scene, sound and confetti) ============ */
+:root { --plane: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath transform='rotate(90 12 12)' d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z'/%3E%3C/svg%3E"); }
+.shell { position: relative; z-index: 1; }
+
+/* the sky: clouds drift behind every screen, and now and then a plane crosses with its contrail */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.sky i { position: absolute; left: 0; width: 360px; height: 110px; opacity: 0.7;
+  background: radial-gradient(closest-side, var(--color-paper-3), transparent) 0 30px / 160px 80px no-repeat, radial-gradient(closest-side, var(--color-paper-3), transparent) 90px 0 / 190px 110px no-repeat, radial-gradient(closest-side, var(--color-paper-3), transparent) 200px 34px / 150px 76px no-repeat;
+  animation: drift 90s linear infinite; }
+.sky i:nth-child(1) { top: 12vh; animation-duration: 110s; animation-delay: -30s; }
+.sky i:nth-child(2) { top: 46vh; animation-duration: 140s; animation-delay: -95s; scale: 1.4; }
+.sky i:nth-child(3) { top: 78vh; animation-duration: 95s; animation-delay: -60s; }
+@keyframes drift { from { translate: -40vw 0; } to { translate: 110vw 0; } }
+.sky b { position: absolute; top: 22vh; left: 0; width: 220px; height: 18px; opacity: 0; animation: cross 34s linear 6s infinite; }
+.sky b::before { content: ""; position: absolute; right: 0; top: 0; width: 18px; height: 18px; background: var(--color-plate); -webkit-mask: var(--plane) center / contain no-repeat; mask: var(--plane) center / contain no-repeat; }
+.sky b::after { content: ""; position: absolute; right: 20px; top: 8px; width: 200px; border-top: 2px dashed var(--color-rule); -webkit-mask-image: linear-gradient(to right, transparent, #000); mask-image: linear-gradient(to right, transparent, #000); }
+@keyframes cross { 0% { translate: -240px 4vh; opacity: 0; } 2% { opacity: 1; } 38% { translate: 105vw -6vh; opacity: 1; } 39%, 100% { translate: 105vw -6vh; opacity: 0; } }
+
+/* every screen arrives instead of appearing */
+.scene { display: contents; }
+.scene > * { animation: arrive-in 460ms var(--ease-out) both; }
+@keyframes arrive-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* start: the ticket prints, the plane waits over the next stop, the board button calls you like a gate light */
+.ticket { animation: print 620ms var(--ease-out) both; }
+@keyframes print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.ticket-stub { animation: stub-in 700ms var(--ease-out) 260ms both; }
+@keyframes stub-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.ticket .strip { margin-top: var(--space-lg); }
+.ticket .strip li { position: relative; }
+.ticket .strip li.is-live::before { content: ""; position: absolute; left: 50%; top: -28px; width: 22px; height: 22px; margin-left: -11px; background: var(--color-accent); -webkit-mask: var(--plane) center / contain no-repeat; mask: var(--plane) center / contain no-repeat; animation: hover-bob 1.8s var(--ease-in-out) infinite; }
+@keyframes hover-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.strip li.is-live, .route li.is-live { animation: live-pulse 1.6s var(--ease-in-out) infinite; }
+@keyframes live-pulse { 0%, 100% { box-shadow: inset 0 0 0 var(--rule-bar) var(--color-accent); } 50% { box-shadow: inset 0 0 0 calc(var(--rule-bar) * 2) var(--color-accent), 0 0 0 4px color-mix(in oklab, var(--color-accent) 18%, transparent); } }
+.strip li.is-done > span:last-child { display: inline-block; animation: flip-in 520ms var(--ease-out) both; }
+.btn--big { position: relative; }
+.btn--big::after { content: ""; position: absolute; inset: calc(var(--rule-bar) * -1); border: var(--rule-bar) solid var(--color-accent); animation: beacon 2s var(--ease-out) infinite; pointer-events: none; }
+@keyframes beacon { 0% { opacity: 0.9; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.12, 1.35); } }
+.btn--big:hover { transform: translateY(-2px); }
+
+/* the photo: a window blind lifts, then the view drifts slowly while you think */
+.pane img { animation: blind 760ms var(--ease-out) both, look 34s linear 760ms both; transform-origin: 60% 40%; }
+@keyframes blind { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes look { from { transform: scale(1); } to { transform: scale(1.08); } }
+.note-card { animation: arrive-in 520ms var(--ease-out) 200ms both; }
+.count .plate { animation: pop 420ms var(--ease-out); }
+
+/* the clock: a burning fuse, red and nudging at the end */
+.clock { position: relative; overflow: hidden; }
+.fuse { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: color-mix(in oklab, var(--color-plate-ink) 22%, transparent); }
+.fuse span { display: block; height: 100%; background: var(--color-accent-2); transform-origin: left; transition: transform 100ms linear; }
+.clock.is-low .fuse span { background: var(--color-error-ink); }
+.clock.is-low { animation: urgent 1s steps(2, jump-none) infinite, nudge 1s var(--ease-out) infinite; }
+@keyframes nudge { 0%, 100% { transform: none; } 8% { transform: scale(1.06); } 16% { transform: none; } }
+
+/* the depth ladder: the plane descends a step each time you go deeper */
+.ladder { display: flex; flex-direction: column; }
+.alt { position: relative; height: 36px; }
+.alt::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; border-top: 2px dashed var(--color-rule); }
+.alt-plane { position: absolute; z-index: 1; left: calc((var(--at) + 0.5) * 33.333%); top: calc(var(--at) * 5px); translate: -50% 0; color: var(--color-accent); transition: left 1s var(--ease-in-out), top 1s var(--ease-in-out); }
+.alt-plane svg { animation: hover-bob 1.6s var(--ease-in-out) infinite; }
+.route li.is-just { animation: flash 600ms var(--ease-out), glow 900ms var(--ease-out); }
+@keyframes glow { from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent-2) 80%, transparent); } to { box-shadow: 0 0 0 14px transparent; } }
+.choices .choice { animation: deal 440ms var(--ease-out) both; }
+.choices .choice + .choice { animation-delay: 90ms; }
+@keyframes deal { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: none; } }
+.choice--risk { overflow: hidden; }
+.choice--risk::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, color-mix(in oklab, var(--color-accent-ink) 22%, transparent) 50%, transparent 65%); background-size: 250% 100%; animation: sheen 2.4s var(--ease-in-out) 600ms infinite; pointer-events: none; }
+@keyframes sheen { from { background-position: 120% 0; } 60%, to { background-position: -120% 0; } }
+.input:focus { box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent) 16%, transparent); }
+.entry-row.shake .input { border-color: var(--color-error); }
+
+/* the reveal: the airport code flips in on the board, the stamp lands with a jolt, the bars fill */
+.flap { display: inline-flex; gap: 2px; perspective: 400px; }
+.flap span { display: inline-block; min-width: 0.72em; text-align: center; padding: 0 2px; background: color-mix(in oklab, var(--color-plate-ink) 12%, transparent); animation: flip-in 560ms var(--ease-out) both; animation-delay: calc(var(--k) * 110ms + 380ms); }
+@keyframes flip-in { 0% { transform: rotateX(90deg); opacity: 0; } 60% { transform: rotateX(-14deg); opacity: 1; } 100% { transform: rotateX(0); opacity: 1; } }
+.pane .over { animation: arrive-in 420ms var(--ease-out) 200ms both; }
+.jolt { animation: jolt 300ms var(--ease-out); }
+@keyframes jolt { 0%, 100% { transform: none; } 20% { transform: translate(3px, 2px); } 45% { transform: translate(-3px, -1px); } 70% { transform: translate(1px, -1px); } }
+.bars .fill { transform-origin: left; animation: grow 1s var(--ease-out) both; }
+.bars li:nth-child(1) .fill { animation-delay: 500ms; }
+.bars li:nth-child(2) .fill { animation-delay: 650ms; }
+.bars li:nth-child(3) .fill { animation-delay: 800ms; }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.facts, .stop .panel > p, .bars { animation: arrive-in 480ms var(--ease-out) 420ms both; }
+.class-track .fill { transform-origin: left; animation: grow 1.2s var(--ease-out) 1.6s both; }
+.score.plate { animation: pop 520ms var(--ease-out) both; }
+
+/* the header */
+.btn--icon { width: 40px; padding: 0; }
+.btn--icon svg { width: 20px; height: 20px; }
+.hud .hud-streak dd.bumping { animation: bump var(--dur-long) var(--ease-out); }

@@ -1,17 +1,17 @@
 // Shared plumbing for the API routes: the anonymous player cookie, dev seeding, and error mapping.
 import { NextResponse, type NextRequest } from "next/server";
 import { db, type Db } from "@/db";
-import { ensurePlayer, gameToday, HttpError, seedIfEmpty } from "./service";
+import { ensurePlayer, gameToday, HttpError, seedSamples } from "./service";
 
 const COOKIE = "stamped_pid";
 const YEAR = 60 * 60 * 24 * 365;
-let seeded = false;
+let seededFor = "";
 
 type Ctx = { db: Db; playerId: string; today: string };
 export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown>) {
   try {
     const d = await db(), today = gameToday();
-    if (!seeded && process.env.SEED_SAMPLE !== "false") { await seedIfEmpty(d, today); seeded = true; }   // sample content until an editor tool exists
+    if (seededFor !== today && process.env.SEED_SAMPLE !== "false") { await seedSamples(d, today); seededFor = today; }   // once per day per server, so a server left running past midnight still gets a flight
     const cookieId = req.cookies.get(COOKIE)?.value;
     const playerId = await ensurePlayer(d, cookieId);
     const res = NextResponse.json(await fn({ db: d, playerId, today }));

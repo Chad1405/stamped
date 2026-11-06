@@ -35,13 +35,18 @@ export async function setName(db: Db, playerId: string, name: unknown) {
 }
 
 /* ---- content ---- */
-/** Development convenience: with an empty table, load the sample itineraries dated around today. */
-export async function seedIfEmpty(db: Db, today: string) {
-  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(itineraries);
-  if (n > 0) return false;
-  await db.insert(itineraries).values((seedDays as { offset: number; flight: string; rounds: Round[] }[])
-    .map(d => ({ date: addDays(today, d.offset), flight: d.flight, rounds: d.rounds })));
-  return true;
+/** Sample content until an editor tool exists: the sample days rotate, so today and the three days before it always have a flight.
+ *  The first seed puts the newest sample on today; each later date takes the next sample in turn and the next flight number. */
+const SAMPLES = (seedDays as { offset: number; rounds: Round[] }[]).toSorted((a, b) => a.offset - b.offset);
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+export async function seedSamples(db: Db, today: string) {
+  const [{ first }] = await db.select({ first: sql<string | null>`min(${itineraries.date})` }).from(itineraries);
+  const anchor = first ?? addDays(today, -(SAMPLES.length - 1));
+  const rows = Array.from({ length: SAMPLES.length }, (_, k) => addDays(today, -k)).filter(d => d >= anchor).map(date => {
+    const n = daysBetween(anchor, date);
+    return { date, flight: String(n + 1).padStart(3, "0"), rounds: SAMPLES[n % SAMPLES.length].rounds };
+  });
+  await db.insert(itineraries).values(rows).onConflictDoNothing({ target: itineraries.date });   // never replaces a flight that already exists
 }
 async function itinerary(db: Db, date: string, today: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) throw new HttpError(404, "No flight on that date.");
