@@ -4,7 +4,7 @@ import type { Db } from "@/db";
 import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopStats } from "@/db/schema";
 import { applyAction, freshStop, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
-import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, TIERS, type TierId } from "@/lib/game/rules";
+import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, TIERS, type TierId, kmBetween } from "@/lib/game/rules";
 import { addDays, streakInfo, weekOf } from "@/lib/game/streak";
 import citiesData from "@/content/cities.json";
 import iso3Data from "@/content/iso3.json";
@@ -77,12 +77,14 @@ export const placeFor = (r: Round, tier: TierId) =>
   tier === "native" || tier === "local" ? r.cityName : tier === "traveller" ? r.regionName : tier === "backpacker" || tier === "lost" ? r.country
     : tier === "tourist" ? CONT[countryByName(r.country)!.cont[0]] : "No entry";
 const MIN_LIVE_PLAYERS = 20;   // below this, show the editor's estimate instead of a noisy percentage
-function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect) {
+function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect, prev?: Round) {
+  const km = prev ? kmBetween(prev, r) : null;
   const live = stats && stats.players >= MIN_LIVE_PLAYERS;
   const pct = (n: number) => Math.round(100 * n / stats!.players);
   return {
     country: r.country, regionName: r.regionName, cityName: r.cityName, spotName: r.spotName, airport: r.airport, fact: r.fact, credit: r.credit ?? null,
     code: codeFor(r, tier), place: placeFor(r, tier),
+    leg: km === null ? null : { from: prev!.cityName, km },   // the flight in from the previous stop
     crowd: live ? { source: "live" as const, players: stats!.players, values: [pct(stats!.country), pct(stats!.city), pct(stats!.spot)] }
                 : { source: "estimate" as const, players: stats?.players ?? 0, values: r.crowd },
   };
@@ -98,7 +100,7 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
   ]);
   const stops = it.rounds.map((r, i) => {
     const s = rows.find(x => x.stop === i)?.state ?? freshStop();
-    return { ...publicRound(r, i), state: stopView(s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i)) : null };
+    return { ...publicRound(r, i), state: stopView(s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1]) : null };
   });
   const score = stops.reduce((n, s) => n + (s.state.tier ? TIERS[s.state.tier].score : 0), 0);
   return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops };
@@ -134,7 +136,7 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
       }
     }
     const [stats] = state.phase === "done" ? await tx.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop))) : [];
-    return { stop: { ...publicRound(r, stop), state: stopView(state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats) : null }, event, gain, dayDone, serverNow: now };
+    return { stop: { ...publicRound(r, stop), state: stopView(state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1]) : null }, event, gain, dayDone, serverNow: now };
   });
 }
 async function stampPassport(db: Db, playerId: string, r: Round, tier: TierId, date: string) {

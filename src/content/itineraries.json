@@ -45,7 +45,9 @@
      "author": "Galanda23",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Blue_alley_in_Chfchaouen.jpg"
-    }
+    },
+    "lat": 35.17,
+    "lng": -5.27
    },
    {
     "type": "Food",
@@ -85,7 +87,9 @@
      "author": "Douglas Perkins",
      "license": "CC BY 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Khao_Soi_01.jpg"
-    }
+    },
+    "lat": 18.79,
+    "lng": 98.98
    },
    {
     "type": "Landmark",
@@ -124,7 +128,9 @@
      "author": "Diego Delso",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Atomium,_Bruselas,_B%C3%A9lgica,_2021-12-15,_DD_148-150_HDR.jpg"
-    }
+    },
+    "lat": 50.85,
+    "lng": 4.35
    },
    {
     "type": "Close-up",
@@ -169,7 +175,9 @@
      "author": "Pnapora",
      "license": "CC BY-SA 3.0",
      "url": "https://commons.wikimedia.org/wiki/File:Krasnal_Teatralny_(Theatre_Dwarf)_Wroclaw_dwarf_02.JPG"
-    }
+    },
+    "lat": 51.11,
+    "lng": 17.03
    },
    {
     "type": "Language",
@@ -209,7 +217,9 @@
      47,
      40,
      31
-    ]
+    ],
+    "lat": -34.6,
+    "lng": -58.38
    }
   ]
  },
@@ -254,7 +264,9 @@
      "author": "Eva Blue",
      "license": "CC0",
      "url": "https://commons.wikimedia.org/wiki/File:Vintage_car_driving_in_Centro_Havana_(Unsplash).jpg"
-    }
+    },
+    "lat": 23.11,
+    "lng": -82.37
    },
    {
     "type": "Food",
@@ -294,7 +306,9 @@
      "author": "Kos88",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Pizza_Margherita_in_Naples_2015.JPG"
-    }
+    },
+    "lat": 40.85,
+    "lng": 14.27
    },
    {
     "type": "Landmark",
@@ -335,7 +349,9 @@
      "author": "Marcin Konsek",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:2016_Kuala_Lumpur,_Petronas_Towers_(26).jpg"
-    }
+    },
+    "lat": 3.14,
+    "lng": 101.69
    },
    {
     "type": "Close-up",
@@ -377,7 +393,9 @@
      "author": "Väsk",
      "license": "CC BY-SA 3.0",
      "url": "https://commons.wikimedia.org/wiki/File:Balkong_i_Valetta_1.jpg"
-    }
+    },
+    "lat": 35.9,
+    "lng": 14.51
    },
    {
     "type": "Language",
@@ -417,7 +435,9 @@
      35,
      30,
      22
-    ]
+    ],
+    "lat": 34.69,
+    "lng": 135.5
    }
   ]
  },
@@ -459,7 +479,9 @@
      "author": "kallerna",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Burano_Venice_4.jpg"
-    }
+    },
+    "lat": 45.44,
+    "lng": 12.33
    },
    {
     "type": "Food",
@@ -500,7 +522,9 @@
      "author": "Anagoria",
      "license": "CC BY 3.0",
      "url": "https://commons.wikimedia.org/wiki/File:2016-08-27_Peking_Duck_at_Great_Wall_Restaurant_Beijing_anagoria.jpg"
-    }
+    },
+    "lat": 39.9,
+    "lng": 116.41
    },
    {
     "type": "Landmark",
@@ -540,7 +564,9 @@
      "author": "Donatas Dabravolskas",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Redentor_Over_Clouds_1.jpg"
-    }
+    },
+    "lat": -22.91,
+    "lng": -43.17
    },
    {
     "type": "Close-up",
@@ -579,7 +605,9 @@
      "author": "JoachimKohler-HB",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Fassaden_in_Bryggen,_Bergen_N.jpg"
-    }
+    },
+    "lat": 60.39,
+    "lng": 5.32
    },
    {
     "type": "Language",
@@ -618,7 +646,9 @@
      19,
      14,
      11
-    ]
+    ],
+    "lat": -6.16,
+    "lng": 39.19
    }
   ]
  },
@@ -681,7 +711,9 @@
      "author": "Fraenerys",
      "license": "CC BY 3.0",
      "url": "https://commons.wikimedia.org/wiki/File:Valpara%C3%ADso_(178426945).jpeg"
-    }
+    },
+    "lat": -33.05,
+    "lng": -71.62
    },
    {
     "type": "Food",
@@ -726,7 +758,9 @@
      "author": "Eugene Krasnaok",
      "license": "CC BY 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Khachapuri_Adjaruli_with_egg_and_butter_2016.jpg"
-    }
+    },
+    "lat": 41.62,
+    "lng": 41.64
    },
    {
     "type": "Landmark",
@@ -766,7 +800,9 @@
      "author": "Andreas Tille",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Hallgr%C3%ADmskirkja.jpeg"
-    }
+    },
+    "lat": 64.15,
+    "lng": -21.94
    },
    {
     "type": "Close-up",
@@ -808,7 +844,9 @@
      "author": "Vernaccia",
      "license": "CC BY 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Lisbon._Azulejo-covered_houses_in_Gra%C3%A7a._(41941933691).jpg"
-    }
+    },
+    "lat": 38.72,
+    "lng": -9.14
    },
    {
     "type": "Language",
@@ -850,7 +888,9 @@
      22,
      18,
      11
-    ]
+    ],
+    "lat": 59.44,
+    "lng": 24.75
    }
   ]
  },
@@ -900,7 +940,9 @@
      "author": "Kris Martyn",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Train_street_in_Hanoi.jpg"
-    }
+    },
+    "lat": 21.03,
+    "lng": 105.85
    },
    {
     "type": "Food",
@@ -940,7 +982,9 @@
      "author": "Sergey A. Demidov",
      "license": "CC BY 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:20250903_Bouillabaisse_in_Khimki_(90108).jpg"
-    }
+    },
+    "lat": 43.3,
+    "lng": 5.37
    },
    {
     "type": "Landmark",
@@ -982,7 +1026,9 @@
      "author": "Vyacheslav Argenberg",
      "license": "CC BY 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Al-Khazneh_(The_Treasury)_2,_Petra,_Jordan.jpg"
-    }
+    },
+    "lat": 30.33,
+    "lng": 35.44
    },
    {
     "type": "Close-up",
@@ -1019,7 +1065,9 @@
      "author": "William Murphy",
      "license": "CC BY-SA 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Doors_Of_Dublin_-_Henrietta_Street_4282282527.jpg"
-    }
+    },
+    "lat": 53.35,
+    "lng": -6.26
    },
    {
     "type": "Language",
@@ -1058,7 +1106,9 @@
      25,
      22,
      17
-    ]
+    ],
+    "lat": 48.21,
+    "lng": 16.37
    }
   ]
  },
@@ -1108,7 +1158,9 @@
      "author": "Joe Ross from Lansing, Michigan",
      "license": "CC BY-SA 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Balconies,_Street_scene_in_Cartagena,_Colombia_(24745444421).jpg"
-    }
+    },
+    "lat": 10.39,
+    "lng": -75.51
    },
    {
     "type": "Food",
@@ -1151,7 +1203,9 @@
      "author": "abex (a flickr user)",
      "license": "CC BY-SA 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Korean.food-Bibimbap-02.jpg"
-    }
+    },
+    "lat": 35.82,
+    "lng": 127.15
    },
    {
     "type": "Landmark",
@@ -1190,7 +1244,9 @@
      "author": "Marcin Konsek",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:2016_Angkor,_Angkor_Wat,_Brama_Angkor_Wat_(30).jpg"
-    }
+    },
+    "lat": 13.36,
+    "lng": 103.86
    },
    {
     "type": "Close-up",
@@ -1229,7 +1285,9 @@
      "author": "Andrew Moore from Johannesburg, South Africa",
      "license": "CC BY-SA 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Trencad%C3%ADs._Park_G%C3%BCell.jpg"
-    }
+    },
+    "lat": 41.39,
+    "lng": 2.17
    },
    {
     "type": "Language",
@@ -1266,7 +1324,9 @@
      44,
      39,
      33
-    ]
+    ],
+    "lat": 41.01,
+    "lng": 28.98
    }
   ]
  },
@@ -1312,7 +1372,9 @@
      "author": "South African Tourism from South Africa",
      "license": "CC BY 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:Bo-Kaap_-_Cape_Town,_South_Africa_(3883775540).jpg"
-    }
+    },
+    "lat": -33.92,
+    "lng": 18.42
    },
    {
     "type": "Food",
@@ -1356,7 +1418,9 @@
      "author": "City Foodsters",
      "license": "CC BY 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:(El_Flaco)_Al_Pastor_Tacos.jpg"
-    }
+    },
+    "lat": 19.43,
+    "lng": -99.13
    },
    {
     "type": "Landmark",
@@ -1397,7 +1461,9 @@
      "author": "Wilfredor",
      "license": "CC0",
      "url": "https://commons.wikimedia.org/wiki/File:Neuschwanstein_Castle_2024.jpg"
-    }
+    },
+    "lat": 47.58,
+    "lng": 10.74
    },
    {
     "type": "Close-up",
@@ -1439,7 +1505,9 @@
      "author": "Basile Morin",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Double_torii_path_at_Fushimi_Inari_Taisha_Shrine,_Kyoto,_Japan.jpg"
-    }
+    },
+    "lat": 35.01,
+    "lng": 135.77
    },
    {
     "type": "Language",
@@ -1478,7 +1546,9 @@
      19,
      16,
      12
-    ]
+    ],
+    "lat": 30.04,
+    "lng": 31.24
    }
   ]
  },
@@ -1524,7 +1594,9 @@
      "author": "László Szalai (Beyond silence)",
      "license": "Public domain",
      "url": "https://commons.wikimedia.org/wiki/File:Main_street-Dubrovnik-1.jpg"
-    }
+    },
+    "lat": 42.65,
+    "lng": 18.09
    },
    {
     "type": "Food",
@@ -1567,7 +1639,9 @@
      "author": "Telluride",
      "license": "CC BY-SA 3.0",
      "url": "https://commons.wikimedia.org/wiki/File:Deep_Dish_Pizza_PD.jpg"
-    }
+    },
+    "lat": 41.88,
+    "lng": -87.63
    },
    {
     "type": "Landmark",
@@ -1607,7 +1681,9 @@
      "author": "kallerna",
      "license": "CC BY-SA 4.0",
      "url": "https://commons.wikimedia.org/wiki/File:Shwedagon_Zedi_Daw_Yangon_4.jpg"
-    }
+    },
+    "lat": 16.84,
+    "lng": 96.17
    },
    {
     "type": "Close-up",
@@ -1650,7 +1726,9 @@
      "author": "Lyn Gateley from Silicon Valley, CA, USA",
      "license": "CC BY 2.0",
      "url": "https://commons.wikimedia.org/wiki/File:DSC00288,_Canal_Cruise,_Amsterdam,_Netherlands_(338955340).jpg"
-    }
+    },
+    "lat": 52.37,
+    "lng": 4.9
    },
    {
     "type": "Language",
@@ -1687,7 +1765,9 @@
      21,
      15,
      10
-    ]
+    ],
+    "lat": 45.5,
+    "lng": -73.57
    }
   ]
  }

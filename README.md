@@ -14,7 +14,8 @@ Open http://localhost:3000. No database to install: without `DATABASE_URL`, an e
 
 ```bash
 npm test          # rules, engine, streaks, and the service against an in-memory Postgres
-npm run test:e2e  # plays a whole day and a league through the real pages (needs a running server, Chrome and puppeteer-core)
+npm run test:e2e  # plays a whole day and a league through the real pages, then a whole day by touch at phone size (needs a running server, Chrome and puppeteer-core)
+npm run test:sound  # renders every sound effect offline in Chrome: audible, no clipping, silent start and end, crisp attack, double-pulse tick
 npm run build     # production build
 ```
 

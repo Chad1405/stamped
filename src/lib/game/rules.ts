@@ -39,3 +39,13 @@ export const CLASSES = [
 export const classFor = (n: number) => [...CLASSES].reverse().find(c => n >= c.min)!;
 export const nextClass = (n: number) => CLASSES.find(c => c.min > n);
 export const MILESTONES = [3, 7, 14, 30, 50, 100];
+
+/** Great-circle distance in km between two answer cities, rounded to the nearest 10 km (the coordinates are city centres). */
+export function kmBetween(a: { lat?: number; lng?: number }, b: { lat?: number; lng?: number }): number | null {
+  if (a.lat === undefined || a.lng === undefined || b.lat === undefined || b.lng === undefined) return null;
+  const rad = Math.PI / 180, dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * 6371 * Math.asin(Math.sqrt(h)) / 10) * 10;
+}
+/** A leg counts towards your kilometres flown only if you named the city you flew to. */
+export const legFlown = (tier: TierId | null | undefined) => !!tier && NAMED_CITY.includes(tier);

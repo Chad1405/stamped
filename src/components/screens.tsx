@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { confetti, sfx } from "@/lib/client/fx";
 import type { Day, League, Me } from "@/lib/client/api";
-import { band, classFor, CLASSES, CONT, LADDER, MAX_DAY_SCORE, nextClass, TIERS } from "@/lib/game/rules";
+import { band, classFor, CLASSES, CONT, LADDER, legFlown, MAX_DAY_SCORE, nextClass, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
 import { CountUp, EntryStamp, longDate, ordinal, Strip } from "./bits";
 
@@ -79,7 +79,10 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   const s = day.score, b = band(s), si = me?.streak;
   const [copied, setCopied] = useState("");
   const tiers = day.stops.map(x => x.state.tier!);
-  const share = `Stamped, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}\n${tiers.map(t => TIERS[t].emoji).join("")}${day.isToday && si && si.n >= 2 ? `\nStreak: ${si.n} days` : ""}\n${typeof location !== "undefined" ? location.origin : ""}`;
+  // kilometres: every leg of the route, and the ones you flew (you fly a leg by naming the city it lands in)
+  const legs = day.stops.map(x => x.reveal?.leg?.km ?? 0), km = (n: number) => n.toLocaleString("en-GB");
+  const routeKm = legs.reduce((a, b) => a + b, 0), flownKm = day.stops.reduce((n, x, i) => n + (legFlown(x.state.tier) ? legs[i] : 0), 0);
+  const share = `Stamped, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}\n${tiers.map(t => TIERS[t].emoji).join("")}${flownKm ? `\n✈️ ${km(flownKm)} km flown` : ""}${day.isToday && si && si.n >= 2 ? `\nStreak: ${si.n} days` : ""}\n${typeof location !== "undefined" ? location.origin : ""}`;
   const nC = me?.passport.countries.length ?? 0, cls = classFor(nC), nxt = nextClass(nC);
   const newC = me?.passport.countries.filter(c => c.first === day.date).length ?? 0, newCity = me?.passport.cities.filter(c => c.first === day.date).length ?? 0;
   // each stamp thuds as it slams into the passport, then the fanfare
@@ -94,6 +97,22 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
       <section className="arrive">
         <div className="score plate"><span>{day.isToday ? "Today's score" : `Flight ${day.flight} score`}</span><span className="figure"><CountUp to={s} ms={1400} /></span><span>of {MAX_DAY_SCORE}</span></div>
         <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p></div>
+      </section>
+      <section className="flightlog">
+        <div className="start-head"><h2>Flight log</h2><p>You flew <strong>{km(flownKm)} km</strong> of {day.isToday ? "today's" : "this flight's"} {km(routeKm)} km route.{flownKm < routeKm ? " A leg counts when you name the city it lands in." : ""}</p></div>
+        <ol className="fl-chart" aria-label="Points at each stop">
+          {day.stops.map((x, i) => {
+            const t = x.state.tier ? TIERS[x.state.tier] : null;
+            return (
+              <li key={i} style={{ ["--i" as string]: i, ["--h" as string]: `${t?.score ?? 0}%` }} className={x.state.tier === "native" ? "is-top" : t && t.score >= 60 ? "is-deep" : ""}>
+                <span className="fl-track" aria-hidden="true"><span className="fl-bar" /></span>
+                <span className="fl-pts">{t?.score ?? 0}</span>
+                <span className="fl-code">{x.reveal?.code ?? "???"}</span>
+                <span className="fl-meta">{i + 1} {x.type.toLowerCase()}{legs[i] ? `, ${km(legs[i])} km` : ""}</span>
+              </li>
+            );
+          })}
+        </ol>
       </section>
       {day.isToday && si?.milestone && (
         <section className="milestone plate pop"><span className="figure">{si.milestone}</span><div><h2>{si.milestone}-day streak</h2><p>You have flown {si.milestone} days running.{si.next ? ` Next milestone: ${si.next} days.` : ""}</p></div></section>

@@ -4,7 +4,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
 import { COUNTRIES, norm } from "@/lib/game/match";
 import { ROUND_MS, TIERS } from "@/lib/game/rules";
-import { confetti, sfx, shake, toTop } from "@/lib/client/fx";
+import { confetti, reducedMotion, sfx, shake, toTop } from "@/lib/client/fx";
+import { legFlown } from "@/lib/game/rules";
+
+// as measured on Krillion: the question leaves in 650 ms, and the top answer turns gold about a second after it lands
+const DEPART_MS = 650, GOLD_MS = 1100;
+type Weight = "miss" | "light" | "big" | "top";
+const weightOf = (tier: string | null): Weight | null => !tier ? null : tier === "miss" ? "miss" : tier === "tourist" || tier === "lost" ? "light" : tier === "native" ? "top" : "big";
 import { CrowdBars, EntryStamp, Strip, useReplay } from "./bits";
 
 type Props = { day: Day; idx: number; offset: number; onResult: (r: ActResult) => void; onNext: () => void; onError: (m: string) => void };
@@ -56,7 +62,7 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
     <div className="suggest">
       <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false}
         role="combobox" aria-autocomplete="list" aria-expanded={shown.length > 0} aria-controls="guess-list" aria-activedescendant={active >= 0 && shown[active] ? `guess-opt-${active}` : undefined}
-        aria-describedby="msg" aria-invalid={invalid || undefined} disabled={disabled}
+        aria-describedby="msg" aria-invalid={invalid || undefined} readOnly={disabled} aria-busy={disabled || undefined}   // read-only, not disabled, while a guess is checked: a disabled box drops keyboard focus
         onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onBlur={() => setOpen(false)}
         onKeyDown={e => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setOpen(true); const n = shown.length || matches.length; if (n) setActive(a => (a + (e.key === "ArrowDown" ? 1 : n - 1)) % n); }
@@ -103,6 +109,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const [now, setNow] = useState(() => Date.now() + offset);
   const [busy, setBusy] = useState(false);
   const [shakeKey, setShakeKey] = useState<number | null>(null);
+  const [departing, setDeparting] = useState(false), [gold, setGold] = useState(false);
   const sentTimeout = useRef(false);
   const rowRef = useReplay<HTMLDivElement>("shake", shakeKey);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,14 +117,22 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const send = useCallback(async (action: Parameters<typeof api.play>[2]) => {
     if (busy) return;
     setBusy(true);
+    const t0 = performance.now();
+    if (action.type === "guess") sfx("submit");
     try {
       const r = await api.play(day.date, idx, action);
-      onResult(r);
       const ev = r.event;
+      // a guess that moves the stop on: the question leaves first, then the next screen arrives; a bounced guess stays put
+      if ((ev.kind === "right" || ev.kind === "finished" || ev.kind === "advanced") && !reducedMotion()) {
+        setDeparting(true);
+        await new Promise(res => setTimeout(res, Math.max(0, DEPART_MS - (performance.now() - t0))));
+        setDeparting(false);
+      }
+      onResult(r);
       if (ev.kind === "rejected") sfx("reject");
       else if (ev.kind === "right") { sfx("correct"); const el = document.querySelector(".route li.is-live")?.getBoundingClientRect(); if (el) confetti({ x: el.left + el.width / 2, y: el.top }, 28); }
       else if (ev.kind === "advanced") sfx("deeper");
-      else if (ev.kind === "finished") { if (action.type === "decide") sfx("bank"); if (ev.tier === "native") setTimeout(() => { sfx("top"); confetti(); }, 320); else if (ev.tier === "miss" || ev.tier === "lost") setTimeout(() => sfx("miss"), 320); }
+      else if (ev.kind === "finished" && action.type === "decide") sfx("bank");   // the landing itself sounds when the stamp lands
       if (r.event.kind === "correction") { setDraft(r.event.suggestion); setMsg({ text: `Did you mean ${r.event.suggestion}? Press Enter to confirm.`, warn: false }); }
       else if (r.event.kind === "rejected") { setMsg({ text: r.event.message, warn: true }); setShakeKey(k => (k ?? 0) + 1); }
       else { setMsg(null); setDraft(""); }
@@ -139,12 +154,25 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const wasPreview = useRef(preview);
   useEffect(() => { if (countN) sfx("count"); }, [countN]);
   useEffect(() => { if (wasPreview.current && !preview && st.phase === "input") sfx("go"); wasPreview.current = preview; }, [preview, st.phase]);
-  useEffect(() => { if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) sfx("tick"); }, [secsLeft]);
+  const final = secsLeft !== null && secsLeft > 0 && secsLeft <= 3;   // the last three seconds: a double beep each second, the answer box turns red
+  useEffect(() => { if (final) sfx("tick"); }, [final, secsLeft]);
   // the stamp lands: a thud and a jolt, timed to the slam
   const stopRef = useRef<HTMLElement>(null), landed = st.phase === "done";
   const nextRef = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => { if (landed) { toTop(); nextRef.current?.focus({ preventScroll: true }); } }, [landed]);   // the reveal opens at the top too
-  useEffect(() => { if (!landed) return; const t = setTimeout(() => { sfx("stamp"); shake(stopRef.current); }, 280); return () => clearTimeout(t); }, [landed]);
+  // the deeper you landed, the bigger the landing: a light thud, a heavy one, or the heavy one and then gold
+  const weight = weightOf(landed ? st.tier : null);
+  useEffect(() => {
+    if (!weight) return;
+    const light = weight === "light" || weight === "miss", peak = light ? 230 : 350;   // the slam peaks at 55% of its run
+    const ts = [setTimeout(() => {
+      sfx(weight === "miss" ? "miss" : light ? "land" : "landBig"); shake(stopRef.current, light ? "jolt" : "jolt-big");
+      const el = st.tier === "local" && document.querySelector(".result-head .entry")?.getBoundingClientRect();
+      if (el) confetti({ x: el.left + el.width / 2, y: el.top }, 40);
+    }, peak)];
+    if (weight === "top") ts.push(setTimeout(() => { setGold(true); sfx("gold"); confetti(undefined, 160); }, GOLD_MS));
+    return () => ts.forEach(clearTimeout);
+  }, [weight, st.tier]);
   // D and B answer the risk choice
   useEffect(() => {
     if (st.phase !== "decide") return;
@@ -164,12 +192,13 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             caption={<>{caption}.{r.credit && <> Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</>}</>} />
           <div className="panel">
             <div className="result-head">
-              <EntryStamp s={s} i={idx} date={day.date} motion="slam" />
-              {t.score > 0 && <span className="gain" aria-hidden="true">+{t.score}</span>}
+              <EntryStamp s={s} i={idx} date={day.date} motion={`slam slam--${weight}${gold ? " is-gold" : ""}`} />
+              {t.score > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{t.score}</span>}
               <div><h1>{r.cityName}, {r.country}</h1><p className="small">{st.note}</p></div>
             </div>
             <dl className="facts">
               <dt>Region</dt><dd>{r.regionName}</dd><dt>Exact spot</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
+              {r.leg && <><dt>Flight in</dt><dd>{r.leg.km.toLocaleString("en-GB")} km from {r.leg.from}{legFlown(st.tier) ? ", flown" : ", not flown: name the city to count it"}</dd></>}
               {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
             </dl>
             <p>{r.fact}</p>
@@ -194,9 +223,9 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       <section className="stop">
         <Frame s={s} caption={caption} overlay={preview && st.endsAt !== null ? (
           <div className={`count${s.postcard ? " count--chat" : ""}`} aria-live="off"><div><div className="count-dial"><svg viewBox="0 0 120 120" aria-hidden="true"><circle className="ring-track" cx="60" cy="60" r="54" /><circle className="ring" key={countN} cx="60" cy="60" r="54" /></svg><span className="count-n" key={countN}>{countN}</span></div><span className="count-label">Typing opens in</span></div></div>) : null} />
-        <div className="panel">
+        <div className={`panel${departing ? " is-departing" : ""}${final ? " is-final" : ""}`}>
           <div className="clockline">
-            <h1>{question}</h1>
+            <h1 key={question} className="q-arrive">{question}</h1>
             <div className={`clock plate${st.phase === "input" && !preview && remaining < 8000 ? " is-low" : ""}`} role="timer" aria-label={st.phase === "decide" ? "Clock stopped while you decide" : "Time left"}>
               <span>{st.phase === "decide" ? "Clock stopped" : "Time left"}</span>
               <span className="figure">0:{String(st.phase === "input" && !preview ? secs : ROUND_MS / 1000).padStart(2, "0")}</span>
