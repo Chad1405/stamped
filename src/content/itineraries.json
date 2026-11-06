@@ -4,7 +4,7 @@
   "flight": "001",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this blue alley?",
     "img": "/clues/d1s1.jpg",
     "alt": "A steep alley of stairs and walls painted in deep blue, with potted plants and tiled steps",
@@ -127,7 +127,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where would you find this little figure?",
     "img": "/clues/d1s4.jpg",
     "alt": "A small bronze figure with outstretched arms standing at the foot of a white wall",
@@ -172,7 +172,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Che, nos vemos el domingo en La Bombonera. Llevá la camiseta azul y oro.",
@@ -218,7 +218,7 @@
   "flight": "002",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this street?",
     "img": "/clues/d2s1.jpg",
     "alt": "A worn street of tall colonnaded buildings with a green 1950s car driving past",
@@ -338,7 +338,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where is this balcony?",
     "img": "/clues/d2s4.jpg",
     "alt": "A weathered stone corner building with a long enclosed wooden balcony on carved stone brackets",
@@ -380,7 +380,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "道頓堀のグリコの看板の前で7時に会おう！",
@@ -426,7 +426,7 @@
   "flight": "003",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this canal?",
     "img": "/clues/d3s1.jpg",
     "alt": "Brightly painted houses along a canal with wooden mooring posts and a tall leaning bell tower behind",
@@ -543,7 +543,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where are these wooden houses?",
     "img": "/clues/d3s4.jpg",
     "alt": "A row of tall, narrow wooden gabled houses painted ochre, white and red",
@@ -582,7 +582,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Tukutane Forodhani saa kumi na mbili jioni, tule mishkaki baharini.",
@@ -627,7 +627,7 @@
   "flight": "004",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this hillside?",
     "img": "/clues/r1.jpg",
     "alt": "A hillside crowded with brightly painted houses under a grey sky",
@@ -769,7 +769,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where are these tiled walls?",
     "img": "/clues/r4.jpg",
     "alt": "Two buildings covered in teal and patterned ceramic tiles on a wet cobbled street",
@@ -811,7 +811,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Tere! Kohtume kell kuus Raekoja platsil, Vana Toomase all.",
@@ -859,7 +859,7 @@
   "flight": "005",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this railway street?",
     "img": "/clues/d7s1.jpg",
     "alt": "A railway line running down a narrow lane, with houses and doorways right up against the tracks",
@@ -985,7 +985,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where is this doorway?",
     "img": "/clues/d7s4.jpg",
     "alt": "A pale green panelled door between white columns, under a fanlight window in a red brick wall",
@@ -1022,7 +1022,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Servus! Treffen wir uns um acht beim Riesenrad im Prater?",
@@ -1067,7 +1067,7 @@
   "flight": "006",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where are these balconies?",
     "img": "/clues/d6s1.jpg",
     "alt": "A narrow street of pink and yellow colonial houses with wooden balconies and bougainvillea",
@@ -1193,7 +1193,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where is this mosaic?",
     "img": "/clues/d6s4.jpg",
     "alt": "A wall of broken white tiles set with square panels of patterned ceramic, under pink roses",
@@ -1232,7 +1232,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Akşam yedide Galata Kulesi'nin önünde buluşalım mı? Sonra Karaköy'de balık yeriz.",
@@ -1275,7 +1275,7 @@
   "flight": "007",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where are these painted houses?",
     "img": "/clues/d5s1.jpg",
     "alt": "A terrace of flat-roofed houses painted pink, mint, lilac and yellow on a sloping street",
@@ -1400,7 +1400,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where are these gates?",
     "img": "/clues/d5s4.jpg",
     "alt": "Two paths running through tunnels of closely spaced vermilion gates with black bases",
@@ -1442,7 +1442,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "نتقابل في خان الخليلي الساعة سبعة؟ هنشرب شاي في الفيشاوي.",
@@ -1487,7 +1487,7 @@
   "flight": "008",
   "rounds": [
    {
-    "type": "Street",
+    "type": "Street View",
     "prompt": "Where is this stone street?",
     "img": "/clues/d4s1.jpg",
     "alt": "A wide street paved with polished pale stone between uniform stone houses, with a bell tower at the far end",
@@ -1610,7 +1610,7 @@
     }
    },
    {
-    "type": "Detail",
+    "type": "Close-up",
     "prompt": "Where are these canal houses?",
     "img": "/clues/d4s4.jpg",
     "alt": "Tall, narrow brick houses with stepped and bell-shaped gables along a canal with a moored boat",
@@ -1653,7 +1653,7 @@
     }
    },
    {
-    "type": "Wildcard",
+    "type": "Language",
     "prompt": "A friend who lives there sends you this. Where are you meeting?",
     "postcard": {
      "text": "Allô! On se rejoint au marché Jean-Talon vers midi? J'apporte des beignes.",
