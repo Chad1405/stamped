@@ -38,7 +38,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
       </section>
       <details className="howto"><summary>How to play and points</summary>
         <section className="points">
-          <div className="start-head"><h2>Points by how close you land</h2><p>Get the country and the Backpacker stamp is yours. Go deeper for more; a miss drops you a tier.</p></div>
+          <div className="start-head"><h2>Points by how close you land</h2><p>You get three tries at the country, with a clue after each miss; every extra try takes 10 off. Get it and the Backpacker stamp is yours. Go deeper for more; a miss drops you a tier.</p></div>
           <table className="table"><caption className="visually-hidden">Stamps and their points</caption>
             <thead><tr><th scope="col">Stamp</th><th scope="col" className="num">Points</th></tr></thead>
             <tbody>{LADDER.map(id => <tr key={id}><td><span className="tier">{TIERS[id].name}</span><span className="note">{TIERS[id].blurb}</span></td><td className="num">{TIERS[id].score}</td></tr>)}</tbody>
@@ -79,6 +79,9 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   const s = day.score, b = band(s), si = me?.streak;
   const [copied, setCopied] = useState("");
   const tiers = day.stops.map(x => x.state.tier!);
+  // every flight ends somewhere worth knowing, whatever the score
+  const places = day.stops.map(x => x.reveal ? x.reveal.cityName + ", " + x.reveal.country : "").filter(Boolean);
+  const visited = places.length > 1 ? places.slice(0, -1).join("; ") + " and " + places.at(-1) : places[0] ?? "five places";
   // kilometres: every leg of the route, and the ones you flew (you fly a leg by naming the city it lands in)
   const legs = day.stops.map(x => x.reveal?.leg?.km ?? 0), km = (n: number) => n.toLocaleString("en-GB");
   const routeKm = legs.reduce((a, b) => a + b, 0), flownKm = day.stops.reduce((n, x, i) => n + (legFlown(x.state.tier) ? legs[i] : 0), 0);
@@ -96,7 +99,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
     <div className="panel" style={{ gap: "var(--space-2xl)" }}>
       <section className="arrive">
         <div className="score plate"><span>{day.isToday ? "Today's score" : `Flight ${day.flight} score`}</span><span className="figure"><CountUp to={s} ms={1400} /></span><span>of {MAX_DAY_SCORE}</span></div>
-        <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p></div>
+        <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p><p className="visited">You visited {visited}.</p></div>
       </section>
       <section className="flightlog">
         <div className="start-head"><h2>Flight log</h2><p>You flew <strong>{km(flownKm)} km</strong> of {day.isToday ? "today's" : "this flight's"} {km(routeKm)} km route.{flownKm < routeKm ? " A leg counts when you name the city it lands in." : ""}</p></div>
@@ -104,9 +107,9 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
           {day.stops.map((x, i) => {
             const t = x.state.tier ? TIERS[x.state.tier] : null;
             return (
-              <li key={i} style={{ ["--i" as string]: i, ["--h" as string]: `${t?.score ?? 0}%` }} className={x.state.tier === "native" ? "is-top" : t && t.score >= 60 ? "is-deep" : ""}>
+              <li key={i} style={{ ["--i" as string]: i, ["--h" as string]: `${x.state.points}%` }} className={x.state.tier === "native" ? "is-top" : t && t.score >= 60 ? "is-deep" : ""}>
                 <span className="fl-track" aria-hidden="true"><span className="fl-bar" /></span>
-                <span className="fl-pts">{t?.score ?? 0}</span>
+                <span className="fl-pts">{x.state.points}</span>
                 <span className="fl-code">{x.reveal?.code ?? "???"}</span>
                 <span className="fl-meta">{i + 1} {x.type.toLowerCase()}{legs[i] ? `, ${km(legs[i])} km` : ""}</span>
               </li>

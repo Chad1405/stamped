@@ -2,9 +2,9 @@
 import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopStats } from "@/db/schema";
-import { applyAction, freshStop, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
+import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
-import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, TIERS, type TierId, kmBetween } from "@/lib/game/rules";
+import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, type TierId, kmBetween } from "@/lib/game/rules";
 import { addDays, streakInfo, weekOf } from "@/lib/game/streak";
 import citiesData from "@/content/cities.json";
 import iso3Data from "@/content/iso3.json";
@@ -51,9 +51,15 @@ export async function seedSamples(db: Db, today: string) {
   await db.insert(itineraries).values(rows).onConflictDoNothing({ target: itineraries.date });   // never replaces a flight that already exists
   // flights copied from a sample follow later edits to the sample file; a real flight never shares a sample's prompts, so it is never touched
   // ponytail: reads every flight once a day per server; drop this when real itineraries replace the samples
+  const prompts = (rs: Round[]) => rs.map(r => r.prompt);
   for (const row of await db.select({ date: itineraries.date, rounds: itineraries.rounds }).from(itineraries)) {
-    const rounds = row.rounds as Round[], same = SAMPLES.find(x => x.rounds.length === rounds.length && x.rounds.every((r, i) => r.prompt === rounds[i].prompt));
-    if (same && JSON.stringify(same.rounds) !== JSON.stringify(rounds)) await db.update(itineraries).set({ rounds: same.rounds }).where(eq(itineraries.date, row.date));
+    const rounds = row.rounds as Round[], mine = prompts(rounds);
+    const same = SAMPLES.find(x => x.rounds.length === rounds.length && prompts(x.rounds).every(p => mine.includes(p)));
+    if (!same || JSON.stringify(same.rounds) === JSON.stringify(rounds)) continue;
+    // progress is saved by stop number, so a flight is only reordered before anyone has played it
+    const reordered = prompts(same.rounds).some((p, i) => p !== mine[i]);
+    if (reordered && (await db.select({ n: plays.stop }).from(plays).where(eq(plays.date, row.date)).limit(1)).length) continue;
+    await db.update(itineraries).set({ rounds: same.rounds }).where(eq(itineraries.date, row.date));
   }
 }
 async function itinerary(db: Db, date: string, today: string) {
@@ -81,7 +87,8 @@ export const placeFor = (r: Round, tier: TierId) =>
 const MIN_LIVE_PLAYERS = 20;   // below this, show the editor's estimate instead of a noisy percentage
 function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect, prev?: Round, guesses: string[] = []) {
   const km = prev ? kmBetween(prev, r) : null;
-  const guess = (tier === "tourist" || tier === "miss") && guesses[0] && guesses[0] !== r.country ? guesses[0] : undefined, cap = guess ? CAPITALS[guess] : undefined;
+  const last = guesses.at(-1);   // a missed stop's guesses are all countries; the last try is the one to measure
+  const guess = (tier === "tourist" || tier === "miss") && last && last !== r.country ? last : undefined, cap = guess ? CAPITALS[guess] : undefined;
   const offKm = cap ? kmBetween({ lat: cap[1], lng: cap[2] }, r) : null;
   const live = stats && stats.players >= MIN_LIVE_PLAYERS;
   const pct = (n: number) => Math.round(100 * n / stats!.players);
@@ -94,7 +101,8 @@ function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect, p
                 : { source: "estimate" as const, players: stats?.players ?? 0, values: r.crowd },
   };
 }
-const stopView = (s: StopState) => ({ phase: s.phase, step: s.step, banked: s.banked, next: s.next, guesses: s.guesses, endsAt: s.endsAt, tier: s.tier, note: s.note });
+const stopView = (r: Round, s: StopState) => ({ phase: s.phase, step: s.step, banked: s.banked, next: s.next, guesses: s.guesses, misses: s.misses ?? 0,
+  endsAt: s.endsAt, tier: s.tier, note: s.note, points: stopPoints(s), clues: countryClues(r, s) });
 
 /* ---- a day ---- */
 export async function getDay(db: Db, playerId: string, date: string, today: string) {
@@ -105,9 +113,9 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
   ]);
   const stops = it.rounds.map((r, i) => {
     const s = rows.find(x => x.stop === i)?.state ?? freshStop();
-    return { ...publicRound(r, i), state: stopView(s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
+    return { ...publicRound(r, i), state: stopView(r, s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
   });
-  const score = stops.reduce((n, s) => n + (s.state.tier ? TIERS[s.state.tier].score : 0), 0);
+  const score = stops.reduce((n, s) => n + s.state.points, 0);
   return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops };
 }
 
@@ -137,11 +145,11 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
       if (all.every(s => s?.phase === "done")) {
         dayDone = true;
         const tiers = all.map(s => s!.tier!);
-        await tx.insert(results).values({ playerId, date, score: tiers.reduce((n, t) => n + TIERS[t].score, 0), tiers, onTime: date === today }).onConflictDoNothing();
+        await tx.insert(results).values({ playerId, date, score: all.reduce((n, s) => n + stopPoints(s!), 0), tiers, onTime: date === today }).onConflictDoNothing();
       }
     }
     const [stats] = state.phase === "done" ? await tx.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop))) : [];
-    return { stop: { ...publicRound(r, stop), state: stopView(state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
+    return { stop: { ...publicRound(r, stop), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
   });
 }
 async function stampPassport(db: Db, playerId: string, r: Round, tier: TierId, date: string) {

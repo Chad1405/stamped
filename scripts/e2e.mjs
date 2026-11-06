@@ -38,7 +38,10 @@ await alice.goto(BASE, { waitUntil: "networkidle0" });
 await alice.waitForFunction(() => document.body.innerText.includes("Board flight"));
 const flightNo = (await text(alice)).match(/Board flight (\d{3})/)?.[1];
 ok(!!flightNo, `start screen shows today's flight (${flightNo})`);
-answers = samples[(Number(flightNo) - 1) % samples.length].rounds;
+// match each stop to its content by its photo or message: a flight already played keeps the order it was played in
+const today = await alice.evaluate(() => fetch("/api/day").then(r => r.json()));
+const keyOf = x => x.img ?? x.postcard?.text, all = samples.flatMap(d => d.rounds);
+answers = today.stops.map(st => all.find(r => keyOf(r) === keyOf(st)));
 await alice.screenshot({ path: `${OUT}/1-start.png`, fullPage: true });
 await clickText(alice, "Board flight");
 await alice.waitForSelector(".count", { timeout: 5000 });
@@ -110,6 +113,14 @@ for (let i = 0; i < 5; i++) {
   const r = answers[i], risk = i % 2 === 0;   // stops 1, 3, 5: risk it and name the city, then bank; stops 2, 4: bank the country
   await carol.waitForSelector("#guess:not([disabled])", { timeout: 9000 });
   phoneTop &&= await atTop();
+  if (i === 1) {   // one wrong try first: a clue, another go, and 10 off the stop
+    const wrong = r.country === "Mongolia" ? "Nepal" : "Mongolia";
+    await carol.tap("#guess"); await carol.type("#guess", wrong.slice(0, 3)); await tapOption(wrong); await carol.tap("button[type=submit]");
+    await carol.waitForSelector(".clues");
+    const clue = await carol.$eval(".clues", e => e.innerText);
+    ok(clue.includes(wrong) && /km/.test(clue) && clue.includes("2 tries left"), `a wrong country earns a clue and another try (${clue.replace(/\s+/g, " ")})`);
+    phoneTop &&= await carol.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  }
   await carol.tap("#guess"); await carol.type("#guess", r.country.slice(0, 3)); await tapOption(r.country); await carol.tap("button[type=submit]");
   await carol.waitForSelector(".choice--risk");
   if (risk) {
@@ -126,7 +137,7 @@ await carol.waitForFunction(() => document.body.innerText.includes("Flight log")
 phoneTop &&= await atTop();
 ok(phoneTop, "phone: every stop, reveal and the passport open at the top, with no sideways scroll");
 const carolDone = await text(carol), carolKm = carolDone.match(/You flew ([\d,]+) km of today's ([\d,]+) km route/);
-ok(carolDone.includes("315") && carolKm && +carolKm[1].replace(/,/g, "") < +carolKm[2].replace(/,/g, ""), `phone: a mixed day scores 315 and flies part of the route (${carolKm?.[1]} of ${carolKm?.[2]} km)`);
+ok(carolDone.includes("305") && carolKm && +carolKm[1].replace(/,/g, "") < +carolKm[2].replace(/,/g, ""), `phone: a mixed day, with one extra try, scores 305 and flies part of the route (${carolKm?.[1]} of ${carolKm?.[2]} km)`);
 await carol.screenshot({ path: `${OUT}/6-phone-done.png`, fullPage: true });
 
 ok([alice, bob, carol].every(p => p.errors.length === 0), "no page errors " + [...alice.errors, ...bob.errors, ...carol.errors].join(" | "));

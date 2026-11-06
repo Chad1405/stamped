@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type StopData } from "@/lib/client/api";
 import { COUNTRIES, norm } from "@/lib/game/match";
-import { ROUND_MS, TIERS } from "@/lib/game/rules";
+import { stepMs, TIERS } from "@/lib/game/rules";
+import { stopPoints } from "@/lib/game/engine";
 import { reducedMotion, sfx, shake, toTop } from "@/lib/client/fx";
 import { legFlown } from "@/lib/game/rules";
 
@@ -88,9 +89,31 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
   );
 }
 
+const clockText = (secs: number) => Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
+
+/** After a wrong country: how far off each try was and which way to head, then the continent. */
+function Clues({ c }: { c: NonNullable<StopData["state"]["clues"]> }) {
+  return (
+    <div className="clues" role="status" aria-live="polite">
+      <ol>
+        {c.tries.map(t => (
+          <li key={t.name} className="pop">
+            <span className="c-name">{t.name}</span>
+            {t.km !== null && t.arrow
+              ? <span className="c-dir"><b aria-hidden="true">{t.arrow}</b> {t.km.toLocaleString("en-GB")} km {t.dir}{t.capital ? <span className="small"> from {t.capital}</span> : null}</span>
+              : <span className="c-dir">Not it</span>}
+          </li>
+        ))}
+      </ol>
+      <p className="c-left">{c.continent ? <>Hint: it’s in <strong>{c.continent}</strong>. </> : null}{c.triesLeft} {c.triesLeft === 1 ? "try" : "tries"} left.</p>
+    </div>
+  );
+}
+
 function Ladder({ s }: { s: StopData }) {
   const order = ["country", "city", "spot"] as const, at = order.indexOf(s.state.phase === "decide" ? s.state.next! : s.state.step);
-  const steps: [string, number][] = [["Country", 30], ["City", 85], ["Exact spot", 100]];
+  const pts = (tier: "backpacker" | "local" | "native") => stopPoints({ tier, misses: s.state.misses });   // each extra try at the country takes a little off
+  const steps: [string, number][] = [["Country", pts("backpacker")], ["City", pts("local")], ["Exact spot", pts("native")]];
   return (
     <div className="ladder">
     <ol className="route" aria-label="How deep you are">
@@ -134,6 +157,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
       onResult(r);
       if (ev.kind === "rejected") sfx("reject");
       else if (ev.kind === "right") { sfx("correct"); }
+      else if (ev.kind === "wrong") { sfx("reject"); setShakeKey(k => (k ?? 0) + 1); }   // the clue panel says how far off and which way
       else if (ev.kind === "advanced") sfx("deeper");
       else if (ev.kind === "finished" && action.type === "decide") sfx("bank");   // the landing itself sounds when the stamp lands
       if (r.event.kind === "correction") { setDraft(r.event.suggestion); setMsg({ text: `Did you mean ${r.event.suggestion}? Press Enter to confirm.`, warn: false }); }
@@ -146,13 +170,14 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   // the clock: server deadline, shown in local time via the measured offset
   useEffect(() => { if (st.phase !== "input") return; const t = setInterval(() => setNow(Date.now() + offset), 100); return () => clearInterval(t); }, [st.phase, offset]);
   useEffect(() => { sentTimeout.current = false; }, [st.step, st.phase, idx]);
-  const preview = st.phase === "input" && st.step === "country" && st.endsAt !== null && now < st.endsAt - ROUND_MS;
-  const remaining = st.endsAt === null ? ROUND_MS : Math.max(0, Math.min(ROUND_MS, st.endsAt - now));
+  const STEP_MS = stepMs(st.step);
+  const preview = st.phase === "input" && st.step === "country" && st.endsAt !== null && now < st.endsAt - STEP_MS;
+  const remaining = st.endsAt === null ? STEP_MS : Math.max(0, Math.min(STEP_MS, st.endsAt - now));
   useEffect(() => {
     if (st.phase === "input" && st.endsAt !== null && now >= st.endsAt && !sentTimeout.current) { sentTimeout.current = true; void send({ type: "timeout", text: draft.trim() || undefined }); }
   }, [now, st.phase, st.endsAt, draft, send]);
   useEffect(() => { if (st.phase === "input" && !preview) inputRef.current?.focus({ preventScroll: true }); }, [st.phase, st.step, preview]);   // focusing must not drag the page away from the clue
-  const countN = preview && st.endsAt !== null ? Math.max(1, Math.ceil((st.endsAt - ROUND_MS - now) / 1000)) : 0;
+  const countN = preview && st.endsAt !== null ? Math.max(1, Math.ceil((st.endsAt - STEP_MS - now) / 1000)) : 0;
   const secsLeft = st.phase === "input" && !preview ? Math.ceil(remaining / 1000) : null;
   const wasPreview = useRef(preview);
   useEffect(() => { if (countN) sfx("count"); }, [countN]);
@@ -183,7 +208,11 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   const caption = `Stop ${idx + 1} of ${day.stops.length}: ${s.type.toLowerCase()}`;
 
   if (st.phase === "done" && s.reveal) {
-    const r = s.reveal, t = TIERS[st.tier!], last = idx === day.stops.length - 1;
+    const r = s.reveal, last = idx === day.stops.length - 1;
+    // a miss is common: say so, with the crowd figure, when most players missed it too
+    const named = r.crowd.values[0], live = r.crowd.source === "live";
+    const company = (st.tier === "miss" || st.tier === "tourist") && named <= 50
+      ? (live ? "Only " : "Usually only ") + Math.max(1, Math.round(named / 10)) + " in 10 players " + (live ? "named " : "name ") + r.country + ". Now you’re one who knows it." : null;
     return (
       <div className="play">
         <section className="stop" ref={stopRef}>
@@ -192,16 +221,17 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
           <div className="panel">
             <div className="result-head">
               <EntryStamp s={s} i={idx} date={day.date} motion={`slam slam--${weight}${gold ? " is-gold" : ""}`} delay={descent / 180} />
-              {t.score > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{t.score}</span>}
+              {st.points > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{st.points}</span>}
               <div><h1>{r.cityName}, {r.country}</h1><p className="small">{st.note}</p></div>
             </div>
+            <p className="fact-lead">{r.fact}</p>
+            {company && <p className="company">{company}</p>}
             <dl className="facts">
               <dt>Region</dt><dd>{r.regionName}</dd><dt>Exact spot</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
               {r.leg && <><dt>Flight in</dt><dd>{r.leg.km.toLocaleString("en-GB")} km from {r.leg.from}{legFlown(st.tier) ? ", flown" : ", not flown: name the city to count it"}</dd></>}
               {r.off && <><dt>How close</dt><dd>{r.off.guess}: {r.off.capital} is {r.off.km.toLocaleString("en-GB")} km from {r.cityName}</dd></>}
               {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
             </dl>
-            <p>{r.fact}</p>
             <CrowdBars crowd={r.crowd} />
             <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
           </div>
@@ -213,9 +243,10 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   // the heading always says what to do now: the clue's question, then the choice, then the next thing to name
   const nextThing = st.next === "city" ? "the city" : "the exact spot";
   const question = st.phase === "decide" ? `${st.guesses.at(-1)} is right! Can you name ${nextThing}?`
-    : st.step === "country" ? s.prompt : st.step === "city" ? `Now name the city in ${st.guesses[0]}.` : `${s.spotLabel}.`;
+    : st.step === "country" ? s.prompt : st.step === "city" ? `Now name the city in ${st.guesses[st.misses]}.` : `${s.spotLabel}.`;
   const label = st.step === "country" ? "Country" : st.step === "city" ? "City" : "Exact spot";
-  const nextScore = st.next === "city" ? TIERS.local.score : TIERS.native.score, dropScore = st.next === "city" ? TIERS.lost.score : TIERS.traveller.score;
+  const p = (tier: Parameters<typeof stopPoints>[0]["tier"]) => stopPoints({ tier, misses: st.misses });   // the points on offer, after any extra tries
+  const nextScore = p(st.next === "city" ? "local" : "native"), dropScore = p(st.next === "city" ? "lost" : "traveller");
   const secs = Math.ceil(remaining / 1000);
   return (
     <div className="play">
@@ -227,12 +258,13 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             <h1 key={question} className="q-arrive">{question}</h1>
             <div className={`clock plate${st.phase === "input" && !preview && remaining < 8000 ? " is-low" : ""}`} role="timer" aria-label={st.phase === "decide" ? "Clock stopped while you decide" : "Time left"}>
               <span>{st.phase === "decide" ? "Clock stopped" : "Time left"}</span>
-              <span className="figure">0:{String(st.phase === "input" && !preview ? secs : ROUND_MS / 1000).padStart(2, "0")}</span>
-              <span className="fuse" aria-hidden="true"><span style={{ transform: `scaleX(${st.phase === "input" && !preview ? remaining / ROUND_MS : 1})` }} /></span>
+              <span className="figure">{clockText(st.phase === "input" && !preview ? secs : STEP_MS / 1000)}</span>
+              <span className="fuse" aria-hidden="true"><span style={{ transform: `scaleX(${st.phase === "input" && !preview ? remaining / STEP_MS : 1})` }} /></span>
             </div>
           </div>
           <Ladder s={s} />
-          {preview && <p className="help">Look first. Typing opens when the clock starts.</p>}
+          {preview && <p className="help">Look first. Typing opens when the clock starts. You get three tries at the country.</p>}
+          {st.clues && <Clues c={st.clues} />}
           {st.phase === "input" && !preview && (
             <form className="field" autoComplete="off" noValidate onSubmit={e => { e.preventDefault(); if (draft.trim()) void send({ type: "guess", text: draft }); }}>
               <label htmlFor="guess">{label}</label>
@@ -253,7 +285,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                 </button>
                 <button className="choice" type="button" aria-keyshortcuts="B" disabled={busy} onClick={() => send({ type: "decide", deeper: false })}>
                   <span className="c-key" aria-hidden="true">B</span><span className="c-tag">Play safe</span><span className="c-title">Bank it</span>
-                  <span className="c-pts">{TIERS[st.banked!].score} <span>points</span></span><span className="c-risk">Keep the {TIERS[st.banked!].name} stamp</span>
+                  <span className="c-pts">{p(st.banked)} <span>points</span></span><span className="c-risk">Keep the {TIERS[st.banked!].name} stamp</span>
                 </button>
               </div>
             </>

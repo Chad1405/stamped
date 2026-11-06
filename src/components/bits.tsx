@@ -32,9 +32,9 @@ export function EntryStamp({ s, i, date, motion, delay = 0 }: { s: StopData; i: 
   if (!s.state.tier || !s.reveal) return null;
   const t = TIERS[s.state.tier], cls = DEEP.includes(s.state.tier) ? "is-deep" : s.state.tier === "miss" ? "is-miss" : "";
   return (
-    <div className={`entry ${cls} ${motion ?? ""}`} style={{ ["--i" as string]: delay }} role="img" aria-label={`${t.name} stamp for stop ${i + 1}, ${s.reveal.place}, ${t.score} points`}>
+    <div className={`entry ${cls} ${motion ?? ""}`} style={{ ["--i" as string]: delay }} role="img" aria-label={`${t.name} stamp for stop ${i + 1}, ${s.reveal.place}, ${s.state.points} points`}>
       <span className="e-code">{s.reveal.code}</span><span className="e-name">{t.name}</span>
-      <span className="e-meta">Stop {i + 1}, {s.type.toLowerCase()}</span><span className="e-meta">+{t.score} on {shortDate(date)}</span>
+      <span className="e-meta">Stop {i + 1}, {s.type.toLowerCase()}</span><span className="e-meta">+{s.state.points} on {shortDate(date)}</span>
     </div>
   );
 }

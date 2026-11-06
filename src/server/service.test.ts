@@ -36,6 +36,16 @@ describe("sample flights", () => {
     expect(rows[addDays(TODAY, -1)]).toEqual(real);
     expect((await getDay(fresh, pid, TODAY, TODAY)).stops.find(s => s.postcard)?.postcard?.from).toMatch(/^\+372/);
   });
+  it("reorder a sample flight only before anyone has played it", async () => {
+    const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;
+    const old = sample.rounds.toReversed(), played = addDays(TODAY, -1);
+    await fresh.insert(itineraries).values([{ date: TODAY, flight: "004", rounds: old }, { date: played, flight: "003", rounds: old }]);
+    await act(fresh, pid, played, 0, { type: "start" }, TODAY);
+    await seedSamples(fresh, TODAY);
+    const rows = Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r.rounds as Round[]]));
+    expect(rows[TODAY]).toEqual(sample.rounds);
+    expect(rows[played]).toEqual(old);
+  });
 });
 
 async function playDay(pid: string, date: string, how: "perfect" | "bank", t0 = Date.now()) {
@@ -54,21 +64,38 @@ async function playDay(pid: string, date: string, how: "perfect" | "bank", t0 = 
 }
 
 describe("a day on the server", () => {
-  it("a wrong country says how far off it was, without changing the score", async () => {
-    const t0 = Date.now(), t = t0 + PREVIEW_MS + 1000, wrong = async (country: string) => {
+  it("three tries with clues; a missed stop says how far off the last try was", async () => {
+    const t0 = Date.now(), t = t0 + PREVIEW_MS + 1000, tries = async (...countries: string[]) => {
       const pid = await ensurePlayer(db, undefined);
       await act(db, pid, TODAY, 0, { type: "start" }, TODAY, t0);
-      return (await act(db, pid, TODAY, 0, { type: "guess", text: country }, TODAY, t)).stop;
+      const out = [];
+      for (const text of countries) out.push(await act(db, pid, TODAY, 0, { type: "guess", text }, TODAY, t));
+      return out;
     };
-    const near = await wrong("Argentina"), far = await wrong("Spain");   // the stop is Valparaíso, Chile
+    // today's first stop is Hallgrímskirkja, Reykjavík
+    const [first, second] = await tries("Spain", "Portugal");
+    expect(first.event.kind).toBe("wrong");
+    expect(first.stop.state.clues?.tries[0]).toEqual(expect.objectContaining({ name: "Spain", capital: "Madrid", arrow: "↖" }));
+    expect(first.stop.state.clues?.continent).toBeNull();
+    expect(second.stop.state.clues?.continent).toBe("Europe");
+    expect(first.stop.reveal).toBeNull();
+    const near = (await tries("Spain", "Portugal", "Norway")).at(-1)!.stop;
     expect(near.state.tier).toBe("tourist");
-    expect(near.reveal?.off).toEqual({ guess: "Argentina", capital: "Buenos Aires", km: expect.any(Number) });
-    expect(near.reveal!.off!.km).toBeGreaterThan(1000); expect(near.reveal!.off!.km).toBeLessThan(1400);   // about 1,200 km
+    expect(near.state.points).toBe(10);
+    expect(near.reveal?.off).toEqual({ guess: "Norway", capital: "Oslo", km: expect.any(Number) });
+    expect(near.reveal!.off!.km).toBeGreaterThan(1600); expect(near.reveal!.off!.km).toBeLessThan(1900);   // Oslo to Reykjavík, about 1,750 km
+    const far = (await tries("Japan", "China", "India")).at(-1)!.stop;
     expect(far.state.tier).toBe("miss");
-    expect(far.reveal!.off!.capital).toBe("Madrid"); expect(far.reveal!.off!.km).toBeGreaterThan(10_000);
+    expect(far.reveal!.off!.capital).toBe("New Delhi");
     const pid = await ensurePlayer(db, undefined);
-    await playDay(pid, TODAY, "bank");
-    expect((await getDay(db, pid, TODAY, TODAY)).stops.every(s => s.reveal?.off === null)).toBe(true);   // right countries show nothing
+    await act(db, pid, TODAY, 0, { type: "start" }, TODAY, t0);
+    await act(db, pid, TODAY, 0, { type: "guess", text: "Spain" }, TODAY, t);
+    await act(db, pid, TODAY, 0, { type: "guess", text: "Iceland" }, TODAY, t);
+    expect((await act(db, pid, TODAY, 0, { type: "decide", deeper: false }, TODAY, t)).stop.state.points).toBe(20);   // right on the second try: 30, less 10
+    expect((await getDay(db, pid, TODAY, TODAY)).score).toBe(20);
+    const banker = await ensurePlayer(db, undefined);
+    await playDay(banker, TODAY, "bank");
+    expect((await getDay(db, banker, TODAY, TODAY)).stops.every(s => s.reveal?.off === null)).toBe(true);   // right countries show nothing
   });
   it("never sends an answer before its stop is finished", async () => {
     const pid = await ensurePlayer(db, undefined);
@@ -87,7 +114,7 @@ describe("a day on the server", () => {
     await playDay(pid, TODAY, "perfect");
     const day = await getDay(db, pid, TODAY, TODAY);
     expect(day.score).toBe(500);
-    expect(day.stops[0].reveal).toEqual(expect.objectContaining({ cityName: "Valparaíso", code: "SCL" }));
+    expect(day.stops[0].reveal).toEqual(expect.objectContaining({ cityName: "Reykjavík", code: "KEF" }));
     const me = await getMe(db, pid, TODAY);
     expect(me.passport.countries).toHaveLength(5);
     expect(me.passport.rare).toHaveLength(5);
