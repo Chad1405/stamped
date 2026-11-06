@@ -653,3 +653,43 @@ footer p { max-width: 65ch; }
 .fl-clouds i::after { left: 46%; width: 30%; aspect-ratio: 1; }
 .fl-clouds i:nth-child(3n + 2)::before { left: 26%; width: 34%; }
 .fl-clouds i:nth-child(3n + 2)::after { left: 52%; width: 26%; }
+
+/* ============ Fit the stop on one screen: the photo and the answer box are always in view together ============ */
+/* laptops: the photo never runs past the bottom of the window */
+.pane:has(img) { max-height: max(300px, calc(100dvh - 400px)); }
+@media (max-width: 40rem) {
+  /* while you play: no Friends/Passport row (it is disabled anyway), a slimmer band, no caption (the band names the stop) */
+  .is-playing .bar-nav { display: none; }
+  .is-playing .flight { height: 120px; margin-bottom: var(--space-sm); }
+  .is-playing .flight::after { height: 30px; }
+  .is-playing .fl-runway { height: 30px; }
+  .is-playing .fl-lines span { display: none; }
+  .is-playing .frame figcaption { display: none; }
+  .is-playing .stop { gap: var(--space-md); }
+  /* the photo shares the screen: capped height, so the question and the box sit right under it */
+  .is-playing .pane { aspect-ratio: auto; height: min(34vh, 75vw); max-height: none; }
+  .is-playing .pane:has(.chat) { height: min(42vh, 100vw); aspect-ratio: auto; }
+  .is-playing .stop .panel { gap: var(--space-sm); }
+  .is-playing .clockline h1 { font-size: var(--text-xl); }
+  .is-playing .clock { min-width: 0; padding: var(--space-2xs) var(--space-sm); }
+  .is-playing .clock .figure { font-size: var(--text-xl); }
+  /* the answer (or the risk choice) comes straight after the question; the points ladder below it */
+  .is-playing .stop .panel > .field, .is-playing .stop .panel > .choices, .is-playing .stop .panel > .help { order: 1; }
+  .is-playing .stop .panel > .ladder { order: 2; }
+  .is-playing .stop .panel > .clockline { order: 0; }
+}
+/* short phones (an iPhone SE with the browser bars showing): a thinner band, a slightly shorter photo, a smaller question */
+@media (max-width: 40rem) and (max-height: 700px) {
+  .is-playing .flight { height: 96px; }
+  .is-playing .pane { height: min(30vh, 75vw); }
+  .is-playing .clockline h1 { font-size: var(--text-lg); }
+  .is-playing .bar { padding-bottom: var(--space-xs); }
+}
+@media (max-width: 40rem) {
+  /* the box and its button share one row; the clock shows just the countdown */
+  .is-playing .entry-row { flex-wrap: nowrap; }
+  .is-playing .entry-row .suggest { flex: 1 1 0; }
+  .is-playing .entry-row .btn { flex: none; padding: 0 var(--space-md); }
+  .is-playing .clock > span:first-child { display: none; }
+  .is-playing .field label { font-size: var(--text-sm); }
+}

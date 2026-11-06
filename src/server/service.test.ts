@@ -54,6 +54,22 @@ async function playDay(pid: string, date: string, how: "perfect" | "bank", t0 = 
 }
 
 describe("a day on the server", () => {
+  it("a wrong country says how far off it was, without changing the score", async () => {
+    const t0 = Date.now(), t = t0 + PREVIEW_MS + 1000, wrong = async (country: string) => {
+      const pid = await ensurePlayer(db, undefined);
+      await act(db, pid, TODAY, 0, { type: "start" }, TODAY, t0);
+      return (await act(db, pid, TODAY, 0, { type: "guess", text: country }, TODAY, t)).stop;
+    };
+    const near = await wrong("Argentina"), far = await wrong("Spain");   // the stop is Valparaíso, Chile
+    expect(near.state.tier).toBe("tourist");
+    expect(near.reveal?.off).toEqual({ guess: "Argentina", capital: "Buenos Aires", km: expect.any(Number) });
+    expect(near.reveal!.off!.km).toBeGreaterThan(1000); expect(near.reveal!.off!.km).toBeLessThan(1400);   // about 1,200 km
+    expect(far.state.tier).toBe("miss");
+    expect(far.reveal!.off!.capital).toBe("Madrid"); expect(far.reveal!.off!.km).toBeGreaterThan(10_000);
+    const pid = await ensurePlayer(db, undefined);
+    await playDay(pid, TODAY, "bank");
+    expect((await getDay(db, pid, TODAY, TODAY)).stops.every(s => s.reveal?.off === null)).toBe(true);   // right countries show nothing
+  });
   it("never sends an answer before its stop is finished", async () => {
     const pid = await ensurePlayer(db, undefined);
     const day = await getDay(db, pid, TODAY, TODAY);
