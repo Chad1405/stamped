@@ -101,8 +101,13 @@ describe("a day on the server", () => {
     const pid = await ensurePlayer(db, undefined);
     const day = await getDay(db, pid, TODAY, TODAY);
     const text = JSON.stringify(day);
-    for (const r of rounds) { expect(text).not.toContain(`"${r.country}"`); expect(text).not.toContain(r.spot[0]); }
-    expect(day.stops.every(s => s.reveal === null)).toBe(true);
+    for (const r of rounds) { expect(text).not.toContain(`"${r.country}"`); expect(text).not.toContain(`"${r.cityName}"`); expect(text).not.toContain(r.spot[0]); }
+    expect(day.stops.every(s => s.reveal === null && s.cities.length === 0)).toBe(true);   // the city list would name the country
+    const t0 = Date.now(), t = t0 + PREVIEW_MS;
+    expect((await act(db, pid, TODAY, 0, { type: "start" }, TODAY, t0)).stop.cities).toEqual([]);
+    expect((await act(db, pid, TODAY, 0, { type: "guess", text: "Spain" }, TODAY, t)).stop.cities).toEqual([]);
+    expect((await act(db, pid, TODAY, 0, { type: "guess", text: rounds[0].country }, TODAY, t)).stop.cities).toContain(rounds[0].cityName);
+    expect((await getDay(db, pid, TODAY, TODAY)).stops[0].cities).toContain(rounds[0].cityName);   // and it survives a reload
   });
   it("refuses future dates and out-of-order stops", async () => {
     const pid = await ensurePlayer(db, undefined);
