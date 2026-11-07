@@ -71,9 +71,9 @@ async function itinerary(db: Db, date: string, today: string) {
 
 /* ---- what the browser may see ---- */
 const citiesFor = (r: Round) => [...new Set([...(CITIES[r.country] ?? []), r.cityName])].sort((a, b) => a.localeCompare(b));
-/** Before a stop is finished: the clue and nothing that names the answer. */
-const publicRound = (r: Round, i: number) => ({
-  stop: i, type: r.type, prompt: r.prompt, img: r.img ?? null, alt: r.alt ?? null, postcard: r.postcard ?? null, spotLabel: r.spotLabel, cities: citiesFor(r),
+/** Before a stop is finished: the clue and nothing that names the answer. The city list names the country, so it waits until the country is banked. */
+const publicRound = (r: Round, i: number, s: StopState) => ({
+  stop: i, type: r.type, prompt: r.prompt, img: r.img ?? null, alt: r.alt ?? null, postcard: r.postcard ?? null, spotLabel: r.spotLabel, cities: s.banked ? citiesFor(r) : [],
 });
 export const codeFor = (r: Round, tier: TierId) => {
   if (tier === "native" || tier === "local") return r.airport;
@@ -113,7 +113,7 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
   ]);
   const stops = it.rounds.map((r, i) => {
     const s = rows.find(x => x.stop === i)?.state ?? freshStop();
-    return { ...publicRound(r, i), state: stopView(r, s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
+    return { ...publicRound(r, i, s), state: stopView(r, s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
   });
   const score = stops.reduce((n, s) => n + s.state.points, 0);
   return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops };
@@ -149,7 +149,7 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
       }
     }
     const [stats] = state.phase === "done" ? await tx.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop))) : [];
-    return { stop: { ...publicRound(r, stop), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
+    return { stop: { ...publicRound(r, stop, state), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
   });
 }
 async function stampPassport(db: Db, playerId: string, r: Round, tier: TierId, date: string) {
