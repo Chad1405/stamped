@@ -17,6 +17,7 @@
     "@neon/config": "^1.11.3",
     "@neon/env": "^1.6.15",
     "@vercel/functions": "^3.11.0",
+    "@vercel/schedules": "0.0.3",
     "drizzle-orm": "^0.44.5",
     "next": "15.5.29",
     "pg": "^8.23.1",

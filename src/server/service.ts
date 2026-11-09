@@ -1,5 +1,5 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
-import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
@@ -37,6 +37,8 @@ export async function setName(db: Db, playerId: string, name: unknown) {
 }
 
 /* ---- content ---- */
+/** How many days ahead the calendar is kept, and how few trigger a warning. */
+export const DAYS_AHEAD = 14, LOW_DAYS = 7;
 /** Sample content until an editor tool exists: the sample days rotate, so today and the three days before it always have a flight.
  *  The first seed puts the newest sample on today; each later date takes the next sample in turn and the next flight number. */
 const SAMPLES = (seedDays as { offset: number; rounds: Round[] }[]).toSorted((a, b) => a.offset - b.offset);
@@ -44,7 +46,7 @@ const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.p
 export async function seedSamples(db: Db, today: string) {
   const [{ first }] = await db.select({ first: sql<string | null>`min(${itineraries.date})` }).from(itineraries);
   const anchor = first ?? addDays(today, -(SAMPLES.length - 1));
-  const rows = Array.from({ length: SAMPLES.length }, (_, k) => addDays(today, -k)).filter(d => d >= anchor).map(date => {
+  const rows = Array.from({ length: SAMPLES.length + DAYS_AHEAD }, (_, k) => addDays(today, DAYS_AHEAD - k)).filter(d => d >= anchor).map(date => {
     const n = daysBetween(anchor, date);
     return { date, flight: String(n + 1).padStart(3, "0"), rounds: SAMPLES[n % SAMPLES.length].rounds };
   });
@@ -61,6 +63,32 @@ export async function seedSamples(db: Db, today: string) {
     const keepOrder = reordered && (await db.select({ n: plays.stop }).from(plays).where(eq(plays.date, row.date)).limit(1)).length > 0;
     await db.update(itineraries).set({ rounds: keepOrder ? mine.map(p => same.rounds.find(r => r.prompt === p)!) : same.rounds }).where(eq(itineraries.date, row.date));
   }
+}
+/** The last resort for a date with no flight: replay the one that has gone longest without being shown, so a day is never missing or unvetted. */
+async function replayIfMissing(db: Db, date: string) {
+  if ((await db.select({ date: itineraries.date }).from(itineraries).where(eq(itineraries.date, date))).length) return false;
+  const [old] = await db.select({ rounds: itineraries.rounds }).from(itineraries).groupBy(itineraries.rounds).orderBy(sql`max(${itineraries.date})`).limit(1);
+  if (!old) return false;
+  const [{ first }] = await db.select({ first: sql<string>`min(${itineraries.date})` }).from(itineraries);
+  const flight = String(daysBetween(first, date) + 1).padStart(3, "0");
+  return (await db.insert(itineraries).values({ date, flight, rounds: old.rounds }).onConflictDoNothing({ target: itineraries.date }).returning()).length > 0;   // two servers can race at midnight; one wins
+}
+/** Fills the calendar and makes sure today and tomorrow exist. Returns how many days in a row are ready after today, and any dates that had to replay. */
+export async function keepCalendar(db: Db, today: string, seed = process.env.SEED_SAMPLE !== "false") {
+  if (seed) await seedSamples(db, today);
+  const replayed: string[] = [];
+  for (const date of [today, addDays(today, 1)]) if (await replayIfMissing(db, date)) replayed.push(date);
+  const ready = new Set((await db.select({ date: itineraries.date }).from(itineraries).where(gt(itineraries.date, today))).map(r => r.date));
+  let ahead = 0;
+  while (ready.has(addDays(today, ahead + 1))) ahead++;
+  return { ahead, replayed };
+}
+/** The daily job: top up the calendar and say so when it is running low. */
+export async function dailyCalendarCheck(db: Db, today: string, warn: (subject: string, text: string) => Promise<void>, seed?: boolean) {
+  const { ahead, replayed } = await keepCalendar(db, today, seed);
+  if (ahead < LOW_DAYS) await warn(`Stamped: only ${ahead} ${ahead === 1 ? "day" : "days"} of flights ready`,
+    `Flights are ready for the next ${ahead} ${ahead === 1 ? "day" : "days"} after ${today}. Add more to keep ${DAYS_AHEAD} days ahead.${replayed.length ? ` Replaying an old flight on: ${replayed.join(", ")}.` : ""}`);
+  return { ahead, replayed };
 }
 async function itinerary(db: Db, date: string, today: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) throw new HttpError(404, "No flight on that date.");

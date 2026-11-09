@@ -2,7 +2,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, ensurePlayer, getDay, getMe, HttpError, joinLeague, myLeagues, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, getDay, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { itineraries } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
@@ -25,6 +25,37 @@ describe("sample flights", () => {
     expect(tomorrow.flight).toBe(flightNo(n + 1));
     expect(tomorrow.stops[0].prompt).toBe(samples[0].rounds[0].prompt);   // then the rotation starts again from the oldest
     expect((await getDay(fresh, pid, TODAY, next)).flight).toBe(flightNo(n));
+  });
+  it("are scheduled 14 days ahead, and players can't reach them early", async () => {
+    const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined);
+    expect((await keepCalendar(fresh, TODAY, true))).toEqual({ ahead: 14, replayed: [] });
+    await expect(getDay(fresh, pid, addDays(TODAY, 1), TODAY)).rejects.toThrow(HttpError);
+    expect((await getMe(fresh, pid, TODAY)).days.every(d => d.date <= TODAY)).toBe(true);
+  });
+  it("replay the longest-unseen flight rather than leave a day empty", async () => {
+    const fresh = await createDb(), sample = (seedDays as { offset: number; rounds: Round[] }[]);
+    const a = sample[0].rounds, b = sample[1].rounds, next = addDays(TODAY, 1), after = addDays(TODAY, 2);
+    await fresh.insert(itineraries).values([{ date: addDays(TODAY, -2), flight: "001", rounds: a }, { date: addDays(TODAY, -1), flight: "002", rounds: b }]);
+    expect(await keepCalendar(fresh, TODAY, false)).toEqual({ ahead: 1, replayed: [TODAY, next] });
+    const rows = async () => Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r]));
+    expect([(await rows())[TODAY].rounds, (await rows())[next].rounds]).toEqual([a, b]);
+    expect((await rows())[TODAY].flight).toBe("003");
+    expect(await keepCalendar(fresh, next, false)).toEqual({ ahead: 1, replayed: [after] });   // today already exists; only the day after is new
+    expect((await rows())[after].rounds).toEqual(a);   // a was last shown before b
+    expect(await keepCalendar(await createDb(), TODAY, false)).toEqual({ ahead: 0, replayed: [] });   // an empty database has nothing to replay
+  });
+  it("warn once the calendar is running low, and not before", async () => {
+    const sent: string[] = [], warn = async (subject: string) => { sent.push(subject); };
+    const full = await createDb();
+    await dailyCalendarCheck(full, TODAY, warn, true);
+    expect(sent).toEqual([]);
+    const low = await createDb(), rounds = (seedDays as { rounds: Round[] }[])[0].rounds;
+    await low.insert(itineraries).values(Array.from({ length: 7 }, (_, k) => ({ date: addDays(TODAY, k), flight: String(k + 1).padStart(3, "0"), rounds })));
+    expect((await dailyCalendarCheck(low, TODAY, warn, false)).ahead).toBe(6);
+    expect(sent).toEqual(["Stamped: only 6 days of flights ready"]);
+    await low.insert(itineraries).values({ date: addDays(TODAY, 7), flight: "008", rounds });
+    await dailyCalendarCheck(low, TODAY, warn, false);
+    expect(sent).toHaveLength(1);   // 7 days ahead is enough
   });
   it("pick up edits to the sample file, and never touch a real flight", async () => {
     const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;
