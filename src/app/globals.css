@@ -705,6 +705,6 @@ footer p { max-width: 65ch; }
 .clues .c-left strong { color: var(--color-plate); }
 /* the reveal leads with something worth knowing, and a miss says it is a common one */
 .fact-lead { font-size: var(--text-lg); line-height: 1.45; animation: arrive-in 480ms var(--ease-out) 380ms both; }
-.company { margin: 0; padding-left: 12px; border-left: 3px solid var(--color-plate); color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
+.company { margin: 0; font-weight: 600; color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
 .visited { margin-top: 8px; color: var(--color-ink-2); }
 @media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }

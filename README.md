@@ -1,6 +1,6 @@
 # Stamped
 
-A daily travel game. Five photo clues a day: name the country, then risk it for the city and the exact spot.
+A daily travel game. Five photo clues a day: name the country, then risk it for the city and a final question.
 This is the live web app built from the Stamped prototype: same design and rules, with the answers, the clock and the scoring moved to the server.
 
 ## Run it locally

@@ -39,12 +39,12 @@ export function EntryStamp({ s, i, date, motion, delay = 0 }: { s: StopData; i: 
   );
 }
 
-export function CrowdBars({ crowd }: { crowd: NonNullable<StopData["reveal"]>["crowd"] }) {
+export function CrowdBars({ crowd, spot }: { crowd: NonNullable<StopData["reveal"]>["crowd"]; spot: string }) {
   const label = crowd.source === "live" ? `How far ${crowd.players} players got` : "How far players usually get (editor's estimate until enough people have played)";
   return (
     <div className="bars"><p className="small">{label}</p>
       <ul aria-label={label}>
-        {(["Country", "City", "Exact spot"] as const).map((l, k) => (
+        {["Country", "City", spot].map((l, k) => (
           <li key={l}><span>{l}</span><span className="track" aria-hidden="true"><span className="fill" style={{ width: `${crowd.values[k]}%` }} /></span><span>{crowd.values[k]}%</span></li>
         ))}
       </ul>

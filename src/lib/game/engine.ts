@@ -9,7 +9,7 @@ const CAPITALS = capitalsData as unknown as Record<string, [string, number, numb
 export type Round = {
   type: string; prompt: string; img?: string; alt?: string; postcard?: { text: string; note: string; lang?: string; from?: string };   // from: the sender's number, masked past its country and area code
   country: string; regionName: string; region: string[]; cityName: string; city: string[];
-  spotLabel: string; spotName: string; spot: string[]; spotStrip?: string;
+  spotLabel: string; spotWord: string; spotName: string; spot: string[]; spotStrip?: string;   // spotLabel: the question; spotWord: what it asks for, for the ladder and buttons
   lat?: number; lng?: number;   // the answer city, for the distance flown between stops (sent only once a stop is played)
   airport: string; fact: string; crowd: number[];
   credit?: { title: string; author: string; license: string; url: string };
@@ -65,7 +65,7 @@ function submit(r: Round, s: StopState, text: string, forced: boolean): { state:
   // spot: near-misses count, because suggesting a correction would hand over the answer
   const m = match(text, [{ id: "spot", name: r.spotName, aliases: r.spot.map(norm) }], r.spotStrip ? new RegExp(r.spotStrip) : undefined);
   const guesses = [...s.guesses, text];
-  if (m) return finish({ ...s, guesses }, "native", "You named the exact spot.");
+  if (m) return finish({ ...s, guesses }, "native", "You got all three.");
   return finish({ ...s, guesses }, "traveller", `"${text}" was not it. You dropped one tier.`);
 }
 

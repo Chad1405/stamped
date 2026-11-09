@@ -113,7 +113,7 @@ function Clues({ c }: { c: NonNullable<StopData["state"]["clues"]> }) {
 function Ladder({ s }: { s: StopData }) {
   const order = ["country", "city", "spot"] as const, at = order.indexOf(s.state.phase === "decide" ? s.state.next! : s.state.step);
   const pts = (tier: "backpacker" | "local" | "native") => stopPoints({ tier, misses: s.state.misses });   // each extra try at the country takes a little off
-  const steps: [string, number][] = [["Country", pts("backpacker")], ["City", pts("local")], ["Exact spot", pts("native")]];
+  const steps: [string, number][] = [["Country", pts("backpacker")], ["City", pts("local")], [s.spotWord ?? "Final question", pts("native")]];   // what it asks stays hidden until the country is right
   return (
     <div className="ladder">
     <ol className="route" aria-label="How deep you are">
@@ -227,12 +227,12 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             <p className="fact-lead">{r.fact}</p>
             {company && <p className="company">{company}</p>}
             <dl className="facts">
-              <dt>Region</dt><dd>{r.regionName}</dd><dt>Exact spot</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
+              <dt>Region</dt><dd>{r.regionName}</dd><dt>{s.spotWord}</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
               {r.leg && <><dt>Flight in</dt><dd>{r.leg.km.toLocaleString("en-GB")} km from {r.leg.from}{legFlown(st.tier) ? ", flown" : ", not flown: name the city to count it"}</dd></>}
               {r.off && <><dt>How close</dt><dd>{r.off.guess}: {r.off.capital} is {r.off.km.toLocaleString("en-GB")} km from {r.cityName}</dd></>}
               {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
             </dl>
-            <CrowdBars crowd={r.crowd} />
+            <CrowdBars crowd={r.crowd} spot={s.spotWord!} />
             <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
           </div>
         </section>
@@ -241,10 +241,10 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   }
 
   // the heading always says what to do now: the clue's question, then the choice, then the next thing to name
-  const nextThing = st.next === "city" ? "the city" : "the exact spot";
+  const nextThing = st.next === "city" ? "the city" : `the ${s.spotWord?.toLowerCase()}`;
   const question = st.phase === "decide" ? `${st.guesses.at(-1)} is right! Can you name ${nextThing}?`
-    : st.step === "country" ? s.prompt : st.step === "city" ? `Now name the city in ${st.guesses[st.misses]}.` : `${s.spotLabel}.`;
-  const label = st.step === "country" ? "Country" : st.step === "city" ? "City" : "Exact spot";
+    : st.step === "country" ? s.prompt : st.step === "city" ? `Now name the city in ${st.guesses[st.misses]}.` : s.spotLabel;
+  const label = st.step === "country" ? "Country" : st.step === "city" ? "City" : s.spotWord;
   const p = (tier: Parameters<typeof stopPoints>[0]["tier"]) => stopPoints({ tier, misses: st.misses });   // the points on offer, after any extra tries
   const nextScore = p(st.next === "city" ? "local" : "native"), dropScore = p(st.next === "city" ? "lost" : "traveller");
   const secs = Math.ceil(remaining / 1000);

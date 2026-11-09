@@ -14,7 +14,7 @@ export const GRACE_MS = 3000;
 
 export type TierId = "native" | "local" | "traveller" | "backpacker" | "lost" | "tourist" | "miss";
 export const TIERS: Record<TierId, { name: string; score: number; emoji: string; blurb: string }> = {
-  native:     { name: "Born There",    score: 100, emoji: "📍", blurb: "Named the exact spot. Locals ask you for directions." },
+  native:     { name: "Born There",    score: 100, emoji: "📍", blurb: "All three right. Locals ask you for directions." },
   local:      { name: "Local",         score: 85,  emoji: "🏙️", blurb: "Right city. You know where the good coffee is." },
   traveller:  { name: "Traveller",     score: 60,  emoji: "🗺️", blurb: "Right region. You left the capital at least once." },
   backpacker: { name: "Backpacker",    score: 30,  emoji: "🏳️", blurb: "Right country. Passport stamped." },

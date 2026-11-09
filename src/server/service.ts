@@ -56,10 +56,10 @@ export async function seedSamples(db: Db, today: string) {
     const rounds = row.rounds as Round[], mine = prompts(rounds);
     const same = SAMPLES.find(x => x.rounds.length === rounds.length && prompts(x.rounds).every(p => mine.includes(p)));
     if (!same || JSON.stringify(same.rounds) === JSON.stringify(rounds)) continue;
-    // progress is saved by stop number, so a flight is only reordered before anyone has played it
+    // progress is saved by stop number, so a flight is only reordered before anyone has played it; a played one keeps its order and takes the new wording
     const reordered = prompts(same.rounds).some((p, i) => p !== mine[i]);
-    if (reordered && (await db.select({ n: plays.stop }).from(plays).where(eq(plays.date, row.date)).limit(1)).length) continue;
-    await db.update(itineraries).set({ rounds: same.rounds }).where(eq(itineraries.date, row.date));
+    const keepOrder = reordered && (await db.select({ n: plays.stop }).from(plays).where(eq(plays.date, row.date)).limit(1)).length > 0;
+    await db.update(itineraries).set({ rounds: keepOrder ? mine.map(p => same.rounds.find(r => r.prompt === p)!) : same.rounds }).where(eq(itineraries.date, row.date));
   }
 }
 async function itinerary(db: Db, date: string, today: string) {
@@ -71,10 +71,12 @@ async function itinerary(db: Db, date: string, today: string) {
 
 /* ---- what the browser may see ---- */
 const citiesFor = (r: Round) => [...new Set([...(CITIES[r.country] ?? []), r.cityName])].sort((a, b) => a.localeCompare(b));
-/** Before a stop is finished: the clue and nothing that names the answer. The city list names the country, so it waits until the country is banked. */
-const publicRound = (r: Round, i: number, s: StopState) => ({
-  stop: i, type: r.type, prompt: r.prompt, img: r.img ?? null, alt: r.alt ?? null, postcard: r.postcard ?? null, spotLabel: r.spotLabel, cities: s.banked ? citiesFor(r) : [],
-});
+/** Before a stop is finished: the clue and nothing that names the answer. The city list and the final question narrow down the country, so they wait until it is banked or the stop is over. */
+const publicRound = (r: Round, i: number, s: StopState) => {
+  const known = s.banked !== null || s.phase === "done";
+  return { stop: i, type: r.type, prompt: r.prompt, img: r.img ?? null, alt: r.alt ?? null, postcard: r.postcard ?? null,
+    spotLabel: known ? r.spotLabel : null, spotWord: known ? r.spotWord : null, cities: known ? citiesFor(r) : [] };
+};
 export const codeFor = (r: Round, tier: TierId) => {
   if (tier === "native" || tier === "local") return r.airport;
   if (tier === "miss") return "???";

@@ -21,7 +21,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <div className="ticket-main">
           {!day.isToday && <p className="archive-tag">Archive flight from {longDate(day.date)}.</p>}
           <h1>Five stops. Name where you landed.</h1>
-          <p className="lead">Name the country, then risk it for the city and the exact spot.</p>
+          <p className="lead">Name the country, then risk it for the city and a final question.</p>
           {day.isToday && si && !si.playedToday && (si.pending
             ? <p className="streak-note">Your lounge pass is covering {longDate(si.pending)}. Fly today to keep your {si.n}-day streak.</p>
             : si.n > 0 && <p className="streak-note">{si.n}-day streak. Fly today to make it {si.n + 1}.</p>)}
@@ -168,7 +168,7 @@ export function Passport({ me, onBack }: { me: Me; onBack: () => void }) {
       </section>
       <section className="ledger">
         <div><h2>Born There finds</h2>{p.rare.length ? <div className="collection">{p.rare.map(x => <div className="entry is-rare" key={x.spot}><span className="e-code">{x.airport}</span><span className="e-name">{x.spot}</span><span className="e-meta">{x.city}, {longDate(x.first)}</span></div>)}</div>
-          : <p className="small">None yet. Name the exact spot on any stop to earn one; they are the rarest stamps you can collect.</p>}</div>
+          : <p className="small">None yet. Get the final question right on any stop to earn one; they are the rarest stamps you can collect.</p>}</div>
         <div><h2>Cities</h2>{p.cities.length ? <ul className="citylist">{p.cities.map(c => <li key={c.name}><strong>{c.airport}</strong> {c.name}</li>)}</ul> : <p className="small">Go deeper and name a city to add it here.</p>}</div>
       </section>
       <div className="actions"><button className="btn btn--primary" type="button" onClick={onBack}>Back to the flight</button></div>

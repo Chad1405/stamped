@@ -22,7 +22,8 @@
      "bruxelles",
      "brussel"
     ],
-    "spotLabel": "Name the landmark",
+    "spotLabel": "What is this landmark called?",
+    "spotWord": "Landmark",
     "spotName": "The Atomium",
     "spot": [
      "atomium",
@@ -61,7 +62,8 @@
      "chiang mai",
      "chiangmai"
     ],
-    "spotLabel": "Name the dish",
+    "spotLabel": "What is this dish called?",
+    "spotWord": "Dish",
     "spotName": "Khao soi",
     "spot": [
      "khao soi",
@@ -108,7 +110,8 @@
      "bs as",
      "baires"
     ],
-    "spotLabel": "Name the stadium",
+    "spotLabel": "What is the stadium called?",
+    "spotWord": "Stadium",
     "spotName": "La Bombonera (Boca Juniors)",
     "spot": [
      "la bombonera",
@@ -149,7 +152,8 @@
      "chefchaouene",
      "xauen"
     ],
-    "spotLabel": "Name the old walled quarter",
+    "spotLabel": "What is this old walled quarter called?",
+    "spotWord": "Old quarter",
     "spotName": "The medina",
     "spot": [
      "medina",
@@ -192,7 +196,8 @@
      "wroclaw",
      "breslau"
     ],
-    "spotLabel": "Name what these little statues are called",
+    "spotLabel": "What are these little statues called?",
+    "spotWord": "Statues",
     "spotName": "Wrocław's dwarfs (krasnale)",
     "spot": [
      "dwarfs",
@@ -243,7 +248,8 @@
      "napoli",
      "neapel"
     ],
-    "spotLabel": "Name the pizza",
+    "spotLabel": "What is this pizza called?",
+    "spotWord": "Pizza",
     "spotName": "Pizza margherita",
     "spot": [
      "margherita",
@@ -286,7 +292,8 @@
      "kuala lumpur",
      "kl"
     ],
-    "spotLabel": "Name the towers",
+    "spotLabel": "What are these towers called?",
+    "spotWord": "Towers",
     "spotName": "Petronas Twin Towers",
     "spot": [
      "petronas towers",
@@ -330,7 +337,8 @@
      "la habana",
      "habana"
     ],
-    "spotLabel": "Name the neighbourhood",
+    "spotLabel": "What is this neighbourhood called?",
+    "spotWord": "Area",
     "spotName": "Centro Habana",
     "spot": [
      "centro habana",
@@ -374,7 +382,8 @@
      "osaka",
      "osaka shi"
     ],
-    "spotLabel": "Name the district",
+    "spotLabel": "What is the district called?",
+    "spotWord": "District",
     "spotName": "Dōtonbori",
     "spot": [
      "dotonbori",
@@ -412,7 +421,8 @@
      "valetta",
      "il belt"
     ],
-    "spotLabel": "Name these enclosed balconies",
+    "spotLabel": "What are these enclosed balconies called?",
+    "spotWord": "Balcony",
     "spotName": "Gallariji (Maltese balconies)",
     "spot": [
      "gallariji",
@@ -462,7 +472,8 @@
      "rio de janeiro",
      "rio"
     ],
-    "spotLabel": "Name the statue",
+    "spotLabel": "What is this statue called?",
+    "spotWord": "Statue",
     "spotName": "Christ the Redeemer",
     "spot": [
      "christ the redeemer",
@@ -503,7 +514,8 @@
      "peking",
      "beijing shi"
     ],
-    "spotLabel": "Name the dish",
+    "spotLabel": "What is this dish called?",
+    "spotWord": "Dish",
     "spotName": "Peking duck",
     "spot": [
      "peking duck",
@@ -546,7 +558,8 @@
      "venezia",
      "venedig"
     ],
-    "spotLabel": "Name the island",
+    "spotLabel": "What is this island called?",
+    "spotWord": "Island",
     "spotName": "Burano",
     "spot": [
      "burano",
@@ -585,7 +598,8 @@
      "bergen",
      "bjorgvin"
     ],
-    "spotLabel": "Name this wharf",
+    "spotLabel": "What is this wharf called?",
+    "spotWord": "Wharf",
     "spotName": "Bryggen",
     "spot": [
      "bryggen",
@@ -632,7 +646,8 @@
      "zanzibar town",
      "zanzibar"
     ],
-    "spotLabel": "Name the old quarter",
+    "spotLabel": "What is the old quarter called?",
+    "spotWord": "Old quarter",
     "spotName": "Stone Town (Forodhani Gardens)",
     "spot": [
      "stone town",
@@ -672,7 +687,8 @@
     "city": [
      "reykjavik"
     ],
-    "spotLabel": "Name the landmark",
+    "spotLabel": "What is this landmark called?",
+    "spotWord": "Landmark",
     "spotName": "Hallgrímskirkja",
     "spot": [
      "hallgrimskirkja",
@@ -718,7 +734,8 @@
      "lisbon",
      "lisboa"
     ],
-    "spotLabel": "Name the neighbourhood",
+    "spotLabel": "What is this neighbourhood called?",
+    "spotWord": "Area",
     "spotName": "Graça",
     "spot": [
      "graca",
@@ -761,7 +778,8 @@
      "valparaiso",
      "valpo"
     ],
-    "spotLabel": "Name one of the city's hills (cerros)",
+    "spotLabel": "What is one of this city's hills (cerros) called?",
+    "spotWord": "Hill",
     "spotName": "Any of its 40-odd cerros, like Cerro Alegre",
     "spot": [
      "alegre",
@@ -820,7 +838,8 @@
      "batumi",
      "batum"
     ],
-    "spotLabel": "Name the dish",
+    "spotLabel": "What is this dish called?",
+    "spotWord": "Dish",
     "spotName": "Adjaruli khachapuri",
     "spot": [
      "adjaruli khachapuri",
@@ -869,7 +888,8 @@
      "tallinn",
      "reval"
     ],
-    "spotLabel": "Name the square",
+    "spotLabel": "What is the square called?",
+    "spotWord": "Square",
     "spotName": "Town Hall Square (Raekoja plats)",
     "spot": [
      "raekoja plats",
@@ -916,7 +936,8 @@
      "wadi musa",
      "wadi mousa"
     ],
-    "spotLabel": "Name the monument",
+    "spotLabel": "What is this monument called?",
+    "spotWord": "Monument",
     "spotName": "Al-Khazneh (the Treasury)",
     "spot": [
      "al khazneh",
@@ -960,7 +981,8 @@
      "marseille",
      "marseilles"
     ],
-    "spotLabel": "Name the dish",
+    "spotLabel": "What is this dish called?",
+    "spotWord": "Dish",
     "spotName": "Bouillabaisse",
     "spot": [
      "bouillabaisse",
@@ -1002,7 +1024,8 @@
      "hanoi",
      "ha noi"
     ],
-    "spotLabel": "Name the street",
+    "spotLabel": "What is this street called?",
+    "spotWord": "Street",
     "spotName": "Train Street (off Lê Duẩn and Phùng Hưng)",
     "spot": [
      "train street",
@@ -1047,7 +1070,8 @@
      "dublin",
      "baile atha cliath"
     ],
-    "spotLabel": "Name the street",
+    "spotLabel": "What is this street called?",
+    "spotWord": "Street",
     "spotName": "Henrietta Street",
     "spot": [
      "henrietta street",
@@ -1090,7 +1114,8 @@
      "vienna",
      "wien"
     ],
-    "spotLabel": "Name the park",
+    "spotLabel": "What is the park called?",
+    "spotWord": "Park",
     "spotName": "The Prater (by the Riesenrad)",
     "spot": [
      "prater",
@@ -1133,7 +1158,8 @@
      "siemreap",
      "siem riep"
     ],
-    "spotLabel": "Name the temple",
+    "spotLabel": "What is this temple called?",
+    "spotWord": "Temple",
     "spotName": "Angkor Wat",
     "spot": [
      "angkor wat",
@@ -1176,7 +1202,8 @@
      "jeonju",
      "chonju"
     ],
-    "spotLabel": "Name the dish",
+    "spotLabel": "What is this dish called?",
+    "spotWord": "Dish",
     "spotName": "Bibimbap (Jeonju bibimbap)",
     "spot": [
      "bibimbap",
@@ -1219,7 +1246,8 @@
      "barcelona",
      "bcn"
     ],
-    "spotLabel": "Name the park",
+    "spotLabel": "What is this park called?",
+    "spotWord": "Park",
     "spotName": "Park Güell",
     "spot": [
      "park guell",
@@ -1265,7 +1293,8 @@
      "constantinople",
      "stamboul"
     ],
-    "spotLabel": "Name the tower",
+    "spotLabel": "What is the tower called?",
+    "spotWord": "Tower",
     "spotName": "Galata Tower",
     "spot": [
      "galata tower",
@@ -1300,7 +1329,8 @@
      "cartagena",
      "cartagena de indias"
     ],
-    "spotLabel": "Name the walled part of the city",
+    "spotLabel": "What is the walled part of this city called?",
+    "spotWord": "Walled city",
     "spotName": "The walled old town (Ciudad Amurallada)",
     "spot": [
      "ciudad amurallada",
@@ -1352,7 +1382,8 @@
      "kyoto",
      "kyouto"
     ],
-    "spotLabel": "Name the shrine",
+    "spotLabel": "What is this shrine called?",
+    "spotWord": "Shrine",
     "spotName": "Fushimi Inari Taisha",
     "spot": [
      "fushimi inari",
@@ -1398,7 +1429,8 @@
      "fussen",
      "hohenschwangau"
     ],
-    "spotLabel": "Name the castle",
+    "spotLabel": "What is this castle called?",
+    "spotWord": "Castle",
     "spotName": "Neuschwanstein Castle",
     "spot": [
      "neuschwanstein",
@@ -1441,7 +1473,8 @@
      "mexico df",
      "df"
     ],
-    "spotLabel": "Name the taco",
+    "spotLabel": "What is this taco called?",
+    "spotWord": "Taco",
     "spotName": "Tacos al pastor",
     "spot": [
      "al pastor",
@@ -1485,7 +1518,8 @@
      "kaapstad",
      "ikapa"
     ],
-    "spotLabel": "Name the neighbourhood",
+    "spotLabel": "What is this neighbourhood called?",
+    "spotWord": "Area",
     "spotName": "Bo-Kaap",
     "spot": [
      "bo kaap",
@@ -1531,7 +1565,8 @@
      "al qahirah",
      "el qahira"
     ],
-    "spotLabel": "Name the bazaar",
+    "spotLabel": "What is the bazaar called?",
+    "spotWord": "Bazaar",
     "spotName": "Khan el-Khalili",
     "spot": [
      "khan el khalili",
@@ -1572,7 +1607,8 @@
      "amsterdam",
      "mokum"
     ],
-    "spotLabel": "Name the canal belt",
+    "spotLabel": "What is this canal belt called?",
+    "spotWord": "Canal belt",
     "spotName": "The canal ring (Grachtengordel)",
     "spot": [
      "grachtengordel",
@@ -1619,7 +1655,8 @@
      "chitown",
      "windy city"
     ],
-    "spotLabel": "Name the style",
+    "spotLabel": "What is this style of pizza called?",
+    "spotWord": "Pizza style",
     "spotName": "Deep-dish pizza",
     "spot": [
      "deep dish",
@@ -1663,7 +1700,8 @@
      "yangon",
      "rangoon"
     ],
-    "spotLabel": "Name the pagoda",
+    "spotLabel": "What is this pagoda called?",
+    "spotWord": "Pagoda",
     "spotName": "Shwedagon Pagoda",
     "spot": [
      "shwedagon",
@@ -1706,7 +1744,8 @@
      "dubrovnik",
      "ragusa"
     ],
-    "spotLabel": "Name the street",
+    "spotLabel": "What is this street called?",
+    "spotWord": "Street",
     "spotName": "Stradun (Placa)",
     "spot": [
      "stradun",
@@ -1752,7 +1791,8 @@
      "montreal",
      "mtl"
     ],
-    "spotLabel": "Name the market",
+    "spotLabel": "What is the market called?",
+    "spotWord": "Market",
     "spotName": "Jean-Talon Market",
     "spot": [
      "jean talon",
