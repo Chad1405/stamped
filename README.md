@@ -53,14 +53,19 @@ To start from a clean slate locally, stop the server and delete `.data/pglite`.
 | `SEED_SAMPLE` | leave unset to fill the calendar by rotating the sample flights; `false` once real content is loaded |
 | `RESEND_API_KEY`, `ALERT_EMAIL` | where the low-calendar warning goes ([Resend](https://resend.com)). Without them it only appears in the logs. `ALERT_EMAIL_FROM` sets the sender (default: Resend's test address, which only delivers to your own Resend account's email) |
 
+| `ADMIN_PASSWORD` | opens `/admin`, the approval page (any username; use something long, there's no attempt limit). Without it, nobody gets in |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob, where approved photos live. Added for you when you connect a Blob store to the project. Without it, local dev saves photos to `public/clues/bank` and production refuses the batch |
+
 Migrations run on the first request after each deploy.
 
-**The calendar.** A daily Vercel Schedule (`keep-calendar` in `vercel.json`) keeps flights ready 14 days ahead and warns when fewer than 7 are. If today or tomorrow has no flight, it replays the flight that has gone longest without being shown. The first request of each day does the same top-up, in case the job didn't run. Players can't reach a future date.
+**The calendar.** A daily Vercel Schedule (`keep-calendar` in `vercel.json`) keeps flights ready 14 days ahead and warns when fewer than 7 are. It builds them from approved stops in the bank, one of each type, easy to hard, with no country back within 7 days, replacing any coming day that still holds a sample. Empty days take a sample while `SEED_SAMPLE` isn't `false`. If today or tomorrow still has no flight, it replays the flight that has gone longest without being shown. The first request of each day does the same top-up, in case the job didn't run. Players can't reach a future date.
+
+**Adding stops.** Paste a JSON list into `/admin`. Each item is a stop as in `src/content/itineraries.json`, without `img` and `credit`, plus `photo` (a Wikimedia Commons file page; not needed for Language stops), and optionally `note` (shown to the reviewer) and `source` (a link for the fact). The licence and credit come from Commons; photos are resized, stripped of metadata and saved under a random name. Stops that fail the checks in `src/server/bank.ts` are skipped with the reason.
 
 ## Not built yet (in order)
 
-1. **A content pipeline.** There are eight sample days, which repeat. Each new day needs a row in `itineraries` (date, flight number, five rounds: photo, answers, accepted spellings, city list, fact, credit). Next: a bank of stops, an approval page, then automatic drafting into the bank.
-2. **Photo hosting.** Clue photos are in `public/clues/`. Move them to object storage with a CDN (Vercel Blob, Cloudflare R2 or Supabase Storage) once content is added daily. Every photo needs a licence that allows commercial use with credit.
+1. **Automatic drafting.** A scheduled job that finds places and writes drafts into the bank. Until then, batches are pasted into `/admin`.
+2. **Moving the sample photos.** The sample clues are still in `public/clues/`; they can go once real flights replace them.
 3. **Sign-in** (Google or email magic link) to play across devices, attached to the anonymous player row.
 4. **Rate limiting** on `/api/play` and `/api/leagues` (Upstash Redis), and analytics (PostHog) to measure day-1, day-7 and day-30 retention.
 5. **Daily reminders**: opt-in email (Resend) or web push.

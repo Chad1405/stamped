@@ -708,3 +708,17 @@ footer p { max-width: 65ch; }
 .company { margin: 0; font-weight: 600; color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
 .visited { margin-top: 8px; color: var(--color-ink-2); }
 @media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }
+
+/* ---- The stop bank (admin only) ---- */
+.bank .small { margin: 0; }
+.bank-msg { margin: 0; padding: var(--space-sm) var(--space-md); border: var(--rule-bar) solid var(--color-ink); background: var(--color-paper-3); overflow-wrap: anywhere; }
+.bank-card { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-lg); padding-block: var(--space-lg); border-top: var(--rule-bar) solid var(--color-ink); }
+.bank-clue { display: flex; flex-direction: column; gap: var(--space-xs); }
+.bank-clue img { width: 100%; height: auto; display: block; }
+.bank-clue blockquote { margin: 0; padding: var(--space-md); background: var(--color-paper-3); border: var(--rule-bar) solid var(--color-ink); }
+.bank-fields { display: flex; flex-direction: column; gap: var(--space-sm); min-width: 0; }
+.bank-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
+.bank-problems { margin: 0; padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl); background: var(--color-paper-3); color: var(--color-accent); font-weight: 700; }
+.bank-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.bank-table th, .bank-table td { padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; text-align: left; border-bottom: var(--rule-hair) solid var(--color-rule); }
+@media (max-width: 720px) { .bank-card, .bank-pair { grid-template-columns: minmax(0, 1fr); } }

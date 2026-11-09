@@ -1,10 +1,10 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
-import { and, asc, desc, eq, gt, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopStats } from "@/db/schema";
+import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
-import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, type TierId, kmBetween } from "@/lib/game/rules";
+import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, type TierId, kmBetween } from "@/lib/game/rules";
 import { addDays, streakInfo, weekOf } from "@/lib/game/streak";
 import citiesData from "@/content/cities.json";
 import iso3Data from "@/content/iso3.json";
@@ -39,10 +39,15 @@ export async function setName(db: Db, playerId: string, name: unknown) {
 /* ---- content ---- */
 /** How many days ahead the calendar is kept, and how few trigger a warning. */
 export const DAYS_AHEAD = 14, LOW_DAYS = 7;
+/** A country doesn't come back within this many days. */
+const COUNTRY_GAP = 7;
 /** Sample content until an editor tool exists: the sample days rotate, so today and the three days before it always have a flight.
  *  The first seed puts the newest sample on today; each later date takes the next sample in turn and the next flight number. */
-const SAMPLES = (seedDays as { offset: number; rounds: Round[] }[]).toSorted((a, b) => a.offset - b.offset);
-const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+export const SAMPLES = (seedDays as { offset: number; rounds: Round[] }[]).toSorted((a, b) => a.offset - b.offset);
+const keyOf = (r: Round) => r.img ?? r.postcard?.text ?? r.prompt;   // a stop's photo or message identifies it; prompts repeat between stops
+const sampleFor = (rounds: Round[]) => { const mine = rounds.map(keyOf); return SAMPLES.find(x => x.rounds.length === rounds.length && x.rounds.every(r => mine.includes(keyOf(r)))); };
+export const isSampleFlight = (rounds: Round[]) => sampleFor(rounds) !== undefined;
+const daysBetween =(a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 export async function seedSamples(db: Db, today: string) {
   const [{ first }] = await db.select({ first: sql<string | null>`min(${itineraries.date})` }).from(itineraries);
   const anchor = first ?? addDays(today, -(SAMPLES.length - 1));
@@ -51,18 +56,49 @@ export async function seedSamples(db: Db, today: string) {
     return { date, flight: String(n + 1).padStart(3, "0"), rounds: SAMPLES[n % SAMPLES.length].rounds };
   });
   await db.insert(itineraries).values(rows).onConflictDoNothing({ target: itineraries.date });   // never replaces a flight that already exists
-  // flights copied from a sample follow later edits to the sample file; a real flight never shares a sample's prompts, so it is never touched
+  // flights copied from a sample follow later edits to the sample file; a real flight never shares a sample's photos, so it is never touched
   // ponytail: reads every flight once a day per server; drop this when real itineraries replace the samples
-  const prompts = (rs: Round[]) => rs.map(r => r.prompt);
   for (const row of await db.select({ date: itineraries.date, rounds: itineraries.rounds }).from(itineraries)) {
-    const rounds = row.rounds as Round[], mine = prompts(rounds);
-    const same = SAMPLES.find(x => x.rounds.length === rounds.length && prompts(x.rounds).every(p => mine.includes(p)));
+    const rounds = row.rounds as Round[], mine = rounds.map(keyOf), same = sampleFor(rounds);
     if (!same || JSON.stringify(same.rounds) === JSON.stringify(rounds)) continue;
     // progress is saved by stop number, so a flight is only reordered before anyone has played it; a played one keeps its order and takes the new wording
-    const reordered = prompts(same.rounds).some((p, i) => p !== mine[i]);
+    const reordered = same.rounds.some((r, i) => keyOf(r) !== mine[i]);
     const keepOrder = reordered && (await db.select({ n: plays.stop }).from(plays).where(eq(plays.date, row.date)).limit(1)).length > 0;
-    await db.update(itineraries).set({ rounds: keepOrder ? mine.map(p => same.rounds.find(r => r.prompt === p)!) : same.rounds }).where(eq(itineraries.date, row.date));
+    await db.update(itineraries).set({ rounds: keepOrder ? mine.map(k => same.rounds.find(r => keyOf(r) === k)!) : same.rounds }).where(eq(itineraries.date, row.date));
   }
+}
+/** Builds flights from approved stops, for any coming day that is empty or still holds a sample. Today is left alone: people may be playing it. */
+export async function fillFromBank(db: Db, today: string) {
+  return db.transaction(async tx => {
+    const ready = await tx.select().from(stopBank).where(and(eq(stopBank.status, "approved"), isNull(stopBank.usedOn))).orderBy(asc(stopBank.createdAt)).for("update");   // two servers filling at once must not use a stop twice
+    const rows = await tx.select().from(itineraries);
+    const byDate = new Map(rows.map(r => [r.date, r.rounds as Round[]]));
+    const first = rows.map(r => r.date).sort()[0];
+    let made = 0;
+    for (let k = 1; k <= DAYS_AHEAD; k++) {
+      const date = addDays(today, k), existing = byDate.get(date);
+      if (existing && !isSampleFlight(existing)) continue;
+      const taken = new Set<string>();
+      for (let back = 1; back <= COUNTRY_GAP; back++) {   // samples don't count, or they'd hold up the first real flights
+        const earlier = byDate.get(addDays(date, -back)) ?? [];
+        if (!isSampleFlight(earlier)) for (const r of earlier) taken.add(r.country);
+      }
+      const picks: typeof ready = [];
+      for (const type of STOP_TYPES) {
+        const pick = ready.find(s => !s.usedOn && s.round.type === type && !taken.has(s.round.country));
+        if (!pick) break;
+        picks.push(pick); pick.usedOn = date; taken.add(pick.round.country);
+      }
+      if (picks.length < STOP_TYPES.length) { for (const p of picks) p.usedOn = null; break; }   // later days can't be fuller than this one
+      const flightRounds = picks.map(p => p.round).toSorted((a, b) => b.crowd[0] - a.crowd[0]);   // easy to hard
+      const flight = String(daysBetween(first ?? date, date) + 1).padStart(3, "0");
+      await tx.insert(itineraries).values({ date, flight, rounds: flightRounds }).onConflictDoUpdate({ target: itineraries.date, set: { rounds: flightRounds } });
+      await tx.update(stopBank).set({ usedOn: date }).where(inArray(stopBank.id, picks.map(p => p.id)));
+      byDate.set(date, flightRounds);
+      made++;
+    }
+    return made;
+  });
 }
 /** The last resort for a date with no flight: replay the one that has gone longest without being shown, so a day is never missing or unvetted. */
 async function replayIfMissing(db: Db, date: string) {
@@ -75,6 +111,7 @@ async function replayIfMissing(db: Db, date: string) {
 }
 /** Fills the calendar and makes sure today and tomorrow exist. Returns how many days in a row are ready after today, and any dates that had to replay. */
 export async function keepCalendar(db: Db, today: string, seed = process.env.SEED_SAMPLE !== "false") {
+  await fillFromBank(db, today);
   if (seed) await seedSamples(db, today);
   const replayed: string[] = [];
   for (const date of [today, addDays(today, 1)]) if (await replayIfMissing(db, date)) replayed.push(date);

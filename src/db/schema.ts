@@ -16,6 +16,17 @@ export const itineraries = pgTable("itineraries", {
   rounds: jsonb("rounds").$type<Round[]>().notNull(),
 });
 
+/** Stops waiting to be used. A person approves each one; the calendar only ever draws from approved stops. */
+export const stopBank = pgTable("stop_bank", {
+  id: text("id").primaryKey(),
+  status: text("status").$type<"pending" | "approved" | "rejected">().notNull().default("pending"),
+  round: jsonb("round").$type<Round>().notNull(),
+  note: text("note").notNull().default(""),       // for the reviewer, e.g. what a Language stop's message says in English
+  source: text("source").notNull().default(""),   // where the fact came from
+  usedOn: text("used_on").references(() => itineraries.date),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** A player's progress on one stop of one day. The engine's state lives here. */
 export const plays = pgTable("plays", {
   playerId: text("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
