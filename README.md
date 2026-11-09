@@ -50,13 +50,16 @@ To start from a clean slate locally, stop the server and delete `.data/pglite`.
 | `DATABASE_URL` | Neon's **pooled** connection string (host ends in `-pooler`), used for app queries |
 | `DATABASE_URL_UNPOOLED` | Neon's direct connection string, used only to run migrations (falls back to `DATABASE_URL` if unset) |
 | `GAME_TIMEZONE` | the time zone the daily flight changes over in, e.g. `Africa/Johannesburg` (default `UTC`) |
-| `SEED_SAMPLE` | `true` to load the four sample flights into an empty database; `false` once real content is loaded |
+| `SEED_SAMPLE` | leave unset to fill the calendar by rotating the sample flights; `false` once real content is loaded |
+| `RESEND_API_KEY`, `ALERT_EMAIL` | where the low-calendar warning goes ([Resend](https://resend.com)). Without them it only appears in the logs. `ALERT_EMAIL_FROM` sets the sender (default: Resend's test address, which only delivers to your own Resend account's email) |
 
 Migrations run on the first request after each deploy.
 
+**The calendar.** A daily Vercel Schedule (`keep-calendar` in `vercel.json`) keeps flights ready 14 days ahead and warns when fewer than 7 are. If today or tomorrow has no flight, it replays the flight that has gone longest without being shown. The first request of each day does the same top-up, in case the job didn't run. Players can't reach a future date.
+
 ## Not built yet (in order)
 
-1. **An editor tool for itineraries.** The sample has four days. Each new day needs a row in `itineraries` (date, flight number, five rounds: photo, answers, accepted spellings, city list, fact, credit). Until the tool exists, add rows with SQL or a seed script, or the next day shows "No flight on that date".
+1. **A content pipeline.** There are eight sample days, which repeat. Each new day needs a row in `itineraries` (date, flight number, five rounds: photo, answers, accepted spellings, city list, fact, credit). Next: a bank of stops, an approval page, then automatic drafting into the bank.
 2. **Photo hosting.** Clue photos are in `public/clues/`. Move them to object storage with a CDN (Vercel Blob, Cloudflare R2 or Supabase Storage) once content is added daily. Every photo needs a licence that allows commercial use with credit.
 3. **Sign-in** (Google or email magic link) to play across devices, attached to the anonymous player row.
 4. **Rate limiting** on `/api/play` and `/api/leagues` (Upstash Redis), and analytics (PostHog) to measure day-1, day-7 and day-30 retention.
