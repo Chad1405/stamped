@@ -1,5 +1,7 @@
 // The game's fixed rules: tiers, score bands, timings. Shared by server and client.
 export const ROUNDS_PER_DAY = 5;
+/** Every flight has one stop of each. */
+export const STOP_TYPES = ["Landmark", "Food", "Language", "Street View", "Close-up"];
 export const MAX_DAY_SCORE = 500;
 export const PREVIEW_MS = 3000;
 export const ROUND_MS = 30000;

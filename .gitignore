@@ -46,3 +46,6 @@ next-env.d.ts
 # end-to-end screenshots
 /.e2e
 .neon
+
+# photos the stop bank stores locally in dev
+/public/clues/bank

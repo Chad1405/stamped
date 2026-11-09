@@ -59,7 +59,7 @@ describe("sample flights", () => {
   });
   it("pick up edits to the sample file, and never touch a real flight", async () => {
     const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;
-    const stale = sample.rounds.map(r => ({ ...r, fact: "old copy" })), real = sample.rounds.map(r => ({ ...r, prompt: `${r.prompt} (real)` }));
+    const stale = sample.rounds.map(r => ({ ...r, fact: "old copy" })), real = sample.rounds.map(r => ({ ...r, img: r.img && `${r.img}?real`, postcard: r.postcard && { ...r.postcard, text: "A real message" } }));
     await fresh.insert(itineraries).values([{ date: TODAY, flight: "004", rounds: stale }, { date: addDays(TODAY, -1), flight: "003", rounds: real }]);
     await seedSamples(fresh, TODAY);
     const rows = Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r.rounds as Round[]]));
