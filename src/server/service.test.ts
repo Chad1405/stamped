@@ -39,12 +39,13 @@ describe("sample flights", () => {
   it("reorder a sample flight only before anyone has played it", async () => {
     const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), sample = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!;
     const old = sample.rounds.toReversed(), played = addDays(TODAY, -1);
-    await fresh.insert(itineraries).values([{ date: TODAY, flight: "004", rounds: old }, { date: played, flight: "003", rounds: old }]);
+    const stale = old.map(r => ({ ...r, spotLabel: "Name the old wording" }));
+    await fresh.insert(itineraries).values([{ date: TODAY, flight: "004", rounds: stale }, { date: played, flight: "003", rounds: stale }]);
     await act(fresh, pid, played, 0, { type: "start" }, TODAY);
     await seedSamples(fresh, TODAY);
     const rows = Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r.rounds as Round[]]));
     expect(rows[TODAY]).toEqual(sample.rounds);
-    expect(rows[played]).toEqual(old);
+    expect(rows[played]).toEqual(old);   // same order as when it was played, with the new wording
   });
 });
 
@@ -102,12 +103,19 @@ describe("a day on the server", () => {
     const day = await getDay(db, pid, TODAY, TODAY);
     const text = JSON.stringify(day);
     for (const r of rounds) { expect(text).not.toContain(`"${r.country}"`); expect(text).not.toContain(`"${r.cityName}"`); expect(text).not.toContain(r.spot[0]); }
-    expect(day.stops.every(s => s.reveal === null && s.cities.length === 0)).toBe(true);   // the city list would name the country
+    expect(day.stops.every(s => s.reveal === null && s.cities.length === 0 && s.spotLabel === null && s.spotWord === null)).toBe(true);   // the city list and the final question narrow down the country
     const t0 = Date.now(), t = t0 + PREVIEW_MS;
     expect((await act(db, pid, TODAY, 0, { type: "start" }, TODAY, t0)).stop.cities).toEqual([]);
-    expect((await act(db, pid, TODAY, 0, { type: "guess", text: "Spain" }, TODAY, t)).stop.cities).toEqual([]);
+    const wrong = (await act(db, pid, TODAY, 0, { type: "guess", text: "Spain" }, TODAY, t)).stop;
+    expect([wrong.cities, wrong.spotWord]).toEqual([[], null]);
     expect((await act(db, pid, TODAY, 0, { type: "guess", text: rounds[0].country }, TODAY, t)).stop.cities).toContain(rounds[0].cityName);
-    expect((await getDay(db, pid, TODAY, TODAY)).stops[0].cities).toContain(rounds[0].cityName);   // and it survives a reload
+    const reloaded = (await getDay(db, pid, TODAY, TODAY)).stops[0];   // and it survives a reload
+    expect(reloaded.cities).toContain(rounds[0].cityName);
+    expect([reloaded.spotLabel, reloaded.spotWord]).toEqual(["What is this landmark called?", "Landmark"]);
+    const missed = await ensurePlayer(db, undefined);   // a missed stop never banks the country, and its reveal still needs the word
+    await act(db, missed, TODAY, 0, { type: "start" }, TODAY, t0);
+    for (const text of ["Japan", "China", "India"]) await act(db, missed, TODAY, 0, { type: "guess", text }, TODAY, t);
+    expect((await getDay(db, missed, TODAY, TODAY)).stops[0].spotWord).toBe("Landmark");
   });
   it("refuses future dates and out-of-order stops", async () => {
     const pid = await ensurePlayer(db, undefined);

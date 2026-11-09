@@ -59,6 +59,8 @@ for (let i = 0; i < 5; i++) {
   await alice.waitForSelector(".choice--risk"); if (i === 0) await alice.screenshot({ path: `${OUT}/2-decide.png`, fullPage: true });
   await alice.keyboard.press("d");
   await guess(alice, r.cityName); await alice.waitForSelector(".choice--risk"); await alice.click(".choice--risk");
+  await alice.waitForFunction(q => document.querySelector("h1")?.innerText === q, { timeout: 5000 }, r.spotLabel);
+  if (i === 0) ok(true, `the last step asks by category (${r.spotLabel})`);
   await guess(alice, r.spot[0]);
   await alice.waitForFunction(() => /Board stop|Open your passport/.test(document.body.innerText));
   if (i === 0) { await wait(700); await alice.screenshot({ path: `${OUT}/3-reveal.png`, fullPage: true }); ok((await text(alice)).includes(`${r.cityName}, ${r.country}`), "the reveal names the place"); }

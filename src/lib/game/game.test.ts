@@ -29,6 +29,12 @@ describe("matching", () => {
 });
 
 describe("the stop engine", () => {
+  it("every final question says what it is asking for, with a word short enough for the ladder", () => {
+    for (const r of rounds) {
+      expect(r.spotLabel, r.spotName).toMatch(/^What (is|are) .+ called\?$/);
+      for (const w of r.spotWord.split(" ")) expect(w.length, r.spotName).toBeLessThanOrEqual(8);   // the widest word that fits a ladder box on a 320px phone
+    }
+  });
   it("every stop of every day can be played perfectly", () => {
     for (const r of rounds) {
       const t = T0 + PREVIEW_MS;

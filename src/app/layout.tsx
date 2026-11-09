@@ -3,7 +3,7 @@ import "./globals.css";
 
 // Chivo Mono is self-hosted from public/fonts (see the @font-face rules at the top of globals.css), so builds never fetch from Google Fonts.
 
-const DESCRIPTION = "A daily travel game: five photo clues. Name the country, then risk it for the city and the exact spot.";
+const DESCRIPTION = "A daily travel game: five photo clues. Name the country, then risk it for the city and a final question.";
 // Link previews (iMessage, WhatsApp, Slack) need absolute image URLs. Vercel sets the production domain; locally it is localhost.
 const SITE = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000";
 
