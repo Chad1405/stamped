@@ -63,7 +63,8 @@ function useAboveKeyboard(inputRef: React.RefObject<HTMLInputElement | null>) {
     if (!vv || !el) return;
     const room = () => { const r = el.getBoundingClientRect(); el.parentElement?.style.setProperty("--below", `${Math.max(88, vv.offsetTop + vv.height - r.bottom - 8)}px`); };
     const fit = () => {
-      const kb = innerHeight - vv.height, typing = document.activeElement === el && kb > 120 && matchMedia("(max-width: 40rem)").matches;
+      // the page's own height, not innerHeight: iPhone Safari shrinks innerHeight with the keyboard too, which hid the keyboard from this check
+      const kb = document.documentElement.clientHeight - vv.height, typing = document.activeElement === el && kb > 120 && matchMedia("(max-width: 40rem)").matches;
       document.body.style.paddingBottom = typing ? `${kb}px` : "";   // room to scroll the box up: the keyboard doesn't make the page any longer
       if (!typing) return;
       const top = vv.offsetTop, bottom = top + vv.height, r = el.getBoundingClientRect();
@@ -72,8 +73,10 @@ function useAboveKeyboard(inputRef: React.RefObject<HTMLInputElement | null>) {
     };
     vv.addEventListener("resize", fit);   // the keyboard opening or closing
     vv.addEventListener("scroll", room);
-    el.addEventListener("focus", fit); el.addEventListener("blur", fit);
-    return () => { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", room); el.removeEventListener("focus", fit); el.removeEventListener("blur", fit); document.body.style.paddingBottom = ""; };
+    // the game focuses the box itself, so tapping it opens the keyboard without a new focus event: check again once the keyboard is up
+    const tap = () => { setTimeout(fit, 100); setTimeout(fit, 450); };
+    el.addEventListener("focus", fit); el.addEventListener("blur", fit); el.addEventListener("click", tap);
+    return () => { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", room); el.removeEventListener("focus", fit); el.removeEventListener("blur", fit); el.removeEventListener("click", tap); document.body.style.paddingBottom = ""; };
   }, [inputRef]);
 }
 
