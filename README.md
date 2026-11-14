@@ -55,7 +55,7 @@ To start from a clean slate locally, stop the server and delete `.data/pglite`.
 
 | `ANTHROPIC_API_KEY` | lets the weekly job draft stops with Claude (Opus 5.5). Without it, the job and the "Draft stops now" button report that it isn't set |
 | `ADMIN_PASSWORD` | opens `/admin`, the approval page (any username; use something long, there's no attempt limit). Without it, nobody gets in |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob, where approved photos live. Added for you when you connect a Blob store to the project. Without it, local dev saves photos to `public/clues/bank` and production refuses the batch |
+| `BLOB_STORE_ID` (or `BLOB_READ_WRITE_TOKEN` on older stores) | Vercel Blob, where approved photos live. Added for you when you connect a Blob store to the project. Without it, local dev saves photos to `public/clues/bank` and production refuses the batch |
 
 Migrations run on the first request after each deploy.
 
