@@ -15,7 +15,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
   try { res = await fetch(url, { ...init, headers: { "content-type": "application/json", ...init?.headers }, cache: "no-store" }); }
   catch { throw new ApiError(0, "Can't reach the game right now. Check your connection and try again."); }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ?? "Something went wrong. Try again.");
+  if (!res.ok) throw new ApiError(res.status, data.error ?? (res.status === 429 ? "That's faster than the game allows. Wait a minute and try again." : "Something went wrong. Try again."));   // a 429 comes from the firewall, without our JSON
   return data as T;
 }
 
