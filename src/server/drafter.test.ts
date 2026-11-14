@@ -4,7 +4,7 @@ import seedDays from "@/content/itineraries.json";
 import { stopBank } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { STOP_TYPES } from "@/lib/game/rules";
-import { draftStops, needed, type Ask } from "./drafter";
+import { draftStops, needed, type Ask, type Get } from "./drafter";
 import { newId } from "./service";
 
 const samples = (seedDays as { rounds: Round[] }[]).flatMap(d => d.rounds);
@@ -17,7 +17,7 @@ const get = (async (url: string) => {
   if (url.includes("en.wikipedia.org")) return json({ query: { pages: [{ extract: "Source text.", fullurl: "https://en.wikipedia.org/wiki/X" }] } });
   if (url.includes("commons.wikimedia.org/w/api.php")) return json({ query: { pages: [info("tall.jpg", 1000, 2000, "CC0"), info("ok.jpg", 2000, 1500, "CC BY 4.0"), info("nc.jpg", 3000, 2000, "CC BY-NC 4.0")] } });
   return new Response(new Uint8Array([1, 2, 3]));
-}) as typeof fetch;
+}) as Get;
 const getPhoto = async () => ({ img: `/p/${newId()}.jpg`, credit: { title: "t", author: "a", license: "CC0", url: "u" } });
 
 /** Claude, answering from the sample stops but naming a new place, so the bank doesn't see a duplicate. */
