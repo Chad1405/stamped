@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { sfx } from "@/lib/client/fx";
 import type { Day, League, Me } from "@/lib/client/api";
-import { band, classFor, CLASSES, CONT, LADDER, legFlown, MAX_DAY_SCORE, nextClass, TIERS } from "@/lib/game/rules";
+import { band, classFor, CLASSES, CONT, COUNTRY_MS, LADDER, legFlown, MAX_DAY_SCORE, nextClass, ROUND_MS, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
 import { CountUp, EntryStamp, longDate, ordinal, Strip } from "./bits";
 
@@ -28,7 +28,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
           <Strip stops={day.stops} current={open} />
           <div className="actions">
             <button className="btn btn--primary btn--big" type="button" onClick={onBoard}>{midStop || resume ? `Resume at stop ${open + 1}` : `Board flight ${day.flight}`}</button>
-            <span className="small">30 seconds a guess</span>
+            <span className="small">{COUNTRY_MS / 1000} seconds for the country, then {ROUND_MS / 1000} a guess</span>
           </div>
         </div>
         <div className="ticket-stub">
@@ -55,22 +55,24 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
 }
 
 function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDay: (d: string) => void }) {
+  const [all, setAll] = useState(false), SHOWN = 5;
   return (
     <section className="points archive">
       <div className="start-head"><h2>Missed a flight?</h2><p>Play earlier days. Only today’s flight counts towards your streak and leagues.</p></div>
       <table className="table"><caption className="visually-hidden">Recent flights</caption>
         <thead><tr><th scope="col">Flight</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col" className="num"><span className="visually-hidden">Action</span></th></tr></thead>
-        <tbody>{me.days.map(d => {
+        <tbody>{me.days.slice(0, all ? undefined : SHOWN).map(d => {
           const here = d.date === current, done = d.score !== null;
           return (
             <tr key={d.date} className={here ? "is-here" : ""}>
               <td className="flight-no">{d.flight}</td><td>{longDate(d.date)}{d.isToday ? " (today)" : ""}</td>
-              <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : "Not flown"}</td>
+              <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : ""}</td>
               <td className="num">{here ? <span className="small">Open now</span> : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
             </tr>
           );
         })}</tbody>
       </table>
+      {!all && me.days.length > SHOWN && <button className="btn btn--small" type="button" onClick={() => setAll(true)}>Show all {me.days.length} flights</button>}
     </section>
   );
 }
@@ -101,6 +103,15 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
         <div className="score plate"><span>{day.isToday ? "Today's score" : `Flight ${day.flight} score`}</span><span className="figure"><CountUp to={s} ms={1400} /></span><span>of {MAX_DAY_SCORE}</span></div>
         <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p><p className="visited">You visited {visited}.</p></div>
       </section>
+      <section className="ledger">
+        <div><h2>{day.isToday ? "Share today's result" : "Share this flight"}</h2><pre className="share">{share}</pre>
+          <div className="actions"><button className="btn btn--primary" type="button" onClick={copy}>Copy result</button><button className="btn" type="button" onClick={onFriends}>Friends league</button><span className="help" role="status">{copied}</span></div></div>
+        <div><h2>Your record</h2>
+          {me && <dl className="stats"><div><dt>Flights</dt><dd>{me.record.flights}</dd></div><div><dt>Day streak</dt><dd>{me.streak.n}</dd></div><div><dt>Best</dt><dd>{me.record.best}</dd></div></dl>}
+          {si && <p className="small">{si.passLeft ? "Lounge pass ready: if you miss one day this week, it keeps your streak alive." : `Lounge pass used this week, for ${longDate(si.usedThisWeek!)}. A new one arrives on Monday.`}</p>}
+          {!day.isToday && <p className="small">Archive flight from {longDate(day.date)}. Only today’s flight counts towards your streak.</p>}
+        </div>
+      </section>
       <section className="flightlog">
         <div className="start-head"><h2>Flight log</h2><p>You flew <strong>{km(flownKm)} km</strong> of {day.isToday ? "today's" : "this flight's"} {km(routeKm)} km route.{flownKm < routeKm ? " A leg counts when you name the city it lands in." : ""}</p></div>
         <ol className="fl-chart" aria-label="Points at each stop">
@@ -127,15 +138,6 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
           <button className="btn btn--small" type="button" onClick={onPassport}>Open my passport</button></div>
       </section>
       <section className="panel"><h2>Your stamps</h2><div className="stamps">{day.stops.map((x, i) => <EntryStamp key={i} s={x} i={i} date={day.date} motion="slam" delay={i + 1} />)}</div></section>
-      <section className="ledger">
-        <div><h2>{day.isToday ? "Share today's result" : "Share this flight"}</h2><pre className="share">{share}</pre>
-          <div className="actions"><button className="btn btn--primary" type="button" onClick={copy}>Copy result</button><button className="btn" type="button" onClick={onFriends}>Friends league</button><span className="help" role="status">{copied}</span></div></div>
-        <div><h2>Your record</h2>
-          {me && <dl className="stats"><div><dt>Flights</dt><dd>{me.record.flights}</dd></div><div><dt>Day streak</dt><dd>{me.streak.n}</dd></div><div><dt>Best</dt><dd>{me.record.best}</dd></div></dl>}
-          {si && <p className="small">{si.passLeft ? "Lounge pass ready: if you miss one day this week, it keeps your streak alive." : `Lounge pass used this week, for ${longDate(si.usedThisWeek!)}. A new one arrives on Monday.`}</p>}
-          {!day.isToday && <p className="small">Archive flight from {longDate(day.date)}. Only today’s flight counts towards your streak.</p>}
-        </div>
-      </section>
       {me && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
     </div>
   );
