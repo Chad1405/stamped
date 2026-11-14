@@ -42,10 +42,10 @@ export function stopProblems(r: Round): string[] {
 }
 
 /* ---- photos ---- */
-const UA = { "user-agent": "Stamped-content-import/1.0" };   // Wikimedia asks automated clients to identify themselves
+export const UA = { "user-agent": "Stamped-content-import/1.0" };   // Wikimedia asks automated clients to identify themselves
 const stripTags = (s = "") => s.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/\s+/g, " ").trim();
 const FREE_TO_USE = /^(cc0|cc by(-sa)? \d(\.\d)?|public domain)\b/i;
-type CommonsInfo = { thumburl?: string; width: number; descriptionurl: string; extmetadata: Record<string, { value: string } | undefined> };
+export type CommonsInfo = { thumburl?: string; width: number; descriptionurl: string; extmetadata: Record<string, { value: string } | undefined> };
 
 /** The credit for a Commons file, or an error if its licence doesn't allow commercial use with credit. */
 export function creditFromCommons(title: string, info: CommonsInfo): NonNullable<Round["credit"]> {

@@ -53,10 +53,13 @@ To start from a clean slate locally, stop the server and delete `.data/pglite`.
 | `SEED_SAMPLE` | leave unset to fill the calendar by rotating the sample flights; `false` once real content is loaded |
 | `RESEND_API_KEY`, `ALERT_EMAIL` | where the low-calendar warning goes ([Resend](https://resend.com)). Without them it only appears in the logs. `ALERT_EMAIL_FROM` sets the sender (default: Resend's test address, which only delivers to your own Resend account's email) |
 
+| `ANTHROPIC_API_KEY` | lets the weekly job draft stops with Claude (Opus 5.5). Without it, the job and the "Draft stops now" button report that it isn't set |
 | `ADMIN_PASSWORD` | opens `/admin`, the approval page (any username; use something long, there's no attempt limit). Without it, nobody gets in |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob, where approved photos live. Added for you when you connect a Blob store to the project. Without it, local dev saves photos to `public/clues/bank` and production refuses the batch |
 
 Migrations run on the first request after each deploy.
+
+**Drafting.** Every Monday at 05:00 UTC a second Schedule (`draft-stops`) tops up the review queue: for each stop type short of three weeks waiting, Claude suggests places, then writes each stop from its English Wikipedia article and picks one of four free-to-use Commons photos (no readable signs or captions). Drafts go through the same checks as a pasted batch, land as pending in `/admin`, and an email says how many are waiting. Nothing reaches players until you approve it. `/admin` can also run it on demand.
 
 **The calendar.** A daily Vercel Schedule (`keep-calendar` in `vercel.json`) keeps flights ready 14 days ahead and warns when fewer than 7 are. It builds them from approved stops in the bank, one of each type, easy to hard, with no country back within 7 days, replacing any coming day that still holds a sample. Empty days take a sample while `SEED_SAMPLE` isn't `false`. If today or tomorrow still has no flight, it replays the flight that has gone longest without being shown. The first request of each day does the same top-up, in case the job didn't run. Players can't reach a future date.
 
