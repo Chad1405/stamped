@@ -6,7 +6,7 @@ import type { Db } from "@/db";
 import { stopBank } from "@/db/schema";
 import { COUNTRIES, countryByName, norm } from "@/lib/game/match";
 import { STOP_TYPES } from "@/lib/game/rules";
-import { addDrafts, commonsPhoto, creditFromCommons, UA, type CommonsInfo, type Draft } from "./bank";
+import { addDrafts, commonsPhoto, creditFromCommons, wikimedia, type CommonsInfo, type Draft } from "./bank";
 import { SAMPLES } from "./service";
 
 const MODEL = "claude-opus-5-5";
@@ -71,10 +71,11 @@ const WHAT: Record<string, string> = {
 const example = (type: string) => { const { img: _i, credit: _c, ...r } = SAMPLES.flatMap(d => d.rounds).find(r => r.type === type)!; return JSON.stringify(r); };
 
 /* ---- sources ---- */
-type Get = typeof fetch;
+export type Get = (url: string) => Promise<Response>;
 async function wikipedia(get: Get, title: string) {
   const q = new URLSearchParams({ action: "query", prop: "extracts|info", inprop: "url", explaintext: "1", redirects: "1", titles: title, format: "json", formatversion: "2" });
-  const res = await get(`https://en.wikipedia.org/w/api.php?${q}`, { headers: UA });
+  const res = await get(`https://en.wikipedia.org/w/api.php?${q}`);
+  if (!res.ok) throw new Error(`Wikipedia said ${res.status}`);
   const page = ((await res.json()) as { query?: { pages?: { extract?: string; fullurl?: string; missing?: boolean }[] } }).query?.pages?.[0];
   if (!page?.extract || page.missing) throw new Error(`no Wikipedia article "${title}"`);
   return { text: page.extract.slice(0, 8000), url: page.fullurl ?? "" };
@@ -82,18 +83,20 @@ async function wikipedia(get: Get, title: string) {
 
 /** Commons photos that are free to use, big enough and landscape, most relevant first. */
 async function candidates(get: Get, search: string) {
-  const q = new URLSearchParams({ action: "query", generator: "search", gsrnamespace: "6", gsrsearch: `${search} filetype:bitmap`, gsrlimit: "15", prop: "imageinfo", iiprop: "url|size|extmetadata", iiurlwidth: "800", format: "json", formatversion: "2" });
-  const res = await get(`https://commons.wikimedia.org/w/api.php?${q}`, { headers: UA });
+  const q = new URLSearchParams({ action: "query", generator: "search", gsrnamespace: "6", gsrsearch: `${search} filetype:bitmap`, gsrlimit: "15", prop: "imageinfo", iiprop: "url|size|extmetadata", iiurlwidth: "960", format: "json", formatversion: "2" });
+  const res = await get(`https://commons.wikimedia.org/w/api.php?${q}`);
+  if (!res.ok) throw new Error(`Commons said ${res.status}`);
   const pages = ((await res.json()) as { query?: { pages?: { title: string; index: number; imageinfo?: (CommonsInfo & { height: number })[] }[] } }).query?.pages ?? [];
   const ok = pages.toSorted((a, b) => a.index - b.index).filter(p => {
     const info = p.imageinfo?.[0];
     if (!info?.thumburl || info.width < info.height) return false;
     try { creditFromCommons(p.title, info); return true; } catch { return false; }
   }).slice(0, PHOTOS);
-  return Promise.all(ok.map(async p => {
-    const img = await get(p.imageinfo![0].thumburl!, { headers: UA });
-    return { page: p.imageinfo![0].descriptionurl, data: Buffer.from(await img.arrayBuffer()).toString("base64") };
+  const photos = await Promise.all(ok.map(async p => {
+    const img = await get(p.imageinfo![0].thumburl!);
+    return img.ok ? { page: p.imageinfo![0].descriptionurl, data: Buffer.from(await img.arrayBuffer()).toString("base64") } : null;
   }));
+  return photos.filter(p => p !== null);
 }
 
 /* ---- one stop ---- */
@@ -144,7 +147,7 @@ async function mapLimit<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>) {
 /* ---- the run ---- */
 export type Deps = { ask?: Ask; get?: Get; getPhoto?: typeof commonsPhoto };
 /** Drafts what the bank is short of, every type at once, into the review queue. */
-export async function draftStops(db: Db, { ask = claude, get = fetch, getPhoto = commonsPhoto }: Deps = {}) {
+export async function draftStops(db: Db, { ask = claude, get = wikimedia, getPhoto = commonsPhoto }: Deps = {}) {
   if (ask === claude && !process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY isn't set");
   const need = await needed(db);
   const bank = await db.select({ round: stopBank.round, status: stopBank.status, usedOn: stopBank.usedOn }).from(stopBank);
@@ -158,9 +161,12 @@ Mix them: about half that most players would recognise, the rest harder but fair
 Don't repeat any of these: ${avoid || "none"}.
 "country" must be written exactly as in this list: ${COUNTRIES.map(c => c.name).join(", ")}.
 "wikipedia" is the exact title of the English Wikipedia article about the spot (or the dish, or for Language stops the meeting place). "photoSearch" is a short Wikimedia Commons search that finds photos of it${type === "Language" ? " (unused here: leave it empty)" : ""}.` }], IDEAS);
-    const drafts = await mapLimit(ideas, 3, idea => draftOne(type, idea, ask, get).catch(e => { skipped.push(`${idea.spotName}: ${e instanceof Error ? e.message : e}`); return null; }));
-    const res = await addDrafts(db, drafts.filter(d => d !== null), getPhoto);
-    return { added: res.added, skipped: [...skipped, ...res.skipped] };
+    let added = 0;
+    await mapLimit(ideas, 3, async idea => {   // each stop is saved as soon as it's drafted, so a run cut off by the time limit keeps what it paid for
+      try { const res = await addDrafts(db, [await draftOne(type, idea, ask, get)], getPhoto); added += res.added; skipped.push(...res.skipped); }
+      catch (e) { skipped.push(`${idea.spotName}: ${e instanceof Error ? e.message : e}`); }
+    });
+    return { added, skipped };
   }));
   return { added: runs.reduce((n, r) => n + r.added, 0), skipped: runs.flatMap(r => r.skipped), need };
 }

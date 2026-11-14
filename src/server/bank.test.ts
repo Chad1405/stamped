@@ -1,11 +1,11 @@
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
 import { itineraries, stopBank } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { addDays } from "@/lib/game/streak";
-import { addDrafts, applyReviewForm, bankOverview, cleanPhoto, creditFromCommons, reviewStop, stopProblems } from "./bank";
+import { addDrafts, applyReviewForm, bankOverview, cleanPhoto, creditFromCommons, reviewStop, stopProblems, wikimedia } from "./bank";
 import { fillFromBank, getDay, ensurePlayer, keepCalendar, newId } from "./service";
 
 const TODAY = "2026-11-05", tomorrow = addDays(TODAY, 1);
@@ -110,5 +110,20 @@ describe("the bank", () => {
     const db = await createDb(), rounds = days[0].map(realCopy);
     await approve(db, [...rounds, ...rounds.map(realCopy)]);   // two of every stop, same countries
     expect(await fillFromBank(db, TODAY)).toBe(1);
+  });
+});
+
+describe("asking Wikimedia", () => {
+  it("sends one request at a time and waits out a slow-down", async () => {
+    let open = 0, most = 0, calls = 0;
+    vi.stubGlobal("fetch", async () => {
+      most = Math.max(most, ++open); await new Promise(r => setTimeout(r, 20)); open--;
+      return ++calls === 1 ? new Response("You are making too many requests", { status: 429, headers: { "retry-after": "1" } }) : new Response("{}");
+    });
+    try {
+      const res = await Promise.all([wikimedia("https://commons.wikimedia.org/a"), wikimedia("https://en.wikipedia.org/b")]);
+      expect(res.map(r => r.status)).toEqual([200, 200]);
+      expect([most, calls]).toEqual([1, 3]);
+    } finally { vi.unstubAllGlobals(); }
   });
 });

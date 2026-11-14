@@ -42,7 +42,22 @@ export function stopProblems(r: Round): string[] {
 }
 
 /* ---- photos ---- */
-export const UA = { "user-agent": "Stamped-content-import/1.0" };   // Wikimedia asks automated clients to identify themselves
+// Wikimedia asks automated clients to name themselves with a way to reach them, and limits cloud servers hard
+const UA = { "user-agent": "StampedGame/1.0 (https://stamped-smoky.vercel.app; daily geography game)" };
+let wikimediaQueue: Promise<unknown> = Promise.resolve();
+/** A request to Wikipedia or Commons: one at a time per server, and a "slow down" waits as long as it asks, up to three times. */
+export function wikimedia(url: string | URL): Promise<Response> {
+  const run = async () => {
+    for (let tries = 0; ; tries++) {
+      const res = await fetch(url, { headers: UA });
+      if ((res.status !== 429 && res.status !== 503) || tries === 3) return res;
+      await new Promise(r => setTimeout(r, 1000 * Math.min(15, Number(res.headers.get("retry-after")) || 2 ** (tries + 1))));
+    }
+  };
+  const p = wikimediaQueue.then(run, run);
+  wikimediaQueue = p.catch(() => {});
+  return p;
+}
 const stripTags = (s = "") => s.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/\s+/g, " ").trim();
 const FREE_TO_USE = /^(cc0|cc by(-sa)? \d(\.\d)?|public domain)\b/i;
 export type CommonsInfo = { thumburl?: string; width: number; descriptionurl: string; extmetadata: Record<string, { value: string } | undefined> };
@@ -76,13 +91,13 @@ export async function commonsPhoto(url: string): Promise<Photo> {
   const page = new URL(url), title = decodeURIComponent(page.pathname.split("/wiki/")[1] ?? "");
   if (page.hostname !== "commons.wikimedia.org" || !title.startsWith("File:")) throw new Error("photo must be a Wikimedia Commons file page");
   const q = new URLSearchParams({ action: "query", titles: title, prop: "imageinfo", iiprop: "url|size|extmetadata", iiurlwidth: "1280", format: "json", formatversion: "2" });
-  const res = await fetch(`https://commons.wikimedia.org/w/api.php?${q}`, { headers: UA });
+  const res = await wikimedia(`https://commons.wikimedia.org/w/api.php?${q}`);
   if (!res.ok) throw new Error(`Commons said ${res.status}`);
   const info = ((await res.json()) as { query?: { pages?: { imageinfo?: CommonsInfo[] }[] } }).query?.pages?.[0]?.imageinfo?.[0];
   if (!info) throw new Error("Commons has no such file");
   const credit = creditFromCommons(title, info), src = new URL(info.thumburl ?? "");
   if (!src.hostname.endsWith(".wikimedia.org")) throw new Error("unexpected image host");
-  const img = await fetch(src, { headers: UA });
+  const img = await wikimedia(src);
   if (!img.ok) throw new Error(`photo download said ${img.status}`);
   return { img: await storePhoto(await cleanPhoto(Buffer.from(await img.arrayBuffer()))), credit };
 }
