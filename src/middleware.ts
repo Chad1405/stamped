@@ -12,7 +12,7 @@ function passwordFrom(req: NextRequest) {
 export async function middleware(req: NextRequest) {
   const expected = process.env.ADMIN_PASSWORD, given = passwordFrom(req);
   if (expected && given && await sha(given) === await sha(expected)) return NextResponse.next();
-  return new NextResponse("Password required.", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="Stamped admin", charset="UTF-8"' } });
+  return new NextResponse("Password required.", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="Born There admin", charset="UTF-8"' } });
 }
 
 export const config = { matcher: ["/admin", "/admin/:path*"] };

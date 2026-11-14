@@ -10,10 +10,10 @@ const SITE = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.
 // The share card is src/app/opengraph-image.png and the icons are icon.png and apple-icon.png beside it; Next adds their tags.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: "Stamped",
+  title: "Born There",
   description: DESCRIPTION,
-  openGraph: { title: "Stamped: five stops a day", description: DESCRIPTION, siteName: "Stamped", type: "website", url: "/" },
-  twitter: { card: "summary_large_image", title: "Stamped: five stops a day", description: DESCRIPTION },
+  openGraph: { title: "Born There: five stops a day", description: DESCRIPTION, siteName: "Born There", type: "website", url: "/" },
+  twitter: { card: "summary_large_image", title: "Born There: five stops a day", description: DESCRIPTION },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 

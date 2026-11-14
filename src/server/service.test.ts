@@ -53,7 +53,7 @@ describe("sample flights", () => {
     const low = await createDb(), rounds = (seedDays as { rounds: Round[] }[])[0].rounds;
     await low.insert(itineraries).values(Array.from({ length: 7 }, (_, k) => ({ date: addDays(TODAY, k), flight: String(k + 1).padStart(3, "0"), rounds })));
     expect((await dailyCalendarCheck(low, TODAY, warn, false)).ahead).toBe(6);
-    expect(sent).toEqual(["Stamped: only 6 days of flights ready"]);
+    expect(sent).toEqual(["Born There: only 6 days of flights ready"]);
     await low.insert(itineraries).values({ date: addDays(TODAY, 7), flight: "008", rounds });
     await dailyCalendarCheck(low, TODAY, warn, false);
     expect(sent).toHaveLength(1);   // 7 days ahead is enough

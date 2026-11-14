@@ -1,6 +1,6 @@
 "use client";
 // The flight band: the day's route as a strip of sky across the top of play. Between stops the plane flies sideways to the next
-// runway; during a stop it comes down only as far as your answer earned (Krillion dives for depth; Stamped descends for precision).
+// runway; during a stop it comes down only as far as your answer earned (Krillion dives for depth; Born There descends for precision).
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { StopData } from "@/lib/client/api";
 import { TIERS, type TierId } from "@/lib/game/rules";
