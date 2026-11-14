@@ -2,13 +2,28 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "src/app/api/keep-calendar/route.ts": {
-      "experimentalTriggers": [{ "type": "schedule/v1beta" }]
+      "experimentalTriggers": [
+        {
+          "type": "schedule/v1beta"
+        }
+      ]
+    },
+    "src/app/api/draft-stops/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "schedule/v1beta"
+        }
+      ]
     }
   },
   "schedules": {
     "keep-calendar": {
       "schedule": "0 6 * * *",
       "function": "api/keep-calendar"
+    },
+    "draft-stops": {
+      "schedule": "0 5 * * 1",
+      "function": "api/draft-stops"
     }
   }
 }

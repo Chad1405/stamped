@@ -32,3 +32,15 @@ export async function body(req: NextRequest): Promise<Record<string, unknown>> {
   try { const v = JSON.parse(text || "{}"); if (v && typeof v === "object" && !Array.isArray(v)) return v; } catch {}
   throw new HttpError(400, "Expected a JSON object.");
 }
+
+/** Always logged; emailed too once RESEND_API_KEY and ALERT_EMAIL are set. */
+export async function sendAlert(subject: string, text: string) {
+  console.error(`[alert] ${subject}. ${text}`);
+  const key = process.env.RESEND_API_KEY, to = process.env.ALERT_EMAIL;
+  if (!key || !to) return;
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ from: process.env.ALERT_EMAIL_FROM || "Stamped <onboarding@resend.dev>", to, subject, text }),
+  });
+  if (!res.ok) console.error(`[alert] email failed: ${res.status} ${await res.text()}`);
+}

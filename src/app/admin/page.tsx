@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { addDrafts, applyReviewForm, bankOverview, reviewStop, stopProblems } from "@/server/bank";
+import { draftStops } from "@/server/drafter";
 import { gameToday } from "@/server/service";
 import type { Round } from "@/lib/game/engine";
 
@@ -15,6 +16,16 @@ async function importBatch(f: FormData) {
     const { added, skipped } = await addDrafts(await db(), JSON.parse(String(f.get("drafts"))));
     msg = `Added ${added}.${skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(" | ")}` : ""}`;
   } catch (e) { msg = `Couldn't read that batch: ${e instanceof Error ? e.message : e}`; }
+  redirect(`/admin?msg=${encodeURIComponent(msg.slice(0, 1500))}`);
+}
+
+async function draftNow() {
+  "use server";
+  let msg: string;
+  try {
+    const { added, skipped, need } = await draftStops(await db());
+    msg = Object.values(need).some(n => n > 0) ? `Drafted ${added} for review.${skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(" | ")}` : ""}` : "Every type already has three weeks of stops waiting, so nothing was drafted.";
+  } catch (e) { msg = `Drafting failed: ${e instanceof Error ? e.message : e}`; }
   redirect(`/admin?msg=${encodeURIComponent(msg.slice(0, 1500))}`);
 }
 
@@ -92,6 +103,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <thead><tr><th>Date</th><th>Flight</th><th>Content</th><th>Stops</th></tr></thead>
           <tbody>{calendar.map(d => <tr key={d.date}><td>{d.date}</td><td>{d.flight ?? "None"}</td><td>{!d.flight ? "Empty" : d.real ? "Real" : "Sample"}</td><td>{d.places.join(", ")}</td></tr>)}</tbody>
         </table>
+      </section>
+
+      <section className="panel">
+        <h2>Draft stops</h2>
+        <p>Claude drafts a week of each stop type every Monday, up to three weeks waiting. This runs it now; it takes about two minutes.</p>
+        <form action={draftNow}><button className="btn btn--primary" type="submit">Draft stops now</button></form>
       </section>
 
       <section className="panel">

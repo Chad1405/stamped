@@ -13,6 +13,7 @@
     "test:sound": "vite-node --config vitest.config.ts scripts/sound-check.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@electric-sql/pglite": "^0.3.7",
     "@neon/config": "^1.11.3",
     "@neon/env": "^1.6.15",
