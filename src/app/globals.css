@@ -712,6 +712,7 @@ footer p { max-width: 65ch; }
 .fact-lead { font-size: var(--text-lg); line-height: 1.45; animation: arrive-in 480ms var(--ease-out) 380ms both; }
 .company { margin: 0; font-weight: 600; color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
 .visited { margin-top: 8px; color: var(--color-ink-2); }
+.field-note { margin-top: 8px; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }
 
 /* ---- The stop bank (admin only) ---- */

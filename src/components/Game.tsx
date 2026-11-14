@@ -52,7 +52,7 @@ export default function Game() {
 
   const merge = useCallback((r: ActResult) => {
     setOffset(r.serverNow - Date.now());
-    setDay(d => { if (!d) return d; const stops = d.stops.map(s => s.stop === r.stop.stop ? r.stop : s); const next = { ...d, stops }; return { ...next, score: scoreOf(next) }; });
+    setDay(d => { if (!d) return d; const stops = d.stops.map(s => s.stop === r.stop.stop ? r.stop : s); const next = { ...d, stops, field: r.field ?? d.field }; return { ...next, score: scoreOf(next) }; });
     if (r.dayDone || r.event.kind === "finished") void refreshPlayer();
   }, [refreshPlayer]);
 

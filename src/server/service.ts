@@ -1,5 +1,5 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
-import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
@@ -172,6 +172,15 @@ const stopView = (r: Round, s: StopState) => ({ phase: s.phase, step: s.step, ba
   endsAt: s.endsAt, tier: s.tier, note: s.note, points: stopPoints(s), clues: countryClues(r, s) });
 
 /* ---- a day ---- */
+/** How a finished day compares with everyone else who finished the same flight; null until enough others have. */
+export async function fieldFor(db: Db, playerId: string, date: string) {
+  const [mine] = await db.select({ score: results.score }).from(results).where(and(eq(results.playerId, playerId), eq(results.date, date)));
+  if (!mine) return null;
+  const [n] = await db.select({ others: sql<number>`count(*)::int`, below: sql<number>`(count(*) filter (where ${results.score} < ${mine.score}))::int` })
+    .from(results).where(and(eq(results.date, date), ne(results.playerId, playerId)));
+  return n.others >= MIN_LIVE_PLAYERS ? { players: n.others + 1, better: Math.round(100 * n.below / n.others) } : null;
+}
+
 export async function getDay(db: Db, playerId: string, date: string, today: string) {
   const it = await itinerary(db, date, today);
   const [rows, stats] = await Promise.all([
@@ -183,19 +192,21 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
     return { ...publicRound(r, i, s), state: stopView(r, s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
   });
   const score = stops.reduce((n, s) => n + s.state.points, 0);
-  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops };
+  const field = stops.every(s => s.state.phase === "done") ? await fieldFor(db, playerId, date) : null;
+  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field };
 }
 
 /* ---- playing ---- */
 export type ActResult = {
   stop: ReturnType<typeof publicRound> & { state: ReturnType<typeof stopView>; reveal: ReturnType<typeof reveal> | null };
   event: Event; gain: { country?: string; city?: string; rare?: string } | null; dayDone: boolean; serverNow: number;
+  field?: Awaited<ReturnType<typeof fieldFor>>;   // with the last stop: how the day compares with everyone else's
 };
 export async function act(db: Db, playerId: string, date: string, stop: number, action: Action, today: string, now = Date.now()): Promise<ActResult> {
   const it = await itinerary(db, date, today);
   if (!Number.isInteger(stop) || stop < 0 || stop >= it.rounds.length) throw new HttpError(400, "No such stop.");
   const r = it.rounds[stop];
-  return db.transaction(async tx => {
+  const res = await db.transaction(async (tx): Promise<ActResult> => {
     const done = await tx.select({ stop: plays.stop, state: plays.state }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).for("update");
     for (let i = 0; i < stop; i++) if (done.find(d => d.stop === i)?.state.phase !== "done") throw new HttpError(409, "Finish the earlier stops first.");
     const before = done.find(d => d.stop === stop)?.state ?? freshStop();
@@ -218,6 +229,7 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
     const [stats] = state.phase === "done" ? await tx.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop))) : [];
     return { stop: { ...publicRound(r, stop, state), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
   });
+  return res.dayDone ? { ...res, field: await fieldFor(db, playerId, date) } : res;
 }
 async function stampPassport(db: Db, playerId: string, r: Round, tier: TierId, date: string) {
   const want: (typeof stamps.$inferInsert)[] = [];
