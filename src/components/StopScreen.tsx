@@ -51,16 +51,37 @@ function Frame({ s, overlay, caption, reply }: { s: StopData; overlay?: React.Re
 }
 
 /** The answer box with its own suggestion list (a combobox): the browser's <datalist> shows nothing on many phones and in-app browsers. */
-/** On a phone, tapping the box opens the keyboard over half the screen: line the clue up with the top so the photo and the box are both in view. (On tap, not on focus: the game focuses the box itself when typing opens, with no keyboard.) */
-function keepClueInView() {
-  if (!matchMedia("(max-width: 40rem)").matches) return;
-  setTimeout(() => document.getElementById("clue")?.scrollIntoView({ block: "start", behavior: "instant" }), 320);   // after the keyboard has opened
+/**
+ * On a phone the keyboard covers the bottom half of the screen without shrinking the page, so the box could sit under it.
+ * While the box has focus, keep it and the first few suggestions in the part of the screen the keyboard leaves visible,
+ * and let the suggestion list scroll within that space instead of running under the keyboard.
+ */
+const SUGGEST_ROOM = 3 * 44 + 8;   // three suggestions
+function useAboveKeyboard(inputRef: React.RefObject<HTMLInputElement | null>) {
+  useEffect(() => {
+    const vv = window.visualViewport, el = inputRef.current;
+    if (!vv || !el) return;
+    const room = () => { const r = el.getBoundingClientRect(); el.parentElement?.style.setProperty("--below", `${Math.max(88, vv.offsetTop + vv.height - r.bottom - 8)}px`); };
+    const fit = () => {
+      const kb = innerHeight - vv.height, typing = document.activeElement === el && kb > 120 && matchMedia("(max-width: 40rem)").matches;
+      document.body.style.paddingBottom = typing ? `${kb}px` : "";   // room to scroll the box up: the keyboard doesn't make the page any longer
+      if (!typing) return;
+      const top = vv.offsetTop, bottom = top + vv.height, r = el.getBoundingClientRect();
+      if (r.top < top + 8 || r.bottom + SUGGEST_ROOM > bottom) scrollBy({ top: r.top - Math.max(top + 8, bottom - r.height - SUGGEST_ROOM), behavior: "instant" });
+      room();
+    };
+    vv.addEventListener("resize", fit);   // the keyboard opening or closing
+    vv.addEventListener("scroll", room);
+    el.addEventListener("focus", fit); el.addEventListener("blur", fit);
+    return () => { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", room); el.removeEventListener("focus", fit); el.removeEventListener("blur", fit); document.body.style.paddingBottom = ""; };
+  }, [inputRef]);
 }
 
 function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disabled, invalid }: {
   inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (v: string) => void; options: string[]; openOnFocus: boolean; disabled: boolean; invalid: boolean;
 }) {
   const [open, setOpen] = useState(false), [active, setActive] = useState(-1);
+  useAboveKeyboard(inputRef);
   const q = norm(value);
   const matches = !q ? (openOnFocus ? options : [])
     : [...options.filter(o => norm(o).startsWith(q)), ...options.filter(o => !norm(o).startsWith(q) && norm(o).includes(q))];
@@ -71,7 +92,7 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
       <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false}
         role="combobox" aria-autocomplete="list" aria-expanded={shown.length > 0} aria-controls="guess-list" aria-activedescendant={active >= 0 && shown[active] ? `guess-opt-${active}` : undefined}
         aria-describedby="msg" aria-invalid={invalid || undefined} readOnly={disabled} aria-busy={disabled || undefined}   // read-only, not disabled, while a guess is checked: a disabled box drops keyboard focus
-        onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => { setOpen(true); keepClueInView(); }} onBlur={() => setOpen(false)}
+        onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onBlur={() => setOpen(false)}
         onKeyDown={e => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setOpen(true); const n = shown.length || matches.length; if (n) setActive(a => (a + (e.key === "ArrowDown" ? 1 : n - 1)) % n); }
           else if (e.key === "Enter" && active >= 0 && shown[active]) { e.preventDefault(); pick(shown[active]); }   // Enter on a highlighted name fills it in; otherwise it submits
