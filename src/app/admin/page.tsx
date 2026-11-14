@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { addDrafts, applyReviewForm, bankOverview, reviewStop, stopProblems } from "@/server/bank";
 import { draftStops } from "@/server/drafter";
-import { gameToday } from "@/server/service";
+import { gameToday, retention } from "@/server/service";
 import type { Round } from "@/lib/game/engine";
 
 export const dynamic = "force-dynamic";
@@ -82,7 +82,9 @@ function StopCard({ id, round: r, note, source, repeat }: { id: string; round: R
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
   const { msg } = await searchParams;
-  const { pending, waiting, calendar, realDays } = await bankOverview(await db(), gameToday());
+  const d = await db(), today = gameToday();
+  const [{ pending, waiting, calendar, realDays }, who] = await Promise.all([bankOverview(d, today), retention(d, today)]);
+  const rate = (r: (typeof who.rates)[number]) => r.of ? `${r.back} of ${r.of} (${Math.round(100 * r.back / r.of)}%)` : "too early to tell";
   return (
     <main className="shell bank">
       <header>
@@ -95,6 +97,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <section className="panel">
         <h2>To review</h2>
         {pending.length ? pending.map(s => <StopCard key={s.id} id={s.id} round={s.round} note={s.note} source={s.source} repeat={s.repeat} />) : <p>Nothing waiting.</p>}
+      </section>
+
+      <section className="panel">
+        <h2>Players</h2>
+        <p>{who.players} {who.players === 1 ? "person has" : "people have"} started a flight. Came back the next day: {rate(who.rates[0])}. A week later: {rate(who.rates[1])}. A month later: {rate(who.rates[2])}.</p>
+        <p className="small">Each counts players whose first day was long enough ago, and whether they played on exactly that later day. A player is a browser: clearing cookies or switching device starts a new one.</p>
+        <table className="bank-table">
+          <thead><tr><th>Day</th><th>Played</th><th>New</th><th>Returning</th><th>Finished a flight</th></tr></thead>
+          <tbody>{who.daily.map(r => <tr key={r.day}><td>{r.day}</td><td>{r.players}</td><td>{r.fresh}</td><td>{r.back}</td><td>{r.finished}</td></tr>)}</tbody>
+        </table>
       </section>
 
       <section className="panel">

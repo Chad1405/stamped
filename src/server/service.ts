@@ -328,3 +328,29 @@ export async function myLeagues(db: Db, playerId: string, today: string) {
     return { id: l.id, name: l.name, code: l.code, owner: l.ownerId === playerId, weekStart: week[0], members: rows };
   });
 }
+
+/* ---- retention, for /admin ---- */
+/**
+ * Who comes back. A player counts as active on a game day when they touched a stop that day (today's flight or the archive);
+ * visitors who never start a stop don't count. Day-N return: of players whose first day is at least N full days ago, how many played exactly N days later.
+ */
+// ponytail: reads every (player, day) pair into memory; move the grouping into SQL past ~100k plays
+export async function retention(db: Db, today: string) {
+  const tz = process.env.GAME_TIMEZONE || "UTC", dayOf = (col: typeof plays.updatedAt | typeof results.completedAt) => sql<string>`to_char(${col} at time zone ${tz}, 'YYYY-MM-DD')`;
+  const [active, finished] = await Promise.all([
+    db.selectDistinct({ id: plays.playerId, day: dayOf(plays.updatedAt) }).from(plays),
+    db.select({ day: dayOf(results.completedAt), n: sql<number>`count(*)::int` }).from(results).groupBy(sql`1`),
+  ]);
+  const days = new Map<string, Set<string>>();
+  for (const { id, day } of active) days.set(id, (days.get(id) ?? new Set()).add(day));
+  const first = new Map([...days].map(([id, set]) => [id, [...set].sort()[0]]));
+  const daily = Array.from({ length: 14 }, (_, k) => addDays(today, -k)).map(day => {
+    const on = [...days].filter(([, set]) => set.has(day)).map(([id]) => id), fresh = on.filter(id => first.get(id) === day).length;
+    return { day, players: on.length, fresh, back: on.length - fresh, finished: finished.find(f => f.day === day)?.n ?? 0 };
+  });
+  const rates = [1, 7, 30].map(after => {
+    const due = [...first].filter(([, d]) => addDays(d, after) < today);   // that later day is over
+    return { after, of: due.length, back: due.filter(([id, d]) => days.get(id)!.has(addDays(d, after))).length };
+  });
+  return { players: days.size, daily, rates };
+}

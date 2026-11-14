@@ -2,9 +2,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, getDay, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { itineraries, results } from "@/db/schema";
+import { itineraries, plays, results } from "@/db/schema";
+import { freshStop } from "@/lib/game/engine";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
 
@@ -212,5 +213,23 @@ describe("how a day compares", () => {
     await finish(380);
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 21, better: 75 });   // 15 of the 20 others scored less
     expect(await fieldFor(db, await ensurePlayer(db, undefined), TODAY)).toBeNull();   // not finished: nothing to compare
+  });
+});
+
+describe("retention", () => {
+  it("counts who came back 1, 7 and 30 days after their first day", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const history = async (...days: string[]) => { const id = await ensurePlayer(db, undefined);
+      await db.insert(plays).values(days.map((d, stop) => ({ playerId: id, date: TODAY, stop, state: freshStop(), updatedAt: new Date(`${d}T12:00:00Z`) }))); };
+    await history("2026-10-01", "2026-10-02", "2026-10-08", "2026-10-31");   // back after 1, 7 and 30 days
+    await history("2026-10-01");                                             // never back
+    await history("2026-10-28", "2026-10-29");                               // back after 1; too new for 30
+    await history("2026-11-04", "2026-11-05");                               // too new for any: day 1 is today, not over yet
+    await ensurePlayer(db, undefined);                                      // opened the site, never started a stop: not counted
+    const r = await retention(db, TODAY);
+    expect(r.players).toBe(4);
+    expect(r.rates).toEqual([{ after: 1, of: 3, back: 2 }, { after: 7, of: 3, back: 1 }, { after: 30, of: 2, back: 1 }]);
+    expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0 }]);
   });
 });
