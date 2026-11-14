@@ -15,14 +15,14 @@ export const stepMs = (step: string) => step === "country" ? COUNTRY_MS : ROUND_
 export const GRACE_MS = 3000;
 
 export type TierId = "native" | "local" | "traveller" | "backpacker" | "lost" | "tourist" | "miss";
-export const TIERS: Record<TierId, { name: string; score: number; emoji: string; blurb: string }> = {
-  native:     { name: "Born There",    score: 100, emoji: "📍", blurb: "All three right. Locals ask you for directions." },
-  local:      { name: "Local",         score: 85,  emoji: "🏙️", blurb: "Right city. You know where the good coffee is." },
-  traveller:  { name: "Traveller",     score: 60,  emoji: "🗺️", blurb: "Right region. You left the capital at least once." },
-  backpacker: { name: "Backpacker",    score: 30,  emoji: "🏳️", blurb: "Right country. Passport stamped." },
-  lost:       { name: "Lost Luggage",  score: 15,  emoji: "🧳", blurb: "Went deeper and got lost. Half a stamp." },
-  tourist:    { name: "Tourist",       score: 10,  emoji: "🌍", blurb: "Right continent. You've seen the brochure." },
-  miss:       { name: "Window Seat",   score: 0,   emoji: "⬛", blurb: "Watched it fly by. Now you know it." },
+export const TIERS: Record<TierId, { name: string; score: number; blurb: string }> = {
+  native:     { name: "Born There",    score: 100, blurb: "All three right. Locals ask you for directions." },
+  local:      { name: "Local",         score: 85,  blurb: "Right city. You know where the good coffee is." },
+  traveller:  { name: "Traveller",     score: 60,  blurb: "Right region. You left the capital at least once." },
+  backpacker: { name: "Backpacker",    score: 30,  blurb: "Right country. Passport stamped." },
+  lost:       { name: "Lost Luggage",  score: 15,  blurb: "Went deeper and got lost. Half a stamp." },
+  tourist:    { name: "Tourist",       score: 10,  blurb: "Right continent. You've seen the brochure." },
+  miss:       { name: "Window Seat",   score: 0,   blurb: "Watched it fly by. Now you know it." },
 };
 export const LADDER: TierId[] = ["native", "local", "traveller", "backpacker", "lost", "tourist"];
 export const SCORE_BANDS = [
