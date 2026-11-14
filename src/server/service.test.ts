@@ -2,9 +2,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, getDay, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, getDay, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { itineraries } from "@/db/schema";
+import { itineraries, results } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
 
@@ -198,5 +198,19 @@ describe("leagues", () => {
   it("rejects an unknown code", async () => {
     const p = await ensurePlayer(db, undefined);
     await expect(joinLeague(db, p, "ZZZZZZ")).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("how a day compares", () => {
+  it("says what share of the other players you beat, once 20 others have finished", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const finish = async (score: number) => { const id = await ensurePlayer(db, undefined); await db.insert(results).values({ playerId: id, date: TODAY, score, tiers: [], onTime: true }); return id; };
+    const me = await finish(300);
+    for (let k = 0; k < 19; k++) await finish(k * 20);   // 0 to 360
+    expect(await fieldFor(db, me, TODAY)).toBeNull();   // 19 others: too few to say
+    await finish(380);
+    expect(await fieldFor(db, me, TODAY)).toEqual({ players: 21, better: 75 });   // 15 of the 20 others scored less
+    expect(await fieldFor(db, await ensurePlayer(db, undefined), TODAY)).toBeNull();   // not finished: nothing to compare
   });
 });

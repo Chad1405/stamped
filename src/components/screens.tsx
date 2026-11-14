@@ -101,7 +101,8 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
     <div className="panel" style={{ gap: "var(--space-2xl)" }}>
       <section className="arrive">
         <div className="score plate"><span>{day.isToday ? "Today's score" : `Flight ${day.flight} score`}</span><span className="figure"><CountUp to={s} ms={1400} /></span><span>of {MAX_DAY_SCORE}</span></div>
-        <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p><p className="visited">You visited {visited}.</p></div>
+        <div><h1>{b.name}</h1><p className="lead">{b.verdict}</p><p className="visited">You visited {visited}.</p>
+          {day.field && <p className="field-note">{day.field.better === 100 ? `The best score of the ${day.field.players} players on this flight so far.` : `Better than ${day.field.better}% of the ${day.field.players} players on this flight so far.`}</p>}</div>
       </section>
       <section className="ledger">
         <div><h2>{day.isToday ? "Share today's result" : "Share this flight"}</h2><pre className="share">{share}</pre>
