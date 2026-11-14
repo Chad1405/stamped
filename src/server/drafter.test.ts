@@ -23,11 +23,15 @@ const getPhoto = async () => ({ img: `/p/${newId()}.jpg`, credit: { title: "t", 
 /** Claude, answering from the sample stops but naming a new place, so the bank doesn't see a duplicate. */
 function fakeClaude(seen: { images: number[] }, usable = (type: string) => type !== "Food"): Ask {
   return (async (content, schema) => {
-    const text = content.map(b => b.type === "text" ? b.text : "").join(" "), type = STOP_TYPES.find(t => text.includes(`${t} stop`))!;
+    const props = schema.properties as Record<string, unknown>;
+    if (!("usable" in props)) return Object.fromEntries(Object.keys(props).map(t => {   // the Close-up lands in the Street View's city, so the run drops it
+      const r = sampleOf(t === "Close-up" ? "Street View" : t);
+      return [t, [{ country: r.country, cityName: r.cityName, spotName: `Zorbatron ${t}`, wikipedia: "X", photoSearch: "x" }]];
+    }));
+    const text = content.map(b => b.type === "text" ? b.text : "").join(" "), type = STOP_TYPES.find(t => text.includes(`Write a ${t} stop`))!;
     const r = sampleOf(type);
-    if ("ideas" in (schema.properties as object)) return { ideas: [{ country: r.country, cityName: r.cityName, spotName: "Zorbatron", wikipedia: "X", photoSearch: "x" }] };
     seen.images.push(content.filter(b => b.type === "image").length);
-    return { ...r, usable: usable(type), concerns: usable(type) ? "" : "no good photo", photo: 0, alt: r.alt ?? "", spotName: "Zorbatron", spot: ["Zorbatron"],
+    return { ...r, usable: usable(type), concerns: usable(type) ? "" : "no good photo", photo: 0, alt: r.alt ?? "", spotName: "Zorbatron", spot: ["Zorbatron", "zorbatron", "ZORBATRON"],
       message: r.postcard?.text ?? "", messageLang: "es", messageFrom: "+54", messageNote: "Text message", translation: r.postcard ? "Hello" : "" };
   }) as Ask;
 }
@@ -45,15 +49,15 @@ describe("drafting stops", () => {
   it("drafts from real sources into the review queue, through the bank's checks", async () => {
     const db = await createDb(), seen = { images: [] as number[] };
     const { added, skipped } = await draftStops(db, { ask: fakeClaude(seen), get, getPhoto });
-    expect(added).toBe(4);
-    expect(skipped).toEqual(["Zorbatron: Claude passed on it: no good photo"]);
-    expect(seen.images.toSorted()).toEqual([0, 1, 1, 1, 1]);   // only the free, landscape photo reaches Claude; the Language stop has none
+    expect(added).toBe(3);
+    expect(skipped.toSorted()).toEqual([`Zorbatron Close-up: ${sampleOf("Street View").cityName} already has a stop in this run`, "Zorbatron Food: Claude passed on it: no good photo"]);
+    expect(seen.images.toSorted()).toEqual([0, 1, 1, 1]);   // only the free, landscape photo reaches Claude; the Language stop has none
     const rows = await db.select().from(stopBank);
     expect(rows.every(r => r.status === "pending" && r.source === "https://en.wikipedia.org/wiki/X")).toBe(true);
     const lang = rows.find(r => r.round.type === "Language")!, landmark = rows.find(r => r.round.type === "Landmark")!;
     expect(lang.round.postcard?.text).toBe(sampleOf("Language").postcard!.text);
     expect(lang.note).toContain("In English: Hello");
     expect(landmark.round.img).toMatch(/^\/p\//);
-    expect(landmark.round.spot).toEqual(["zorbatron"]);   // accepted spellings are normalised
+    expect(landmark.round.spot).toEqual(["zorbatron"]);   // accepted spellings are normalised, each once
   });
 });

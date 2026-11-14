@@ -104,24 +104,43 @@ export async function commonsPhoto(url: string): Promise<Photo> {
 
 /* ---- drafts in ---- */
 export type Draft = Omit<Round, "img" | "credit"> & { photo?: string; note?: string; source?: string };
-const dupKey = (r: { country: string; spotName: string }) => `${norm(r.country)}|${norm(r.spotName)}`;
+
+/* ---- repeats ---- */
+type Place = { country: string; cityName: string; spotName: string; spot: string[]; photo?: string; label?: string };
+const placeOf = (r: Round, label?: string): Place => ({ ...r, photo: r.credit?.url, label });
+/** The names an answer goes by, compared loosely: "The Colosseum (Flavian Amphitheatre)" is "colosseum" and "flavian amphitheatre". */
+const namesOf = (s = "") => s.split(/[()]/).map(p => norm(p).replace(/^the /, "").trim()).filter(p => p.length > 3);
+/** A Commons file however its address is written. */
+const photoKey = (url: string) => { try { return decodeURIComponent(new URL(url).pathname).replace(/_/g, " ").toLowerCase(); } catch { return url; } };
+
+/** The earlier stop this one repeats: the same photo, or the same place in the same city under any of its names. Country and city repeats on their own are fine. */
+export function repeatOf(p: Place, earlier: Place[]) {
+  const main = namesOf(p.spotName), all = new Set([...main, ...(p.spot ?? []).flatMap(namesOf)]), photo = p.photo && photoKey(p.photo);
+  return earlier.find(e => (photo && e.photo && photoKey(e.photo) === photo)
+    || (norm(e.country) === norm(p.country) && norm(e.cityName) === norm(p.cityName)
+      && (namesOf(e.spotName).some(n => all.has(n)) || main.some(n => (e.spot ?? []).flatMap(namesOf).includes(n)))));
+}
+const what = (e: Place) => `"${e.spotName}"${e.label ? ` (${e.label})` : ""}`;
+const labelOf = (row: { status: string; usedOn: string | null }) => row.usedOn ? `shown on ${row.usedOn}` : row.status === "pending" ? "also waiting for review" : row.status;
 
 /** Adds a batch for review. A stop that fails is skipped with its reason; the rest still go in. */
 export async function addDrafts(db: Db, input: unknown, getPhoto: (url: string) => Promise<Photo> = commonsPhoto) {
   if (!Array.isArray(input)) throw new HttpError(400, "Expected a JSON list of stops.");
-  const seen = new Set([...SAMPLES.flatMap(d => d.rounds), ...(await db.select({ round: stopBank.round }).from(stopBank)).map(s => s.round)].map(dupKey));   // rejected stops count: don't offer them twice
+  const earlier = [...SAMPLES.flatMap(d => d.rounds).map(r => placeOf(r, "a sample day")),   // rejected stops count: don't offer them twice
+    ...(await db.select().from(stopBank)).map(row => placeOf(row.round, labelOf(row)))];
   let added = 0;
   const skipped: string[] = [];
   for (const draft of input as Draft[]) {
     const name = draft?.spotName || draft?.cityName || "A stop";
     try {
       const { photo, note, source, ...rest } = draft;
-      if (seen.has(dupKey(rest))) throw new Error("already in the bank");
+      const twin = repeatOf({ ...rest, photo }, earlier);
+      if (twin) throw new Error(`repeats ${what(twin)}`);
       const round: Round = { ...rest, ...(rest.type === "Language" ? {} : await getPhoto(String(photo))) };
       const problems = stopProblems(round);
       if (problems.length) throw new Error(problems.join(" "));
       await db.insert(stopBank).values({ id: newId(), round, note: note ?? "", source: source ?? "" });
-      seen.add(dupKey(rest));
+      earlier.push(placeOf(round, "also waiting for review"));
       added++;
     } catch (e) { skipped.push(`${name}: ${e instanceof Error ? e.message : e}`); }
   }
@@ -129,7 +148,7 @@ export async function addDrafts(db: Db, input: unknown, getPhoto: (url: string) 
 }
 
 /* ---- review ---- */
-const list = (s: string) => s.split(",").map(norm).filter(Boolean);
+const list = (s: string) => [...new Set(s.split(",").map(norm).filter(Boolean))];   // a repeated spelling is dropped when the reviewer saves
 /** A review form's fields over the stop they were drawn from. */
 export function applyReviewForm(r: Round, f: FormData): Round {
   const text = (k: string) => String(f.get(k) ?? "").trim();
@@ -152,8 +171,8 @@ export async function reviewStop(db: Db, id: string, decision: "approve" | "reje
 }
 
 export async function bankOverview(db: Db, today: string) {
-  const [pending, waiting, flights] = await Promise.all([
-    db.select().from(stopBank).where(eq(stopBank.status, "pending")).orderBy(asc(stopBank.createdAt)),
+  const [all, waiting, flights] = await Promise.all([
+    db.select().from(stopBank).orderBy(asc(stopBank.createdAt)),
     db.select({ round: stopBank.round }).from(stopBank).where(and(eq(stopBank.status, "approved"), isNull(stopBank.usedOn))),
     db.select().from(itineraries).where(gt(itineraries.date, today)).orderBy(asc(itineraries.date)),
   ]);
@@ -161,6 +180,12 @@ export async function bankOverview(db: Db, today: string) {
   const calendar = Array.from({ length: DAYS_AHEAD }, (_, k) => addDays(today, k + 1)).map(date => {
     const f = byDate.get(date), rounds = (f?.rounds ?? []) as Round[];
     return { date, flight: f?.flight ?? null, real: !!f && !isSampleFlight(rounds), places: rounds.map(r => r.cityName) };
+  });
+  // a stop drafted before the repeat check got stricter can still look like another one: say so, and let the reviewer choose
+  const samples = SAMPLES.flatMap(d => d.rounds).map(r => placeOf(r, "a sample day"));
+  const pending = all.filter(r => r.status === "pending").map(row => {
+    const twin = repeatOf(placeOf(row.round), [...samples, ...all.filter(o => o.id !== row.id).map(o => placeOf(o.round, labelOf(o)))]);
+    return { ...row, repeat: twin ? `Looks like a repeat of ${what(twin)}.` : null };
   });
   return { pending, waiting: STOP_TYPES.map(type => ({ type, n: waiting.filter(w => w.round.type === type).length })), calendar, realDays: calendar.findIndex(d => !d.real) < 0 ? calendar.length : calendar.findIndex(d => !d.real) };
 }

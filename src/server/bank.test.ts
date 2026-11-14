@@ -5,7 +5,7 @@ import seedDays from "@/content/itineraries.json";
 import { itineraries, stopBank } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { addDays } from "@/lib/game/streak";
-import { addDrafts, applyReviewForm, bankOverview, cleanPhoto, creditFromCommons, reviewStop, stopProblems, wikimedia } from "./bank";
+import { addDrafts, applyReviewForm, bankOverview, cleanPhoto, creditFromCommons, repeatOf, reviewStop, stopProblems, wikimedia } from "./bank";
 import { fillFromBank, getDay, ensurePlayer, keepCalendar, newId } from "./service";
 
 const TODAY = "2026-11-05", tomorrow = addDays(TODAY, 1);
@@ -54,10 +54,11 @@ describe("photos", () => {
 
 describe("the bank", () => {
   it("takes a batch, skipping stops that fail or are already known", async () => {
-    const db = await createDb(), fresh = { ...stop, spotName: "Somewhere new" };
-    const { added, skipped } = await addDrafts(db, [draftOf(fresh), draftOf(fresh), draftOf(stop), { ...draftOf(fresh), spotName: "Other", country: "Atlantis" }], photo);
+    const db = await createDb(), fresh = { ...stop, spotName: "Somewhere new", spot: ["somewhere new"] };
+    const other = { ...draftOf(fresh), spotName: "Other", spot: ["other"], country: "Atlantis", photo: "https://commons.wikimedia.org/wiki/File:Y.jpg" };
+    const { added, skipped } = await addDrafts(db, [draftOf(fresh), draftOf(fresh), draftOf(stop), other], photo);
     expect(added).toBe(1);
-    expect(skipped).toEqual([expect.stringContaining("already in the bank"), expect.stringContaining("already in the bank"), expect.stringContaining("Atlantis")]);
+    expect(skipped).toEqual([expect.stringContaining("repeats"), expect.stringContaining('repeats "The Atomium" (a sample day)'), expect.stringContaining("Atlantis")]);
     expect((await addDrafts(db, [{ junk: true }], photo)).skipped).toHaveLength(1);   // a malformed stop is a skip, not a crash
     await expect(addDrafts(db, { not: "a list" }, photo)).rejects.toThrow(/list/);
   });
@@ -110,6 +111,31 @@ describe("the bank", () => {
     const db = await createDb(), rounds = days[0].map(realCopy);
     await approve(db, [...rounds, ...rounds.map(realCopy)]);   // two of every stop, same countries
     expect(await fillFromBank(db, TODAY)).toBe(1);
+  });
+});
+
+describe("repeats", () => {
+  const place = (spotName: string, spot: string[], extra: Partial<Round> = {}) => ({ country: "Argentina", cityName: "Buenos Aires", spotName, spot, ...extra });
+  it("catches the same place under another name, and the same photo anywhere", () => {
+    expect(repeatOf(place("Caminito", ["caminito", "el caminito"]), [place("La Boca (Caminito)", ["la boca", "caminito"])])).toBeTruthy();
+    const pel = { country: "Brazil", cityName: "Salvador" };
+    expect(repeatOf({ ...pel, spotName: "Pelourinho", spot: ["pelourinho"] }, [{ ...pel, spotName: "Pelourinho (Historic Centre of Salvador)", spot: ["pelourinho", "centro historico"] }])).toBeTruthy();
+    expect(repeatOf({ country: "Italy", cityName: "Rome", spotName: "Colosseum", spot: ["colosseum", "colosseo"] }, [{ country: "Italy", cityName: "Rome", spotName: "The Colosseum (Flavian Amphitheatre)", spot: ["flavian amphitheatre"] }])).toBeTruthy();
+    const url = "https://commons.wikimedia.org/wiki/File:Atomium_2021.jpg";
+    expect(repeatOf({ ...place("Somewhere else", ["x"]), photo: url }, [{ ...place("Elsewhere", ["y"], { country: "Belgium" }), photo: "https://commons.wikimedia.org/wiki/File:Atomium%202021.jpg" }])).toBeTruthy();
+  });
+  it("lets a different place in the same city through, and no sample repeats another", () => {
+    expect(repeatOf(place("Teatro Colón", ["teatro colon"]), [place("La Boca (Caminito)", ["la boca", "caminito"])])).toBeUndefined();
+    const all = days.flat().map(r => ({ ...r, photo: r.credit?.url }));
+    for (const [i, r] of all.entries()) expect(repeatOf(r, all.filter((_, k) => k !== i))?.spotName, r.spotName).toBeUndefined();
+  });
+});
+
+describe("the review form", () => {
+  it("keeps each accepted spelling once", () => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries({ city: "Brussels, brussels, Bruxelles, BRUSSELS", region: "", spot: "", crowd: "61, 55, 47" })) f.set(k, v);
+    expect(applyReviewForm(stop, f).city).toEqual(["brussels", "bruxelles"]);
   });
 });
 

@@ -48,7 +48,7 @@ function Field({ name, label, value, long }: { name: string; label: string; valu
   );
 }
 
-function StopCard({ id, round: r, note, source }: { id: string; round: Round; note: string; source: string }) {
+function StopCard({ id, round: r, note, source, repeat }: { id: string; round: Round; note: string; source: string; repeat: string | null }) {
   const problems = stopProblems(r), link = safeLink(source), photoPage = r.credit && safeLink(r.credit.url);
   return (
     <form className="bank-card">
@@ -61,7 +61,7 @@ function StopCard({ id, round: r, note, source }: { id: string; round: Round; no
         {link && <p className="small"><a href={link} target="_blank" rel="noopener">Where the fact came from</a></p>}
       </div>
       <div className="bank-fields">
-        {problems.length > 0 && <ul className="bank-problems">{problems.map(p => <li key={p}>{p}</li>)}</ul>}
+        {(problems.length > 0 || repeat) && <ul className="bank-problems">{[...problems, ...(repeat ? [repeat] : [])].map(p => <li key={p}>{p}</li>)}</ul>}
         <Field name="prompt" label="Clue" value={r.prompt} />
         {r.postcard ? <Field name="message" label="Message" value={r.postcard.text} long /> : <Field name="alt" label="Photo description (no place names)" value={r.alt ?? ""} />}
         <div className="bank-pair"><Field name="country" label="Country" value={r.country} /><Field name="airport" label="Airport" value={r.airport} /></div>
@@ -94,7 +94,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
       <section className="panel">
         <h2>To review</h2>
-        {pending.length ? pending.map(s => <StopCard key={s.id} id={s.id} round={s.round} note={s.note} source={s.source} />) : <p>Nothing waiting.</p>}
+        {pending.length ? pending.map(s => <StopCard key={s.id} id={s.id} round={s.round} note={s.note} source={s.source} repeat={s.repeat} />) : <p>Nothing waiting.</p>}
       </section>
 
       <section className="panel">
