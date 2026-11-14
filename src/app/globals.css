@@ -176,7 +176,7 @@ h2 { font-size: var(--text-xl); }
 .archive .table td { vertical-align: middle; }
 .archive .flight-no { font-weight: 800; }
 .archive tr.is-here td { background: var(--color-paper-2); }
-.btn--small { min-height: 40px; padding: 0 var(--space-md); }
+.btn--small { min-height: 44px; padding: 0 var(--space-md); }
 .archive-tag { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; font-size: var(--text-sm); font-weight: 500; color: var(--color-accent); }
 .linkish { padding: 0; border: 0; background: none; font: inherit; color: var(--color-ink); text-decoration: underline; text-underline-offset: 0.16em; cursor: pointer; min-height: 24px; }
 .linkish:hover { color: var(--color-accent); }
@@ -294,6 +294,8 @@ textarea.codebox { min-height: 6rem; padding: var(--space-sm); resize: vertical;
 .frame figcaption { font-size: var(--text-sm); font-weight: 500; color: var(--color-muted); }
 .panel { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
 .clockline { display: flex; justify-content: space-between; align-items: stretch; gap: var(--space-md); }
+.clockline h1 { flex: 1 1 0; min-width: 0; }   /* the heading wraps; the clock never gets squeezed */
+.clockline .clock { flex: none; }
 .clock { display: flex; flex-direction: column; justify-content: center; gap: var(--space-2xs); padding: var(--space-xs) var(--space-md); min-width: 7.5rem; }
 .clock span:first-child { font-size: var(--text-xs); font-weight: 500; }
 .clock .figure { font-size: var(--text-figure-s); }
@@ -389,7 +391,10 @@ footer p { max-width: 65ch; }
   .ticket { grid-template-columns: minmax(0, 1fr); }
   .ticket-main { padding: var(--space-lg) var(--space-md); }
   .ticket-stub { border-left: 0; border-top: var(--rule-bar) dashed var(--color-plate-ink); padding: var(--space-lg) var(--space-md); }
-  .choices { grid-template-columns: minmax(0, 1fr); }
+  /* both cards side by side, so Bank it is on screen next to Risk it */
+  .choice { padding: var(--space-sm); }
+  .choice .c-key { display: none; }
+  .choice .c-title { font-size: var(--text-md); }
   .board .clue { display: none; }
   .board th, .board td { padding-inline: var(--space-xs); }
   .board .code, .board .pts { font-size: var(--text-lg); }
@@ -722,3 +727,9 @@ footer p { max-width: 65ch; }
 .bank-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .bank-table th, .bank-table td { padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; text-align: left; border-bottom: var(--rule-hair) solid var(--color-rule); }
 @media (max-width: 720px) { .bank-card, .bank-pair { grid-template-columns: minmax(0, 1fr); } }
+
+/* the reveal's next-stop button stays at the bottom of a phone screen until you scroll to it */
+@media (max-width: 40rem) {
+  .stop .panel > .actions { position: sticky; bottom: 0; z-index: 2; padding-block: var(--space-sm); background: var(--color-paper); }
+  .stop .panel > .actions .btn { flex: 1 1 auto; }
+}

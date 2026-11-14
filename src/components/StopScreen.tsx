@@ -226,6 +226,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
             </div>
             <p className="fact-lead">{r.fact}</p>
             {company && <p className="company">{company}</p>}
+            <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
             <dl className="facts">
               <dt>Region</dt><dd>{r.regionName}</dd><dt>{s.spotWord}</dt><dd>{r.spotName}</dd><dt>Nearest airport</dt><dd>{r.airport}</dd>
               {r.leg && <><dt>Flight in</dt><dd>{r.leg.km.toLocaleString("en-GB")} km from {r.leg.from}{legFlown(st.tier) ? ", flown" : ", not flown: name the city to count it"}</dd></>}
@@ -233,7 +234,6 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
               {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
             </dl>
             <CrowdBars crowd={r.crowd} spot={s.spotWord!} />
-            <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>
           </div>
         </section>
       </div>
