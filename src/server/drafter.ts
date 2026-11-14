@@ -49,7 +49,7 @@ const claude: Ask = async <T>(content: Block[], schema: Record<string, unknown>)
 };
 
 const str = { type: "string" }, strs = { type: "array", items: str }, obj = (props: Record<string, object>) => ({ type: "object", properties: props, required: Object.keys(props), additionalProperties: false });
-const IDEAS = obj({ ideas: { type: "array", items: obj({ country: str, cityName: str, spotName: str, wikipedia: str, photoSearch: str }) } });
+const IDEA = obj({ country: str, cityName: str, spotName: str, wikipedia: str, photoSearch: str });
 const DRAFT = obj({
   usable: { type: "boolean" }, concerns: str, photo: { type: "integer" }, alt: str, prompt: str,
   cityName: str, city: strs, regionName: str, region: strs, spotLabel: str, spotWord: str, spotName: str, spot: strs,
@@ -128,14 +128,17 @@ ${source.text}` },
   const photo = photos[w.photo];
   if (type !== "Language" && !photo) throw new Error("Claude didn't pick a photo");
   return {
-    type, prompt: w.prompt, country, cityName: w.cityName, city: w.city.map(norm), regionName: w.regionName, region: w.region.map(norm),
-    spotLabel: w.spotLabel, spotWord: w.spotWord, spotName: w.spotName, spot: w.spot.map(norm), airport: w.airport.toUpperCase(), fact: w.fact,
+    type, prompt: w.prompt, country, cityName: w.cityName, city: spellings(w.city), regionName: w.regionName, region: spellings(w.region),
+    spotLabel: w.spotLabel, spotWord: w.spotWord, spotName: w.spotName, spot: spellings(w.spot), airport: w.airport.toUpperCase(), fact: w.fact,
     crowd: w.crowd.map(Math.round), lat: w.lat, lng: w.lng,
     ...(photo ? { alt: w.alt, photo: photo.page } : { postcard: { text: w.message, lang: w.messageLang, from: w.messageFrom, note: w.messageNote } }),
     note: ["Drafted by Claude.", w.translation && `In English: ${w.translation}`, w.concerns && `Check: ${w.concerns}`].filter(Boolean).join(" "),
     source: source.url,
   };
 }
+
+/** Accepted spellings as the game compares them, each once. */
+const spellings = (xs: string[]) => [...new Set(xs.map(norm).filter(Boolean))];
 
 async function mapLimit<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>) {
   const out: R[] = [];
@@ -153,20 +156,29 @@ export async function draftStops(db: Db, { ask = claude, get = wikimedia, getPho
   const bank = await db.select({ round: stopBank.round, status: stopBank.status, usedOn: stopBank.usedOn }).from(stopBank);
   const known = [...SAMPLES.flatMap(d => d.rounds), ...bank.map(b => b.round)];
   const waiting = [...new Set(bank.filter(b => b.status !== "rejected" && !b.usedOn).map(b => b.round.country))].join(", ");
-  const runs = await Promise.all(STOP_TYPES.filter(t => need[t] > 0).map(async type => {
-    const skipped: string[] = [];
-    const avoid = known.filter(r => r.type === type).map(r => `${r.spotName} (${r.country})`).join("; ");
-    const { ideas } = await ask<{ ideas: Idea[] }>([{ type: "text", text: `Suggest ${need[type] + SPARE} places for ${type} stops: ${WHAT[type]}
-Mix them: about half that most players would recognise, the rest harder but fair. Use ${need[type] + SPARE} different countries, spread across continents, and favour countries other than these, which already have stops waiting: ${waiting || "none yet"}.
-Don't repeat any of these: ${avoid || "none"}.
+  const types = STOP_TYPES.filter(t => need[t] > 0);
+  if (!types.length) return { added: 0, skipped: [], need };
+  // one request picks places for every type, so it can spread them; the code still keeps a city to one stop per run
+  const picked = await ask<Record<string, Idea[]>>([{ type: "text", text: `Suggest places for this week's stops:
+${types.map(t => `- ${t}: ${need[t] + SPARE} places. ${WHAT[t]} Don't repeat any of these: ${known.filter(r => r.type === t).map(r => `${r.spotName} (${r.country})`).join("; ") || "none"}.`).join("\n")}
+Every place must be in a different city, and use as many different countries as you can, spread across continents. Favour countries other than these, which already have stops waiting: ${waiting || "none yet"}.
+For each type, mix them: about half that most players would recognise, the rest harder but fair.
 "country" must be written exactly as in this list: ${COUNTRIES.map(c => c.name).join(", ")}.
-"wikipedia" is the exact title of the English Wikipedia article about the spot (or the dish, or for Language stops the meeting place). "photoSearch" is a short Wikimedia Commons search that finds photos of it${type === "Language" ? " (unused here: leave it empty)" : ""}.` }], IDEAS);
+"wikipedia" is the exact title of the English Wikipedia article about the spot (or the dish, or for Language stops the meeting place). "photoSearch" is a short Wikimedia Commons search that finds photos of it (leave it empty for Language).` }],
+    obj(Object.fromEntries(types.map(t => [t, { type: "array", items: IDEA }]))));
+  const cities = new Set<string>(), skipped: string[] = [];
+  const plan = types.map(type => ({ type, ideas: (picked[type] ?? []).filter(idea => {
+    const city = `${norm(idea.country)}|${norm(idea.cityName)}`;
+    if (cities.has(city)) { skipped.push(`${idea.spotName}: ${idea.cityName} already has a stop in this run`); return false; }
+    cities.add(city); return true;
+  }) }));
+  const runs = await Promise.all(plan.map(async ({ type, ideas }) => {
     let added = 0;
     await mapLimit(ideas, 3, async idea => {   // each stop is saved as soon as it's drafted, so a run cut off by the time limit keeps what it paid for
       try { const res = await addDrafts(db, [await draftOne(type, idea, ask, get)], getPhoto); added += res.added; skipped.push(...res.skipped); }
       catch (e) { skipped.push(`${idea.spotName}: ${e instanceof Error ? e.message : e}`); }
     });
-    return { added, skipped };
+    return added;
   }));
-  return { added: runs.reduce((n, r) => n + r.added, 0), skipped: runs.flatMap(r => r.skipped), need };
+  return { added: runs.reduce((n, r) => n + r, 0), skipped, need };
 }
