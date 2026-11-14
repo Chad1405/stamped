@@ -10,10 +10,10 @@ export const maxDuration = 300;   // every type drafts at once; a run is about t
 export const POST = handleSchedule(async () => {
   try {
     const { added, skipped } = await draftStops(await db());
-    if (added || skipped.length) await sendAlert(`Stamped: ${added} new ${added === 1 ? "stop" : "stops"} to review`,
+    if (added || skipped.length) await sendAlert(`Born There: ${added} new ${added === 1 ? "stop" : "stops"} to review`,
       `Approve them at /admin.${skipped.length ? `\n\nSkipped ${skipped.length}:\n${skipped.join("\n")}` : ""}`);
   } catch (e) {
-    await sendAlert("Stamped: the weekly drafting job failed", String(e));
+    await sendAlert("Born There: the weekly drafting job failed", String(e));
     throw e;
   }
 });

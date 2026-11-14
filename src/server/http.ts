@@ -40,7 +40,7 @@ export async function sendAlert(subject: string, text: string) {
   if (!key || !to) return;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: process.env.ALERT_EMAIL_FROM || "Stamped <onboarding@resend.dev>", to, subject, text }),
+    body: JSON.stringify({ from: process.env.ALERT_EMAIL_FROM || "Born There <onboarding@resend.dev>", to, subject, text }),
   });
   if (!res.ok) console.error(`[alert] email failed: ${res.status} ${await res.text()}`);
 }

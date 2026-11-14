@@ -43,7 +43,7 @@ export function stopProblems(r: Round): string[] {
 
 /* ---- photos ---- */
 // Wikimedia asks automated clients to name themselves with a way to reach them, and limits cloud servers hard
-const UA = { "user-agent": "StampedGame/1.0 (https://stamped-smoky.vercel.app; daily geography game)" };
+const UA = { "user-agent": "BornThereGame/1.0 (https://bornthere.app; daily geography game)" };
 let wikimediaQueue: Promise<unknown> = Promise.resolve();
 /** A request to Wikipedia or Commons: one at a time per server, and a "slow down" waits as long as it asks, up to three times. */
 export function wikimedia(url: string | URL): Promise<Response> {

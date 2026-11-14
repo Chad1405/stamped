@@ -123,7 +123,7 @@ export async function keepCalendar(db: Db, today: string, seed = process.env.SEE
 /** The daily job: top up the calendar and say so when it is running low. */
 export async function dailyCalendarCheck(db: Db, today: string, warn: (subject: string, text: string) => Promise<void>, seed?: boolean) {
   const { ahead, replayed } = await keepCalendar(db, today, seed);
-  if (ahead < LOW_DAYS) await warn(`Stamped: only ${ahead} ${ahead === 1 ? "day" : "days"} of flights ready`,
+  if (ahead < LOW_DAYS) await warn(`Born There: only ${ahead} ${ahead === 1 ? "day" : "days"} of flights ready`,
     `Flights are ready for the next ${ahead} ${ahead === 1 ? "day" : "days"} after ${today}. Add more to keep ${DAYS_AHEAD} days ahead.${replayed.length ? ` Replaying an old flight on: ${replayed.join(", ")}.` : ""}`);
   return { ahead, replayed };
 }

@@ -1,7 +1,7 @@
-# Stamped
+# Born There
 
 A daily travel game. Five photo clues a day: name the country, then risk it for the city and a final question.
-This is the live web app built from the Stamped prototype: same design and rules, with the answers, the clock and the scoring moved to the server.
+This is the live web app built from the Stamped prototype (the game's old name): same design and rules, with the answers, the clock and the scoring moved to the server.
 
 ## Run it locally
 
@@ -73,6 +73,6 @@ Migrations run on the first request after each deploy.
 4. **Rate limiting** on `/api/play` and `/api/leagues` (Upstash Redis), and analytics (PostHog) to measure day-1, day-7 and day-30 retention.
 5. **Daily reminders**: opt-in email (Resend) or web push.
 6. **Payments** (Stripe) for the archive, deliberately left out of this phase.
-7. **Legal:** privacy policy, cookie consent if ads or analytics set cookies, terms. Check the "Stamped" name for trademark conflicts before launch.
+7. **Legal:** privacy policy, cookie consent if ads or analytics set cookies, terms. The game was renamed from Stamped to Born There; the player cookie keeps its old `stamped_pid` name so nobody loses progress.
 
 Crowd percentages show the editor's estimate until 20 players have finished a stop, then switch to live figures.

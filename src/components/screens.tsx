@@ -90,7 +90,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   // the comparison, shortened for sharing: "Better than 76%" becomes "Top 24%"
   const rank = day.field && (day.field.better === 100 ? `Top score ${day.isToday ? "today" : "on this flight"}` : `Top ${Math.max(1, 100 - day.field.better)}% ${day.isToday ? "today" : "on this flight"}`);
   // each stop's points, not stamp names or places: nothing that spoils the day for a friend who hasn't played
-  const share = [`Stamped, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}`, `Stops: ${day.stops.map(x => x.state.points).join(" · ")}`, flownKm ? `${km(flownKm)} km flown` : "", rank,
+  const share = [`Born There, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}`, `Stops: ${day.stops.map(x => x.state.points).join(" · ")}`, flownKm ? `${km(flownKm)} km flown` : "", rank,
     day.isToday && si && si.n >= 2 ? `Streak: ${si.n} days` : "", typeof location !== "undefined" ? location.origin : ""].filter(Boolean).join("\n");
   const nC = me?.passport.countries.length ?? 0, cls = classFor(nC), nxt = nextClass(nC);
   const newC = me?.passport.countries.filter(c => c.first === day.date).length ?? 0, newCity = me?.passport.cities.filter(c => c.first === day.date).length ?? 0;
@@ -206,7 +206,7 @@ export function Friends({ me, leagues, onCreate, onJoin, onLeave, onRename, onBa
                 <td className="num c-days">{m.played}/7</td><td className="num">{m.todayScore ?? "Not yet"}</td><td className="num c-streak">{m.streak}</td><td className="num total">{m.total}</td></tr>
             ))}</tbody></table></div>
           <div className="actions">
-            <button className="btn btn--small" type="button" onClick={() => navigator.clipboard.writeText(`Join my Stamped league "${l.name}": ${invite(l)}`).then(() => setCopied(l.id), () => setCopied(""))}>{copied === l.id ? "Invite copied" : "Copy invite link"}</button>
+            <button className="btn btn--small" type="button" onClick={() => navigator.clipboard.writeText(`Join my Born There league "${l.name}": ${invite(l)}`).then(() => setCopied(l.id), () => setCopied(""))}>{copied === l.id ? "Invite copied" : "Copy invite link"}</button>
             <button className="linkish" type="button" onClick={() => onLeave(l.id)}>Leave league</button>
           </div>
         </section>

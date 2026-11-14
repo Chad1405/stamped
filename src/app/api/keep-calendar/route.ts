@@ -10,7 +10,7 @@ export const POST = handleSchedule(async () => {
   try {
     await dailyCalendarCheck(await db(), gameToday(), warn);
   } catch (e) {
-    await warn("Stamped: the daily calendar job failed", String(e));
+    await warn("Born There: the daily calendar job failed", String(e));
     throw e;
   }
 });

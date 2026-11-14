@@ -24,7 +24,7 @@ export async function needed(db: Db): Promise<Record<string, number>> {
 type Block = Anthropic.Beta.BetaContentBlockParam;
 export type Ask = <T>(content: Block[], schema: Record<string, unknown>) => Promise<T>;
 
-const SYSTEM = `You write stops for Stamped, a daily geography game. Each stop shows a photo (or, for Language stops, a text message) and the player names the country, then the city, then answers a final question about the exact thing shown.
+const SYSTEM = `You write stops for Born There, a daily geography game. Each stop shows a photo (or, for Language stops, a text message) and the player names the country, then the city, then answers a final question about the exact thing shown.
 Rules for every stop:
 - Facts come only from the source text you're given. Never add a fact it doesn't support.
 - Nothing the player sees before guessing (the clue, the photo description, the final question) may name or hint at the country, city or answer.
