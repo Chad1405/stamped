@@ -87,7 +87,11 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   // kilometres: every leg of the route, and the ones you flew (you fly a leg by naming the city it lands in)
   const legs = day.stops.map(x => x.reveal?.leg?.km ?? 0), km = (n: number) => n.toLocaleString("en-GB");
   const routeKm = legs.reduce((a, b) => a + b, 0), flownKm = day.stops.reduce((n, x, i) => n + (legFlown(x.state.tier) ? legs[i] : 0), 0);
-  const share = `Stamped, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}\n${tiers.map(t => TIERS[t].emoji).join("")}${flownKm ? `\n✈️ ${km(flownKm)} km flown` : ""}${day.isToday && si && si.n >= 2 ? `\nStreak: ${si.n} days` : ""}\n${typeof location !== "undefined" ? location.origin : ""}`;
+  // the comparison, shortened for sharing: "Better than 76%" becomes "Top 24%"
+  const rank = day.field && (day.field.better === 100 ? `Top score ${day.isToday ? "today" : "on this flight"}` : `Top ${Math.max(1, 100 - day.field.better)}% ${day.isToday ? "today" : "on this flight"}`);
+  // each stop's points, not stamp names or places: nothing that spoils the day for a friend who hasn't played
+  const share = [`Stamped, flight ${day.flight}: ${s}/${MAX_DAY_SCORE}`, `Stops: ${day.stops.map(x => x.state.points).join(" · ")}`, flownKm ? `${km(flownKm)} km flown` : "", rank,
+    day.isToday && si && si.n >= 2 ? `Streak: ${si.n} days` : "", typeof location !== "undefined" ? location.origin : ""].filter(Boolean).join("\n");
   const nC = me?.passport.countries.length ?? 0, cls = classFor(nC), nxt = nextClass(nC);
   const newC = me?.passport.countries.filter(c => c.first === day.date).length ?? 0, newCity = me?.passport.cities.filter(c => c.first === day.date).length ?? 0;
   // each stamp thuds as it slams into the passport, then the fanfare
