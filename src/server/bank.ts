@@ -62,8 +62,9 @@ export const cleanPhoto = (bytes: Buffer) => sharp(bytes).rotate().resize(960, 7
 
 async function storePhoto(bytes: Buffer) {
   const name = `${newId()}.jpg`;   // the browser sees this before the player guesses, so it says nothing
-  if (process.env.BLOB_READ_WRITE_TOKEN) return (await put(`clues/${name}`, bytes, { access: "public", contentType: "image/jpeg", addRandomSuffix: false })).url;
-  if (process.env.VERCEL) throw new Error("photo storage isn't set up (BLOB_READ_WRITE_TOKEN)");
+  // newer stores connect with BLOB_STORE_ID and Vercel's OIDC token; older ones with BLOB_READ_WRITE_TOKEN
+  if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN) return (await put(`clues/${name}`, bytes, { access: "public", contentType: "image/jpeg", addRandomSuffix: false })).url;
+  if (process.env.VERCEL) throw new Error("photo storage isn't set up: connect a Blob store to the project");
   const dir = path.join(process.cwd(), "public", "clues", "bank");
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, name), bytes);
