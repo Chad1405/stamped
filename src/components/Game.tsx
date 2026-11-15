@@ -131,6 +131,7 @@ export default function Game() {
       </main>
       <footer>
         <p>Each photo is credited with its answer, once you have played that stop.</p>
+        <nav aria-label="About"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
       </footer>
     </div>
   );

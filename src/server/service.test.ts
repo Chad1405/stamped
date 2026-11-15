@@ -2,9 +2,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { itineraries, plays, results } from "@/db/schema";
+import { itineraries, leagues, plays, players, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
@@ -231,5 +231,21 @@ describe("retention", () => {
     expect(r.players).toBe(4);
     expect(r.rates).toEqual([{ after: 1, of: 3, back: 2 }, { after: 7, of: 3, back: 1 }, { after: 30, of: 2, back: 1 }]);
     expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0 }]);
+  });
+});
+
+describe("deleting a player", () => {
+  it("removes everything kept about them, and their leagues, but nobody else's", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const [me, other] = [await ensurePlayer(db, undefined), await ensurePlayer(db, undefined)];
+    for (const id of [me, other]) await db.insert(results).values({ playerId: id, date: TODAY, score: 100, tiers: [], onTime: true });
+    await db.insert(plays).values({ playerId: me, date: TODAY, stop: 0, state: freshStop() });
+    await createLeague(db, me, "Mine");
+    await forgetPlayer(db, me);
+    expect((await db.select().from(players)).map(p => p.id)).toEqual([other]);
+    expect((await db.select().from(results)).map(r => r.playerId)).toEqual([other]);
+    expect(await db.select().from(plays)).toEqual([]);
+    expect(await db.select().from(leagues)).toEqual([]);
   });
 });

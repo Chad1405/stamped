@@ -23,6 +23,7 @@ export const api = {
   day: (date?: string) => call<Day>(`/api/day${date ? `?date=${encodeURIComponent(date)}` : ""}`),
   play: (date: string, stop: number, action: Action) => call<ActResult>("/api/play", { method: "POST", body: JSON.stringify({ date, stop, action }) }),
   me: () => call<Me>("/api/me"),
+  forget: () => call<{ ok: true }>("/api/me", { method: "DELETE" }),
   rename: (name: string) => call<Me>("/api/me", { method: "PATCH", body: JSON.stringify({ name }) }),
   leagues: () => call<League[]>("/api/leagues"),
   createLeague: (name: string) => call<{ joined: string; leagues: League[] }>("/api/leagues", { method: "POST", body: JSON.stringify({ name }) }),

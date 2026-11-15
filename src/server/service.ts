@@ -31,6 +31,10 @@ export async function ensurePlayer(db: Db, id: string | undefined): Promise<stri
   await db.insert(players).values({ id: fresh });
   return fresh;
 }
+/** Deletes a player and everything kept about them: plays, results, stamps, league places and the leagues they started. Anonymous totals per stop stay. */
+export async function forgetPlayer(db: Db, playerId: string) {
+  await db.delete(players).where(eq(players.id, playerId));
+}
 export const cleanName = (s: unknown) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
 export async function setName(db: Db, playerId: string, name: unknown) {
   await db.update(players).set({ name: cleanName(name) }).where(eq(players.id, playerId));
