@@ -45,9 +45,13 @@ export default function Game() {
   }, [refreshPlayer]);
 
   useEffect(() => {
-    const join = new URLSearchParams(location.search).get("join");
-    if (join) { setInvite(join.toUpperCase()); history.replaceState(null, "", location.pathname); }
-    void load().then(() => { if (join) { backTo.current = "home"; setView("friends"); } });
+    const q = new URLSearchParams(location.search), join = q.get("join"), pass = q.get("pass");
+    if (join) setInvite(join.toUpperCase());
+    if (join || pass) history.replaceState(null, "", location.pathname);   // back from Checkout or a restore link: the archive shows the pass
+    void load().then(() => {
+      if (join) { backTo.current = "home"; setView("friends"); }
+      if (pass === "expired") setError("That restore link has expired or was already used. Ask for a new one under the archive.");
+    });
   }, [load]);
 
   const merge = useCallback((r: ActResult) => {

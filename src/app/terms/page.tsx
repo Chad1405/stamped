@@ -13,7 +13,12 @@ export default function Terms() {
 
       <section>
         <h2>The game</h2>
-        <p>{SITE.name} is free to play. We work to keep it running and correct, but we provide it as it is: it may change, have mistakes or downtime, and we may stop running it.</p>
+        <p>{SITE.name} is free to play each day. We work to keep it running and correct, but we provide it as it is: it may change, have mistakes or downtime, and we may stop running it.</p>
+      </section>
+
+      <section>
+        <h2>The archive pass</h2>
+        <p>Today&apos;s and yesterday&apos;s flights are free. The archive pass, a one-time payment, opens every earlier flight for as long as the game runs. Payment is taken by Stripe as the seller, through its merchant of record service, under its own terms. The pass belongs to the browser you bought it on and can be restored on another one with the email you paid with. For refunds or payment questions, contact us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a>; your rights as a consumer aren&apos;t affected.</p>
       </section>
 
       <section>

@@ -23,6 +23,7 @@ export default function Privacy() {
           <li>Your play: the guesses you type, your answers and choices, when you made them, and your scores.</li>
           <li>What that adds up to: your streak, lounge pass use, finished flights, and the countries, cities and stamps in your passport.</li>
           <li>If you use friends leagues: the name you choose and the leagues you join or start.</li>
+          <li>If you buy the archive pass: the email you paid with and a reference to the payment, so the pass can be restored on another browser. We never see your card details.</li>
         </ul>
         <p>We don&apos;t ask for your name, email or location, and we don&apos;t store your IP address in our database. Guesses are kept as you type them, so please don&apos;t type anything personal into the answer box.</p>
       </section>
@@ -47,13 +48,15 @@ export default function Privacy() {
           <li><strong>Players in your leagues</strong> see your league name, scores and streak.</li>
           <li><strong>Vercel</strong> hosts the game and protects it from abuse. To do that it handles your IP address and keeps request logs for a short time.</li>
           <li><strong>Neon</strong> runs the database where your progress is kept.</li>
+          <li><strong>Stripe</strong> takes payment for the archive pass, as the seller through its merchant of record service (shown at checkout as Onelink). It handles your payment details and tax under its own privacy policy.</li>
+          <li><strong>Resend</strong> sends the email if you ask to restore a pass.</li>
         </ul>
         <p>These services may store data outside your country, under their own data protection terms. Nobody else gets your data, and we never sell it.</p>
       </section>
 
       <section>
         <h2>How long</h2>
-        <p>For as long as the game runs, unless you delete it first. Clearing your cookies disconnects you from your progress but doesn&apos;t delete it, so if you want it gone, delete it first as described below.</p>
+        <p>For as long as the game runs, unless you delete it first. Clearing your cookies disconnects you from your progress but doesn&apos;t delete it, so if you want it gone, delete it first as described below. If you bought the archive pass, the purchase record (your email and the payment reference) is kept even after you delete your progress, because it&apos;s a record of a sale and lets you restore the pass. Email us to have it removed.</p>
       </section>
 
       <section>

@@ -14,7 +14,8 @@ export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown
     if (seededFor !== today) { await keepCalendar(d, today); seededFor = today; }   // once per day per server, so a day still has a flight if the daily job failed
     const cookieId = req.cookies.get(COOKIE)?.value;
     const playerId = await ensurePlayer(d, cookieId);
-    const res = NextResponse.json(await fn({ db: d, playerId, today }));
+    const out = await fn({ db: d, playerId, today });
+    const res = out instanceof NextResponse ? out : NextResponse.json(out);   // a route may answer with a redirect instead of JSON
     if (playerId !== cookieId) res.cookies.set(COOKIE, playerId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: YEAR, path: "/" });
     res.headers.set("Cache-Control", "no-store");
     return res;
@@ -42,14 +43,20 @@ export async function body(req: NextRequest): Promise<Record<string, unknown>> {
   throw new HttpError(400, "Expected a JSON object.");
 }
 
-/** Always logged; emailed too once RESEND_API_KEY and ALERT_EMAIL are set. */
-export async function sendAlert(subject: string, text: string) {
-  console.error(`[alert] ${subject}. ${text}`);
-  const key = process.env.RESEND_API_KEY, to = process.env.ALERT_EMAIL;
-  if (!key || !to) return;
+/** Sends an email through Resend. Without RESEND_API_KEY (local dev) it only logs, so a restore link can still be followed from the console. */
+export async function sendEmail(to: string, subject: string, text: string) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) { console.log(`[email] to ${to}: ${subject}. ${text}`); return; }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify({ from: process.env.ALERT_EMAIL_FROM || "Born There <onboarding@resend.dev>", to, subject, text }),
   });
-  if (!res.ok) console.error(`[alert] email failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) console.error(`[email] failed: ${res.status} ${await res.text()}`);
+}
+
+/** Always logged; emailed too once RESEND_API_KEY and ALERT_EMAIL are set. */
+export async function sendAlert(subject: string, text: string) {
+  console.error(`[alert] ${subject}. ${text}`);
+  const to = process.env.ALERT_EMAIL;
+  if (to && process.env.RESEND_API_KEY) await sendEmail(to, subject, text);
 }

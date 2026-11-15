@@ -6,6 +6,7 @@ import { api, type Day, type League, type Me } from "@/lib/client/api";
 import { band, classFor, CLASSES, CONT, COUNTRY_MS, LADDER, legFlown, MAX_DAY_SCORE, nextClass, ROUND_MS, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
 import { CountUp, EntryStamp, longDate, ordinal, Strip } from "./bits";
+import { SITE } from "@/lib/site";
 
 const firstOpen = (day: Day) => day.stops.findIndex(s => s.state.phase !== "done");
 
@@ -67,13 +68,37 @@ function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDa
             <tr key={d.date} className={here ? "is-here" : ""}>
               <td className="flight-no">{d.flight}</td><td>{longDate(d.date)}{d.isToday ? " (today)" : ""}</td>
               <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : ""}</td>
-              <td className="num">{here ? <span className="small">Open now</span> : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
+              <td className="num">{here ? <span className="small">Open now</span>
+                : d.locked ? <a className="btn btn--small" href="#archive-pass">Unlock</a>
+                : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
             </tr>
           );
         })}</tbody>
       </table>
       {!all && me.days.length > SHOWN && <button className="btn btn--small" type="button" onClick={() => setAll(true)}>Show all {me.days.length} flights</button>}
+      <ArchivePass me={me} />
     </section>
+  );
+}
+
+/** Today's and yesterday's flights are free; the pass opens the rest, once and for good. */
+function ArchivePass({ me }: { me: Me }) {
+  const [msg, setMsg] = useState(""), [busy, setBusy] = useState(false), [email, setEmail] = useState("");
+  if (me.unlocked) return <p className="small pass-note">Archive pass active. Every past flight is open.</p>;
+  if (!me.days.some(d => d.locked)) return null;
+  const buy = () => { setBusy(true); setMsg(""); api.checkout().then(r => location.assign(r.url), e => { setBusy(false); setMsg(e.message); }); };
+  const restore = (e: React.FormEvent) => { e.preventDefault(); api.restore(email).then(() => setMsg("If that email bought a pass, a link is on its way. It works once, within 30 minutes."), err => setMsg(err.message)); };
+  return (
+    <div className="pass" id="archive-pass">
+      <h3>Archive pass</h3>
+      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once.</p>
+      <button className="btn btn--primary" type="button" onClick={buy} disabled={busy}>{busy ? "Opening checkout…" : `Unlock the archive, ${SITE.passPrice}`}</button>
+      <form className="pass-restore" onSubmit={restore}>
+        <label htmlFor="restore-email">Bought it already? Enter the email you paid with and we’ll send a link to unlock this browser.</label>
+        <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit">Send link</button></div>
+      </form>
+      {msg && <p className="small" role="status">{msg}</p>}
+    </div>
   );
 }
 

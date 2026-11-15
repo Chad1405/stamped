@@ -87,7 +87,7 @@ h2 { font-size: var(--text-xl); }
 .lead { font-size: var(--text-lg); color: var(--color-ink-2); }
 
 /* controls */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 48px; padding: 0 var(--space-lg); border: var(--rule-bar) solid var(--color-ink); border-radius: 0; background: transparent; color: var(--color-ink); font: 800 var(--text-sm)/1 var(--font-body); white-space: nowrap; cursor: pointer; transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 48px; padding: 0 var(--space-lg); border: var(--rule-bar) solid var(--color-ink); border-radius: 0; background: transparent; color: var(--color-ink); font: 800 var(--text-sm)/1 var(--font-body); white-space: nowrap; text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
 .btn:hover { background: var(--color-paper-2); }
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
@@ -177,6 +177,9 @@ h2 { font-size: var(--text-xl); }
 .archive .flight-no { font-weight: 800; }
 .archive tr.is-here td { background: var(--color-paper-2); }
 .btn--small { min-height: 44px; padding: 0 var(--space-md); }
+.pass { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); padding-top: var(--space-lg); margin-top: var(--space-md); scroll-margin-top: var(--space-xl); }
+.pass-restore { display: flex; flex-direction: column; gap: var(--space-xs); width: 100%; font-size: var(--text-sm); }
+.pass-note { margin-top: var(--space-md); }
 .archive-tag { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; font-size: var(--text-sm); font-weight: 500; color: var(--color-accent); }
 .linkish { padding: 0; border: 0; background: none; font: inherit; color: var(--color-ink); text-decoration: underline; text-underline-offset: 0.16em; cursor: pointer; min-height: 24px; }
 .linkish:hover { color: var(--color-accent); }
