@@ -1,7 +1,7 @@
 // Shared plumbing for the API routes: the anonymous player cookie, dev seeding, and error mapping.
 import { NextResponse, type NextRequest } from "next/server";
 import { db, type Db } from "@/db";
-import { ensurePlayer, gameToday, HttpError, keepCalendar } from "./service";
+import { ensurePlayer, forgetPlayer, gameToday, HttpError, keepCalendar } from "./service";
 
 const COOKIE = "stamped_pid";
 const YEAR = 60 * 60 * 24 * 365;
@@ -23,6 +23,15 @@ export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown
     console.error(e);
     return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment." }, { status: 500 });
   }
+}
+
+/** Deletes the player behind this browser's cookie and the cookie itself; the next visit starts a new, empty player. */
+export async function forget(req: NextRequest) {
+  const id = req.cookies.get(COOKIE)?.value;
+  if (id) await forgetPlayer(await db(), id);
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete(COOKIE);
+  return res;
 }
 
 /** Read a small JSON body; anything else is a 400. */

@@ -734,3 +734,11 @@ footer p { max-width: 65ch; }
   .stop .panel > .actions { position: sticky; bottom: 0; z-index: 2; padding-block: var(--space-sm); background: var(--color-paper); }
   .stop .panel > .actions .btn { flex: 1 1 auto; }
 }
+
+/* ---- your data, privacy and terms ---- */
+.forget { display: flex; flex-direction: column; gap: var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); padding-top: var(--space-lg); }
+.legal { display: flex; flex-direction: column; gap: var(--space-lg); max-width: 70ch; padding-block: var(--space-xl) var(--space-2xl); }
+.legal section { display: flex; flex-direction: column; gap: var(--space-sm); }
+.legal ul { display: flex; flex-direction: column; gap: var(--space-xs); padding-left: 1.2em; }
+footer nav { display: flex; gap: var(--space-md); }
+

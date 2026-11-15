@@ -2,7 +2,7 @@
 // The screens around play: start, the day's passport, the lifetime passport, and friend leagues.
 import { useEffect, useState } from "react";
 import { sfx } from "@/lib/client/fx";
-import type { Day, League, Me } from "@/lib/client/api";
+import { api, type Day, type League, type Me } from "@/lib/client/api";
 import { band, classFor, CLASSES, CONT, COUNTRY_MS, LADDER, legFlown, MAX_DAY_SCORE, nextClass, ROUND_MS, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
 import { CountUp, EntryStamp, longDate, ordinal, Strip } from "./bits";
@@ -179,7 +179,25 @@ export function Passport({ me, onBack }: { me: Me; onBack: () => void }) {
         <div><h2>Cities</h2>{p.cities.length ? <ul className="citylist">{p.cities.map(c => <li key={c.name}><strong>{c.airport}</strong> {c.name}</li>)}</ul> : <p className="small">Go deeper and name a city to add it here.</p>}</div>
       </section>
       <div className="actions"><button className="btn btn--primary" type="button" onClick={onBack}>Back to the flight</button></div>
+      <Forget />
     </div>
+  );
+}
+
+/** Deletes everything kept about this browser's player, after a second, explicit yes. */
+function Forget() {
+  const [asking, setAsking] = useState(false), [msg, setMsg] = useState("");
+  const forget = () => api.forget().then(() => location.assign("/"), () => setMsg("That didn't work. Try again in a moment."));
+  return (
+    <section className="forget">
+      <h2>Your data</h2>
+      <p className="small">Your progress is tied to this browser, not an account. <a href="/privacy">What we keep, and why</a>.</p>
+      {asking ? <>
+        <p>This deletes your streak, passport, results and league places, and any league you started. It can&apos;t be undone.</p>
+        <div className="actions"><button className="btn" type="button" onClick={forget}>Yes, delete everything</button><button className="btn btn--small" type="button" onClick={() => setAsking(false)}>Keep it</button></div>
+      </> : <div className="actions"><button className="btn btn--small" type="button" onClick={() => setAsking(true)}>Delete my progress</button></div>}
+      {msg && <p className="help is-error" role="status">{msg}</p>}
+    </section>
   );
 }
 
