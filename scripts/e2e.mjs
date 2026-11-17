@@ -62,9 +62,9 @@ for (let i = 0; i < 5; i++) {
   await alice.waitForFunction(q => document.querySelector("h1")?.innerText === q, { timeout: 5000 }, r.spotLabel);
   if (i === 0) ok(true, `the last step asks by category (${r.spotLabel})`);
   await guess(alice, r.spot[0]);
-  await alice.waitForFunction(() => /Board stop|Open your passport/.test(document.body.innerText));
+  await alice.waitForFunction(() => /Board stop|See your hand/.test(document.body.innerText));
   if (i === 0) { await wait(700); await alice.screenshot({ path: `${OUT}/3-reveal.png`, fullPage: true }); ok((await text(alice)).includes(`${r.cityName}, ${r.country}`), "the reveal names the place"); }
-  await clickText(alice, i < 4 ? "Board stop" : "Open your passport");
+  await clickText(alice, i < 4 ? "Board stop" : "See your hand");
   if (i < 4) await alice.waitForSelector(".count", { timeout: 5000 }).catch(() => {});
 }
 await alice.waitForFunction(() => document.body.innerText.includes("Your passport grew"));
@@ -131,11 +131,11 @@ for (let i = 0; i < 5; i++) {
     await carol.waitForSelector(".choice--risk");
   }
   await carol.tap(".choice:not(.choice--risk)");
-  await carol.waitForFunction(() => /Board stop|Open your passport/.test(document.body.innerText));
+  await carol.waitForFunction(() => /Board stop|See your hand/.test(document.body.innerText));
   phoneTop &&= await atTop();
-  await clickText(carol, i < 4 ? "Board stop" : "Open your passport");
+  await clickText(carol, i < 4 ? "Board stop" : "See your hand");
 }
-await carol.waitForFunction(() => document.body.innerText.includes("Flight log"));
+await carol.waitForFunction(() => document.body.innerText.includes("Your passport grew"));
 phoneTop &&= await atTop();
 ok(phoneTop, "phone: every stop, reveal and the passport open at the top, with no sideways scroll");
 const carolDone = await text(carol), carolKm = carolDone.match(/You flew ([\d,]+) km of today's ([\d,]+) km route/);
