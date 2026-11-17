@@ -72,6 +72,8 @@ describe("drafting stops", () => {
       { date: "2026-11-17", flight: "002", rounds: [land, { ...food, tells: "Kept." }, lang] },
     ]);
     await db.insert(stopBank).values([{ id: newId(), round: food }, { id: newId(), status: "rejected" as const, round: food }]);
+    expect(await writeTells(db, "2026-11-17", { ask, get, until: 0 })).toEqual({ written: 0, failed: [], left: 3 });   // out of time: nothing started, all three counted as left
+    expect((await db.select().from(stopBank)).every(b => !b.round.tells)).toBe(true);
     const { written, failed } = await writeTells(db, "2026-11-17", { ask, get });
     expect([written, failed]).toEqual([3, []]);   // two in today's flight, one waiting in the bank
     const [past, today] = (await db.select().from(itineraries)).toSorted((a, b) => a.date.localeCompare(b.date));
