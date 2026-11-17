@@ -1,40 +1,49 @@
 "use client";
-// Small pieces every screen shares: the live strip, the entry stamp, crowd bars, a counting number.
+// Small pieces every screen shares: the cards, the deck, crowd bars, a counting number.
 import { useEffect, useRef, useState } from "react";
 import type { StopData } from "@/lib/client/api";
-import { TIERS, type TierId } from "@/lib/game/rules";
+import { TIERS } from "@/lib/game/rules";
 
 export const ordinal = (n: number) => n + (n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th");
 export const longDate = (d: string) => { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
 export const shortDate = (d: string) => { const [y, m, dd] = d.split("-"); return `${dd}.${m}.${y.slice(2)}`; };
-const DEEP: TierId[] = ["native", "local", "traveller"];
 
-/** The day's five stops, carried through play. */
-export function Strip({ stops, current, total }: { stops: StopData[]; current: number; total?: number }) {
+/** A played stop as a small card: number, airport code, points and the stamp's name. */
+export function MiniCard({ s, i, style }: { s: StopData; i: number; style?: React.CSSProperties }) {
+  const tier = s.state.tier, t = tier ? TIERS[tier] : null;
   return (
-    <ol className="strip" aria-label="Today's five stops">
-      {stops.map((s, i) => {
-        const done = s.state.phase === "done", live = !done && i === current;
+    <span className={`mini t-${tier ?? "miss"}`} style={style} role="img" aria-label={`Stop ${i + 1}${s.reveal ? `, ${s.reveal.place}` : ""}: ${t?.name ?? "not played"}, ${s.state.points} points`}>
+      <span className="m-n" aria-hidden="true">{i + 1}</span>
+      <span className="m-code" aria-hidden="true">{s.reveal?.code ?? "—"}</span>
+      <span className="m-pts" aria-hidden="true">{s.state.points}</span>
+      <span className="m-tier" aria-hidden="true">{t?.name ?? ""}</span>
+    </span>
+  );
+}
+
+/** Today's hand on the start screen: played stops face up, the rest face down, the next one glowing. */
+export function Fan({ stops, current }: { stops: StopData[]; current: number }) {
+  const n = stops.length;
+  return (
+    <ol className="fan" aria-label={`Today's ${n} stops, ${stops.filter(s => s.state.phase === "done").length} played`}>
+      {stops.map((s, k) => {
+        const done = s.state.phase === "done", off = k - (n - 1) / 2;
         return (
-          <li key={i} className={done ? "is-done" : live ? "is-live" : ""} aria-current={live ? "step" : undefined}>
-            <span>{i + 1} <span className="s-type">{s.type.toLowerCase()}</span></span>
-            <span>{done && s.reveal ? s.reveal.code : "???"}</span>
+          <li key={k} className={!done && k === current ? "is-live" : undefined} style={{ ["--r" as string]: `${off * 9}deg`, ["--y" as string]: `${Math.abs(off) * 6}px`, ["--k" as string]: k }}>
+            {done ? <MiniCard s={s} i={k} /> : <span className="cardback" aria-hidden="true">{k === current && <span>{k + 1}</span>}</span>}
           </li>
         );
       })}
-      {total !== undefined && <li className="total"><span>Total</span><span>{total}</span></li>}
     </ol>
   );
 }
 
-/** The stamp you earn on a stop. */
-export function EntryStamp({ s, i, date, motion, delay = 0 }: { s: StopData; i: number; date: string; motion?: string; delay?: number }) {
-  if (!s.state.tier || !s.reveal) return null;
-  const t = TIERS[s.state.tier], cls = DEEP.includes(s.state.tier) ? "is-deep" : s.state.tier === "miss" ? "is-miss" : "";
+/** The rest of the day, peeking at the bottom of the screen. */
+export function Deck({ left }: { left: number }) {
   return (
-    <div className={`entry ${cls} ${motion ?? ""}`} style={{ ["--i" as string]: delay }} role="img" aria-label={`${t.name} stamp for stop ${i + 1}, ${s.reveal.place}, ${s.state.points} points`}>
-      <span className="e-code">{s.reveal.code}</span><span className="e-name">{t.name}</span>
-      <span className="e-meta">Stop {i + 1}, {s.type.toLowerCase()}</span><span className="e-meta">+{s.state.points} on {shortDate(date)}</span>
+    <div className="deck" role="img" aria-label={left ? `${left} ${left === 1 ? "card" : "cards"} left in the deck` : "The last card of the day"}>
+      <div className="stack" aria-hidden="true">{Array.from({ length: Math.max(1, Math.min(left, 4)) }, (_, k) => <i key={k} className="cardback" style={{ ["--k" as string]: k }} />)}</div>
+      <span className="deck-left" aria-hidden="true">{left ? `${left} left` : "Last card"}</span>
     </div>
   );
 }

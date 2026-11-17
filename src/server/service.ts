@@ -148,7 +148,7 @@ const publicRound = (r: Round, i: number, s: StopState) => {
 };
 export const codeFor = (r: Round, tier: TierId) => {
   if (tier === "native" || tier === "local") return r.airport;
-  if (tier === "miss") return "???";
+  if (tier === "miss") return "—";   // nothing named, so no code to show (a dash, not "???", which reads as missing data)
   if (tier === "tourist") return CONT3[countryByName(r.country)!.cont[0]];
   return ISO3[r.country] ?? r.country.slice(0, 3).toUpperCase();
 };
