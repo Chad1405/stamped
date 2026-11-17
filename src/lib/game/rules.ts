@@ -47,6 +47,8 @@ export const CLASSES = [
 export const classFor = (n: number) => [...CLASSES].reverse().find(c => n >= c.min)!;
 export const nextClass = (n: number) => CLASSES.find(c => c.min > n);
 export const MILESTONES = [3, 7, 14, 30, 50, 100];
+/** Streak milestones that earn a boarding voucher: one archive flight of your choice, kept for good. A taste of the archive, not the pass. */
+export const VOUCHER_AT = [7, 30];
 
 /** Great-circle distance in km between two answer cities, rounded to the nearest 10 km (the coordinates are city centres). */
 export function kmBetween(a: { lat?: number; lng?: number }, b: { lat?: number; lng?: number }): number | null {

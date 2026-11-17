@@ -56,10 +56,17 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
 }
 
 function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDay: (d: string) => void }) {
-  const [all, setAll] = useState(false), SHOWN = 5;
+  const [all, setAll] = useState(false), [msg, setMsg] = useState(""), SHOWN = 5;
+  const left = me.unlocked ? 0 : me.vouchers.left;
+  // spending is for good, so ask first; opening the flight reloads the record, which shows the voucher gone
+  const spend = (date: string, flight: string) => {
+    if (!confirm(`Use your boarding voucher on flight ${flight}? It stays open for good.`)) return;
+    api.voucher(date).then(() => onOpenDay(date), e => setMsg(e.message));
+  };
   return (
     <section className="points archive">
       <div className="start-head"><h2>Missed a flight?</h2><p>Play earlier days. Only today’s flight counts towards your streak and leagues.</p></div>
+      {left > 0 && <p className="voucher-note">You have {left === 1 ? "a boarding voucher" : `${left} boarding vouchers`}. Use {left === 1 ? "it" : "one"} on any locked flight below and it stays open for good.</p>}
       <table className="table"><caption className="visually-hidden">Recent flights</caption>
         <thead><tr><th scope="col">Flight</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col" className="num"><span className="visually-hidden">Action</span></th></tr></thead>
         <tbody>{me.days.slice(0, all ? undefined : SHOWN).map(d => {
@@ -69,12 +76,13 @@ function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDa
               <td className="flight-no">{d.flight}</td><td>{longDate(d.date)}{d.isToday ? " (today)" : ""}</td>
               <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : ""}</td>
               <td className="num">{here ? <span className="small">Open now</span>
-                : d.locked ? <a className="btn btn--small" href="#archive-pass">Unlock</a>
+                : d.locked ? (left > 0 ? <button className="btn btn--small" type="button" onClick={() => spend(d.date, d.flight)}>Use voucher</button> : <a className="btn btn--small" href="#archive-pass">Unlock</a>)
                 : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
             </tr>
           );
         })}</tbody>
       </table>
+      {msg && <p className="small" role="alert">{msg}</p>}
       {!all && me.days.length > SHOWN && <button className="btn btn--small" type="button" onClick={() => setAll(true)}>Show all {me.days.length} flights</button>}
       <ArchivePass me={me} />
     </section>
@@ -155,6 +163,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
           {!day.isToday && <p className="small">Archive flight from {longDate(day.date)}. Only today’s flight counts towards your streak.</p>}
         </div>
       </section>
+      {day.isToday && <Tomorrow day={day} me={me} />}
       <section className="flightlog">
         <div className="start-head"><h2>Flight log</h2><p>You flew <strong>{km(flownKm)} km</strong> of {day.isToday ? "today's" : "this flight's"} {km(routeKm)} km route.{flownKm < routeKm ? " A leg counts when you name the city it lands in." : ""}</p></div>
         <ol className="fl-chart" aria-label="Points at each stop">
@@ -183,6 +192,23 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
       <section className="panel"><h2>Your stamps</h2><div className="stamps">{day.stops.map((x, i) => <EntryStamp key={i} s={x} i={i} date={day.date} motion="slam" delay={i + 1} />)}</div></section>
       {me && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
     </div>
+  );
+}
+
+/** Reasons to come back tomorrow: what tomorrow's first stop is, and how far off the next boarding voucher is. */
+function Tomorrow({ day, me }: { day: Day; me: Me | null }) {
+  const t = day.tomorrow, si = me?.streak, v = me?.vouchers;
+  const days = (k: number) => `${k} more ${k === 1 ? "day" : "days"} running`;
+  const line = !si || !v || me.unlocked ? null
+    : v.earnedToday ? `Your ${si.n}-day streak earned a boarding voucher: open any archive flight you choose, below. It stays open for good.`
+    : v.next ? `${days(v.next - si.n)} to ${v.earned ? "another" : "your first"} boarding voucher: an archive flight of your choice, yours to keep.` : null;
+  if (!t && !line) return null;
+  return (
+    <section className="tomorrow">
+      <h2>Tomorrow’s flight</h2>
+      {t && <p className="lead">Flight {t.flight} boards tomorrow. Stop 1 is {t.what} in {t.continent}.</p>}
+      {line && <p className={v?.earnedToday ? "tomorrow-win" : undefined}>{line}</p>}
+    </section>
   );
 }
 
