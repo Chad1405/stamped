@@ -20,6 +20,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
   const newcomer = !me?.days.some(d => d.score !== null || d.stopsDone);
   return (
     <div className="home" aria-label={day.isToday ? "Today's flight" : `Archive flight ${day.flight}`}>
+      <div className="col col-main">
       {!day.isToday && <p className="archive-tag">Archive flight from {longDate(day.date)}.</p>}
       <h1>Five stops. Name where you landed.</h1>
       <p className="lead">Each stop is a photo or a message from somewhere real. Name the country, then risk it for the city and a final question.</p>
@@ -37,6 +38,8 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <span className="small">{COUNTRY_MS / 1000} seconds for the country, then {ROUND_MS / 1000} a guess</span>
         <span className="small">{newcomer ? "A new flight every day, the same for everyone. Free, no sign-up." : `Flight ${day.flight} · ${shortDay} · top score ${MAX_DAY_SCORE} · your best ${best}`}</span>
       </div>
+      </div>
+      <div className="col col-side">
       <details className="card howto"><summary>How to play and points</summary>
         <div className="howto-body">
           <ol className="steps">
@@ -54,6 +57,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <button className="btn btn--small" type="button" onClick={onFriends}>{league ? "See the league" : "Start a league"}</button>
       </section>
       {me && !newcomer && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
+      </div>
     </div>
   );
 }
@@ -146,6 +150,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   const text = encodeURIComponent(share), n = day.stops.length;
   return (
     <div className="done">
+      <div className="col col-main">
       <p className="done-title">{day.isToday ? "Your hand today" : `Your hand, flight ${day.flight}`}</p>
       <ol className="hand" aria-label="Your five stops">
         {day.stops.map((x, i) => {
@@ -169,6 +174,8 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
           <span className="help" role="status">{copied}</span>
         </div>
       </section>
+      </div>
+      <div className="col col-side">
       {day.isToday && <Tomorrow day={day} me={me} />}
       {day.isToday && si?.milestone && (
         <section className="card milestone pop"><span className="figure">{si.milestone}</span><div><h2>{si.milestone}-day streak</h2><p>You have flown {si.milestone} days running.{si.next ? ` Next milestone: ${si.next} days.` : ""}</p></div></section>
@@ -189,6 +196,7 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
           <button className="btn btn--small" type="button" onClick={onPassport}>Open my passport</button></div>
       </section>
       {me && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
+      </div>
     </div>
   );
 }
