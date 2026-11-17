@@ -63,7 +63,7 @@ button { cursor: pointer; }
 
 /* header: wordmark, the HUD, and the way to friends and the passport */
 .bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
-.mark { font: var(--fs-lg)/1 var(--display); color: var(--gold); text-shadow: 0 3px 0 var(--red-dark); text-decoration: none; white-space: nowrap; }
+.mark { font: var(--fs-lg)/1 var(--display); color: var(--gold); text-shadow: 0 3px 0 var(--red-dark); text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; min-height: var(--tap); }
 .hud { flex: 1; margin: 0; display: flex; justify-content: center; align-items: center; gap: var(--s2); }
 .hud div { display: flex; flex-direction: column-reverse; align-items: center; line-height: 1; }
 .hud dt { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-cream); }
@@ -374,6 +374,7 @@ dl.facts dd { margin: 0; font-weight: 700; }
 pre.share { margin: 0; padding: var(--s3); background: var(--cream); border: 2px solid var(--ink); border-radius: var(--r-sm); font: 700 var(--fs-md)/1.4 var(--body); white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
 .share-to { gap: var(--s2); }
 .share-to .help { flex-basis: 100%; min-height: 0; }
+.share-to > a.btn { min-width: var(--tap); }
 /* phones: Share across the top, the three channels on one row under it */
 @media (max-width: 560px) { .share-to > .btn--gold { flex: 1 0 100%; } .share-to > a.btn { flex: 1 1 0; padding-inline: var(--s2); } }
 dl.stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
