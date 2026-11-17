@@ -10,7 +10,7 @@ const DESCRIPTION = "A daily travel game: five photo clues. Name the country, th
 // Link previews (iMessage, WhatsApp, Slack) need absolute image URLs. Vercel sets the production domain; locally it is localhost.
 const SITE = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000";
 
-// The share card is src/app/opengraph-image.png and the icons are icon.png and apple-icon.png beside it; Next adds their tags.
+// The share card is src/app/opengraph-image.png and the icons are icon0.svg, icon1.png and apple-icon.png beside it; Next adds their tags. Their sources are in brand/ (DESIGN.md, Brand).
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: "Born There",

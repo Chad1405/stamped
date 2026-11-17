@@ -37,6 +37,26 @@ Protect it: one card on screen at a time during play, the deck always visible, a
 | Sizes | `--tap 44px` · `--table 440px` (540px on desktop) · `--pic-h clamp(150px, 30svh, 290px)` |
 | Motion | `--t-fast 120ms` · `--t-mid 340ms` · `--t-draw 560ms` · `--t-flip 640ms` · `--t-slam 460ms` · `--t-deal 520ms` · `--ease-bounce cubic-bezier(.2,1.45,.4,1)` · `--ease-out cubic-bezier(.2,.8,.2,1)` · `--ease-in cubic-bezier(.5,0,.9,.4)` |
 
+## Brand
+Chosen 17 Nov 2026 (variation C, "Corner index"). The mark is a playing card from this deck: the B for Born There over the deck's own suit, a red pointer that says "here", because every clue was born in the place you have to name. Files are in `brand/`.
+
+| File | Use |
+|---|---|
+| `logo.svg` | Gold name with its red-dark shadow, beside the card. On the felt and other dark grounds |
+| `logo-light.svg` | Ink name with a red shadow. On cream, white and other light grounds |
+| `mark.svg` | The card alone: avatars, app icon art, anywhere square |
+| `mark-mono.svg` | One flat colour (ink by default; recolour the fills) for printing, stamps, watermarks |
+| `wordmark.svg` | The name alone, where the card already shows nearby |
+| `favicon.svg` | Reduced card for 16 to 32px (bigger B and pointer, thicker edge). Copied to `src/app/icon0.svg` |
+| `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` | PNG icons on the felt. The first two are copied to `src/app/icon1.png` and `src/app/apple-icon.png` |
+| `og-image.png` (from `og.html`) | Link preview, copied to `src/app/opengraph-image.png` |
+
+- **Construction:** a 100 by 100 grid; card 70 by 90 at radius 11 with a 6-unit ink edge; the B is Bungee, outlined (no font needed); the name is Bungee, outlined, with the shadow 9 units down at 100-unit cap size.
+- **Colours:** `--ink`, `--card`, `--red` in the card; `--gold` name with `--red-dark` shadow on dark; `--ink` name with `--red` shadow on light.
+- **Clear space:** half the card's width on every side of the logo or mark.
+- **Minimum size:** the mark at 16px only as `favicon.svg`; the full mark from 32px; the logo from 140px wide.
+- **Never:** redraw the pointer as a map pin or arrow, recolour the pointer away from red, put the card on a tile of any colour other than the felt, set the name in live text in place of the outlines, add gradients, glows or outlines, or stretch it.
+
 ## Voice
 Unchanged from today: plain, short, British spelling, travel words ("Board flight 001", "Stamp it", "Bank it", "Risk it", "Window Seat"). Card words may join them (draw, hand, deck) but the game never talks like a casino: no "bet", "wager", "jackpot", "all in" or "cash out".
 
