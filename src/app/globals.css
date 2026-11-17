@@ -149,6 +149,12 @@ textarea.input { min-height: 6rem; padding: var(--s3); font-weight: 500; line-he
 .fan li.is-live { z-index: 1; }
 .fan li.is-live .cardback { box-shadow: 0 0 0 3px var(--gold), 0 0 24px 4px rgb(243 194 79 / 0.55); }
 .board-row { display: grid; gap: var(--s2); text-align: center; }
+/* a first-timer sees one real stop, dealt face up, instead of today's face-down hand */
+.example { margin: var(--s2) auto 0; width: min(290px, 86%, 36svh); display: grid; gap: var(--s3); justify-items: center; }
+.ex-card { width: 100%; background: var(--card); color: var(--ink); border: var(--bw) solid var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-card); padding: 10px; transform: rotate(-2.5deg); }
+.ex-card img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border: 2px solid var(--ink); border-radius: var(--r-md); }
+.ex-q { margin: 10px 2px 2px; font: var(--fs-md)/1.15 var(--display); }
+.example figcaption { width: max-content; max-width: calc(100vw - 32px); text-align: center; }
 .howto { padding: 0; gap: 0; }
 .howto summary { min-height: var(--tap); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--s4); font: var(--fs-md)/1 var(--display); cursor: pointer; list-style: none; }
 .howto summary::-webkit-details-marker { display: none; }

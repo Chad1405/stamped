@@ -199,7 +199,19 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
   const score = stops.reduce((n, s) => n + s.state.points, 0);
   const finished = stops.every(s => s.state.phase === "done");
   const field = finished ? await fieldFor(db, playerId, date) : null;
-  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field, tomorrow: finished && date === today ? await teaser(db, today) : null };
+  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field, tomorrow: finished && date === today ? await teaser(db, today) : null,
+    example: date === today ? await example(db, today) : null };
+}
+
+/** For the start screen: one photo stop from a flight that has already been shown (two or more days ago), so it spoils nothing.
+ *  Only the photo and the question go out, never the answer. */
+async function example(db: Db, today: string) {
+  const past = await db.select().from(itineraries).where(lte(itineraries.date, addDays(today, -2))).orderBy(desc(itineraries.date)).limit(3);
+  for (const it of past) {
+    const r = it.rounds.find(x => x.type === "Landmark" && x.img) ?? it.rounds.find(x => x.img);
+    if (r) return { img: r.img!, alt: r.alt ?? "", prompt: r.prompt, flight: it.flight };
+  }
+  return null;
 }
 
 const TEASE: Record<string, string> = { Landmark: "a landmark", Food: "a dish", "Street View": "a street", "Close-up": "a close-up", Language: "a text message" };

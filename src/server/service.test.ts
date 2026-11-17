@@ -1,6 +1,6 @@
 // Drives the service against an in-memory Postgres: the same SQL the hosted database runs.
 import { beforeAll, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
 import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName, spendVoucher } from "./service";
@@ -299,6 +299,12 @@ describe("archive pass", () => {
     expect((await getMe(fresh, pid, TODAY)).vouchers).toEqual({ left: 0, earned: 0, earnedToday: false, next: 7 });   // six days running, today not flown yet
     const before = await getDay(fresh, pid, TODAY, TODAY);
     expect(before.tomorrow).toBeNull();   // the teaser waits until today's flight is done
+    // the start screen's example is a photo stop from a flight two or more days old, and never carries its answer
+    const shown = (await fresh.select().from(itineraries).where(lte(itineraries.date, addDays(TODAY, -2)))).flatMap(x => x.rounds.map(r => r.img));
+    expect(before.example).toMatchObject({ img: expect.any(String), prompt: expect.any(String), flight: expect.any(String) });
+    expect(shown).toContain(before.example!.img);
+    expect(Object.keys(before.example!).sort()).toEqual(["alt", "flight", "img", "prompt"]);
+    expect((await getDay(fresh, pid, addDays(TODAY, -1), TODAY)).example).toBeNull();   // only with today's flight
     for (let i = 0; i < rounds.length; i++) {   // fly today: the seventh day
       await act(fresh, pid, TODAY, i, { type: "start" }, TODAY, 0);
       await act(fresh, pid, TODAY, i, { type: "guess", text: rounds[i].country }, TODAY, PREVIEW_MS);
