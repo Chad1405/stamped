@@ -745,3 +745,10 @@ footer p { max-width: 65ch; }
 .legal ul { display: flex; flex-direction: column; gap: var(--space-xs); padding-left: 1.2em; }
 footer nav { display: flex; gap: var(--space-md); }
 
+
+/* phones: Share across the full width, then WhatsApp, Messages and X side by side */
+@media (max-width: 40rem) {
+  .share-to { gap: var(--space-xs); }
+  .share-to > .btn--primary, .share-to > .help:not(:empty) { flex: 1 0 100%; }
+  .share-to > a.btn { flex: 1 1 0; padding: 0 var(--space-xs); }
+}

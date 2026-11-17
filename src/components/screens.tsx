@@ -125,7 +125,14 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
     ts.push(setTimeout(() => { sfx("finale"); }, (day.stops.length + 1) * 180 + 500));
     return () => ts.forEach(clearTimeout);
   }, [day.date]); // eslint-disable-line react-hooks/exhaustive-deps -- once per flight shown
-  const copy = () => navigator.clipboard.writeText(share).then(() => setCopied("Copied to your clipboard."), () => setCopied("Select the text and copy it."));
+  // the phone's own share sheet where there is one (it already lists WhatsApp, Messages and the rest), the clipboard elsewhere
+  const [canShare, setCanShare] = useState(false), [phone, setPhone] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator.share === "function"); setPhone(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)); }, []);
+  const count = (via: string) => { api.share(day.date, via).catch(() => {}); };
+  const shareNow = () => canShare
+    ? navigator.share({ text: share }).then(() => count("native"), () => {})   // closing the sheet isn't a share
+    : navigator.clipboard.writeText(share).then(() => { setCopied("Copied to your clipboard."); count("copy"); }, () => setCopied("Select the text and copy it."));
+  const text = encodeURIComponent(share);
   return (
     <div className="panel" style={{ gap: "var(--space-2xl)" }}>
       <section className="arrive">
@@ -135,7 +142,13 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
       </section>
       <section className="ledger">
         <div><h2>{day.isToday ? "Share today's result" : "Share this flight"}</h2><pre className="share">{share}</pre>
-          <div className="actions"><button className="btn btn--primary" type="button" onClick={copy}>Copy result</button><button className="btn" type="button" onClick={onFriends}>Friends league</button><span className="help" role="status">{copied}</span></div></div>
+          <div className="actions share-to">
+            <button className="btn btn--primary" type="button" onClick={shareNow}>{canShare ? "Share" : "Copy result"}</button>
+            <a className="btn btn--small" href={`https://wa.me/?text=${text}`} target="_blank" rel="noopener noreferrer" onClick={() => count("whatsapp")}>WhatsApp</a>
+            {phone && <a className="btn btn--small" href={`sms:?&body=${text}`} onClick={() => count("messages")}>Messages</a>}
+            <a className="btn btn--small" href={`https://x.com/intent/post?text=${text}`} target="_blank" rel="noopener noreferrer" onClick={() => count("x")}>X</a>
+            <span className="help" role="status">{copied}</span></div>
+          <div className="actions"><button className="btn" type="button" onClick={onFriends}>Friends league</button></div></div>
         <div><h2>Your record</h2>
           {me && <dl className="stats"><div><dt>Flights</dt><dd>{me.record.flights}</dd></div><div><dt>Day streak</dt><dd>{me.streak.n}</dd></div><div><dt>Best</dt><dd>{me.record.best}</dd></div></dl>}
           {si && <p className="small">{si.passLeft ? "Lounge pass ready: if you miss one day this week, it keeps your streak alive." : `Lounge pass used this week, for ${longDate(si.usedThisWeek!)}. A new one arrives on Monday.`}</p>}

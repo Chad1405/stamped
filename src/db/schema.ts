@@ -62,6 +62,14 @@ export const results = pgTable("results", {
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [primaryKey({ columns: [t.playerId, t.date] }), index("results_date_idx").on(t.date)]);
 
+/** Shares from the results screen: one row per player, flight and channel, however many times they tap. */
+export const shares = pgTable("shares", {
+  playerId: text("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  via: text("via").$type<"native" | "whatsapp" | "messages" | "x" | "copy">().notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.playerId, t.date, t.via] })]);
+
 /** The lifetime passport: countries, cities and Born There finds, each stamped once. */
 export const stamps = pgTable("stamps", {
   playerId: text("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),

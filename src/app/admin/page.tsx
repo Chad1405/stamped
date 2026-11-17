@@ -103,9 +103,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <h2>Players</h2>
         <p>{who.players} {who.players === 1 ? "person has" : "people have"} started a flight. Came back the next day: {rate(who.rates[0])}. A week later: {rate(who.rates[1])}. A month later: {rate(who.rates[2])}.</p>
         <p className="small">Each counts players whose first day was long enough ago, and whether they played on exactly that later day. A player is a browser: clearing cookies or switching device starts a new one.</p>
+        {(() => { const fin = who.daily.reduce((n, r) => n + r.finished, 0), sh = who.daily.reduce((n, r) => n + r.shared, 0), v = who.byVia;
+          return <p>Shared a result in the last 14 days: {sh} of {fin} finished flights{fin ? ` (${Math.round(100 * sh / fin)}%)` : ""}. By button: share sheet {v.native ?? 0}, WhatsApp {v.whatsapp ?? 0}, Messages {v.messages ?? 0}, X {v.x ?? 0}, copied {v.copy ?? 0}.</p>; })()}
         <table className="bank-table">
-          <thead><tr><th>Day</th><th>Played</th><th>New</th><th>Returning</th><th>Finished a flight</th></tr></thead>
-          <tbody>{who.daily.map(r => <tr key={r.day}><td>{r.day}</td><td>{r.players}</td><td>{r.fresh}</td><td>{r.back}</td><td>{r.finished}</td></tr>)}</tbody>
+          <thead><tr><th>Day</th><th>Played</th><th>New</th><th>Returning</th><th>Finished a flight</th><th>Shared</th></tr></thead>
+          <tbody>{who.daily.map(r => <tr key={r.day}><td>{r.day}</td><td>{r.players}</td><td>{r.fresh}</td><td>{r.back}</td><td>{r.finished}</td><td>{r.shared}</td></tr>)}</tbody>
         </table>
       </section>
 

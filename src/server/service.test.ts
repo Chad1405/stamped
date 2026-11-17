@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, redeemRestore, requestRestore, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -232,7 +232,22 @@ describe("retention", () => {
     const r = await retention(db, TODAY);
     expect(r.players).toBe(4);
     expect(r.rates).toEqual([{ after: 1, of: 3, back: 2 }, { after: 7, of: 3, back: 1 }, { after: 30, of: 2, back: 1 }]);
-    expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0 }]);
+    expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0, shared: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0, shared: 0 }]);
+  });
+});
+
+describe("share counts", () => {
+  it("counts each player once per flight and channel, only for a finished flight", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const [done, notDone] = [await ensurePlayer(db, undefined), await ensurePlayer(db, undefined)];
+    await db.insert(results).values({ playerId: done, date: TODAY, score: 100, tiers: [], onTime: true });
+    for (const via of ["whatsapp", "whatsapp", "x"]) await recordShare(db, done, TODAY, via);   // tapping twice counts once
+    await recordShare(db, notDone, TODAY, "whatsapp");                                         // no finished flight: not counted
+    await expect(recordShare(db, done, TODAY, "fax")).rejects.toThrow(HttpError);
+    const r = await retention(db, gameToday());
+    expect(r.byVia).toEqual({ whatsapp: 1, x: 1 });
+    expect(r.daily[0].shared).toBe(1);   // one player shared, whatever the buttons
   });
 });
 
