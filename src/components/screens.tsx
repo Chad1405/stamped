@@ -40,7 +40,8 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
       </div>
       </div>
       <div className="col col-side">
-      <details className="card howto"><summary>How to play and points</summary>
+      {/* newcomers on desktop get the rules open, filling the right column; phones keep it closed so Board stays near the top */}
+      <details className="card howto" ref={el => { if (el && newcomer && !el.dataset.set) { el.dataset.set = "1"; el.open = matchMedia("(min-width: 1000px)").matches; } }}><summary>How to play and points</summary>
         <div className="howto-body">
           <ol className="steps">
             <li><span><strong>Name the country.</strong> Look first, then type. You get three tries, with a clue after each miss; every extra try takes 10 off.</span></li>
