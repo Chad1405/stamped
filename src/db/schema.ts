@@ -6,7 +6,23 @@ export const players = pgTable("players", {
   id: text("id").primaryKey(),
   name: text("name").notNull().default(""),
   passes: jsonb("passes").$type<string[]>().notNull().default([]),   // dates a lounge pass covered
+  unlocked: boolean("unlocked").notNull().default(false),            // holds the archive pass, bought here or restored by email
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Paid archive passes, one row per Stripe Checkout Session. Kept when a player deletes their progress: it's the record of a sale, and how a pass is restored. */
+export const purchases = pgTable("purchases", {
+  sessionId: text("session_id").primaryKey(),
+  email: text("email").notNull(),   // lower-cased
+  playerId: text("player_id").references(() => players.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("purchases_email_idx").on(t.email)]);
+
+/** One-use links that restore a pass on another browser, sent to the purchase email. */
+export const restoreTokens = pgTable("restore_tokens", {
+  token: text("token").primaryKey(),
+  email: text("email").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
 /** One itinerary per day. `rounds` holds the answers and never leaves the server unredacted. */
@@ -45,6 +61,14 @@ export const results = pgTable("results", {
   onTime: boolean("on_time").notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [primaryKey({ columns: [t.playerId, t.date] }), index("results_date_idx").on(t.date)]);
+
+/** Shares from the results screen: one row per player, flight and channel, however many times they tap. */
+export const shares = pgTable("shares", {
+  playerId: text("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  via: text("via").$type<"native" | "whatsapp" | "messages" | "x" | "copy">().notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.playerId, t.date, t.via] })]);
 
 /** The lifetime passport: countries, cities and Born There finds, each stamped once. */
 export const stamps = pgTable("stamps", {

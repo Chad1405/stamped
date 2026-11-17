@@ -6,6 +6,7 @@ import { api, type Day, type League, type Me } from "@/lib/client/api";
 import { band, classFor, CLASSES, CONT, COUNTRY_MS, LADDER, legFlown, MAX_DAY_SCORE, nextClass, ROUND_MS, TIERS } from "@/lib/game/rules";
 import { COUNTRIES } from "@/lib/game/match";
 import { CountUp, EntryStamp, longDate, ordinal, Strip } from "./bits";
+import { SITE } from "@/lib/site";
 
 const firstOpen = (day: Day) => day.stops.findIndex(s => s.state.phase !== "done");
 
@@ -67,13 +68,37 @@ function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDa
             <tr key={d.date} className={here ? "is-here" : ""}>
               <td className="flight-no">{d.flight}</td><td>{longDate(d.date)}{d.isToday ? " (today)" : ""}</td>
               <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : ""}</td>
-              <td className="num">{here ? <span className="small">Open now</span> : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
+              <td className="num">{here ? <span className="small">Open now</span>
+                : d.locked ? <a className="btn btn--small" href="#archive-pass">Unlock</a>
+                : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See passport" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
             </tr>
           );
         })}</tbody>
       </table>
       {!all && me.days.length > SHOWN && <button className="btn btn--small" type="button" onClick={() => setAll(true)}>Show all {me.days.length} flights</button>}
+      <ArchivePass me={me} />
     </section>
+  );
+}
+
+/** Today's and yesterday's flights are free; the pass opens the rest, once and for good. */
+function ArchivePass({ me }: { me: Me }) {
+  const [msg, setMsg] = useState(""), [busy, setBusy] = useState(false), [email, setEmail] = useState("");
+  if (me.unlocked) return <p className="small pass-note">Archive pass active. Every past flight is open.</p>;
+  if (!me.days.some(d => d.locked)) return null;
+  const buy = () => { setBusy(true); setMsg(""); api.checkout().then(r => location.assign(r.url), e => { setBusy(false); setMsg(e.message); }); };
+  const restore = (e: React.FormEvent) => { e.preventDefault(); api.restore(email).then(() => setMsg("If that email bought a pass, a link is on its way. It works once, within 30 minutes."), err => setMsg(err.message)); };
+  return (
+    <div className="pass" id="archive-pass">
+      <h3>Archive pass</h3>
+      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once.</p>
+      <button className="btn btn--primary" type="button" onClick={buy} disabled={busy}>{busy ? "Opening checkout…" : `Unlock the archive, ${SITE.passPrice}`}</button>
+      <form className="pass-restore" onSubmit={restore}>
+        <label htmlFor="restore-email">Bought it already? Enter the email you paid with and we’ll send a link to unlock this browser.</label>
+        <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit">Send link</button></div>
+      </form>
+      {msg && <p className="small" role="status">{msg}</p>}
+    </div>
   );
 }
 
@@ -100,7 +125,14 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
     ts.push(setTimeout(() => { sfx("finale"); }, (day.stops.length + 1) * 180 + 500));
     return () => ts.forEach(clearTimeout);
   }, [day.date]); // eslint-disable-line react-hooks/exhaustive-deps -- once per flight shown
-  const copy = () => navigator.clipboard.writeText(share).then(() => setCopied("Copied to your clipboard."), () => setCopied("Select the text and copy it."));
+  // the phone's own share sheet where there is one (it already lists WhatsApp, Messages and the rest), the clipboard elsewhere
+  const [canShare, setCanShare] = useState(false), [phone, setPhone] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator.share === "function"); setPhone(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)); }, []);
+  const count = (via: string) => { api.share(day.date, via).catch(() => {}); };
+  const shareNow = () => canShare
+    ? navigator.share({ text: share }).then(() => count("native"), () => {})   // closing the sheet isn't a share
+    : navigator.clipboard.writeText(share).then(() => { setCopied("Copied to your clipboard."); count("copy"); }, () => setCopied("Select the text and copy it."));
+  const text = encodeURIComponent(share);
   return (
     <div className="panel" style={{ gap: "var(--space-2xl)" }}>
       <section className="arrive">
@@ -110,7 +142,13 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
       </section>
       <section className="ledger">
         <div><h2>{day.isToday ? "Share today's result" : "Share this flight"}</h2><pre className="share">{share}</pre>
-          <div className="actions"><button className="btn btn--primary" type="button" onClick={copy}>Copy result</button><button className="btn" type="button" onClick={onFriends}>Friends league</button><span className="help" role="status">{copied}</span></div></div>
+          <div className="actions share-to">
+            <button className="btn btn--primary" type="button" onClick={shareNow}>{canShare ? "Share" : "Copy result"}</button>
+            <a className="btn btn--small" href={`https://wa.me/?text=${text}`} target="_blank" rel="noopener noreferrer" onClick={() => count("whatsapp")}>WhatsApp</a>
+            {phone && <a className="btn btn--small" href={`sms:?&body=${text}`} onClick={() => count("messages")}>Messages</a>}
+            <a className="btn btn--small" href={`https://x.com/intent/post?text=${text}`} target="_blank" rel="noopener noreferrer" onClick={() => count("x")}>X</a>
+            <span className="help" role="status">{copied}</span></div>
+          <div className="actions"><button className="btn" type="button" onClick={onFriends}>Friends league</button></div></div>
         <div><h2>Your record</h2>
           {me && <dl className="stats"><div><dt>Flights</dt><dd>{me.record.flights}</dd></div><div><dt>Day streak</dt><dd>{me.streak.n}</dd></div><div><dt>Best</dt><dd>{me.record.best}</dd></div></dl>}
           {si && <p className="small">{si.passLeft ? "Lounge pass ready: if you miss one day this week, it keeps your streak alive." : `Lounge pass used this week, for ${longDate(si.usedThisWeek!)}. A new one arrives on Monday.`}</p>}

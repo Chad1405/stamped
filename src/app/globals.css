@@ -87,7 +87,7 @@ h2 { font-size: var(--text-xl); }
 .lead { font-size: var(--text-lg); color: var(--color-ink-2); }
 
 /* controls */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 48px; padding: 0 var(--space-lg); border: var(--rule-bar) solid var(--color-ink); border-radius: 0; background: transparent; color: var(--color-ink); font: 800 var(--text-sm)/1 var(--font-body); white-space: nowrap; cursor: pointer; transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 48px; padding: 0 var(--space-lg); border: var(--rule-bar) solid var(--color-ink); border-radius: 0; background: transparent; color: var(--color-ink); font: 800 var(--text-sm)/1 var(--font-body); white-space: nowrap; text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
 .btn:hover { background: var(--color-paper-2); }
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
@@ -177,6 +177,9 @@ h2 { font-size: var(--text-xl); }
 .archive .flight-no { font-weight: 800; }
 .archive tr.is-here td { background: var(--color-paper-2); }
 .btn--small { min-height: 44px; padding: 0 var(--space-md); }
+.pass { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); padding-top: var(--space-lg); margin-top: var(--space-md); scroll-margin-top: var(--space-xl); }
+.pass-restore { display: flex; flex-direction: column; gap: var(--space-xs); width: 100%; font-size: var(--text-sm); }
+.pass-note { margin-top: var(--space-md); }
 .archive-tag { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; font-size: var(--text-sm); font-weight: 500; color: var(--color-accent); }
 .linkish { padding: 0; border: 0; background: none; font: inherit; color: var(--color-ink); text-decoration: underline; text-underline-offset: 0.16em; cursor: pointer; min-height: 24px; }
 .linkish:hover { color: var(--color-accent); }
@@ -710,10 +713,13 @@ footer p { max-width: 65ch; }
 .clues .c-left strong { color: var(--color-plate); }
 /* the reveal leads with something worth knowing, and a miss says it is a common one */
 .fact-lead { font-size: var(--text-lg); line-height: 1.45; animation: arrive-in 480ms var(--ease-out) 380ms both; }
+.tells { animation: arrive-in 480ms var(--ease-out) 300ms both; }
+.tells h2 { margin: 0 0 4px; font-weight: 700; color: var(--color-ink-2); }
+.tells p { margin: 0; line-height: 1.5; }
 .company { margin: 0; font-weight: 600; color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
 .visited { margin-top: 8px; color: var(--color-ink-2); }
 .field-note { margin-top: 8px; font-weight: 700; }
-@media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fact-lead, .company, .tells { animation: none; } }
 
 /* ---- The stop bank (admin only) ---- */
 .bank .small { margin: 0; }
@@ -742,3 +748,10 @@ footer p { max-width: 65ch; }
 .legal ul { display: flex; flex-direction: column; gap: var(--space-xs); padding-left: 1.2em; }
 footer nav { display: flex; gap: var(--space-md); }
 
+
+/* phones: Share across the full width, then WhatsApp, Messages and X side by side */
+@media (max-width: 40rem) {
+  .share-to { gap: var(--space-xs); }
+  .share-to > .btn--primary, .share-to > .help:not(:empty) { flex: 1 0 100%; }
+  .share-to > a.btn { flex: 1 1 0; padding: 0 var(--space-xs); }
+}

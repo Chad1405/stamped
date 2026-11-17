@@ -1,10 +1,11 @@
 // Drives the service against an in-memory Postgres: the same SQL the hosted database runs.
 import { beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { itineraries, leagues, plays, players, results } from "@/db/schema";
+import { itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
@@ -175,6 +176,7 @@ describe("a day on the server", () => {
   });
   it("archive days add passport stamps but never streak days", async () => {
     const pid = await ensurePlayer(db, undefined);
+    await db.update(players).set({ unlocked: true }).where(eq(players.id, pid));   // older than yesterday: needs the archive pass
     await playDay(pid, addDays(TODAY, -3), "bank");
     const me = await getMe(db, pid, TODAY);
     expect(me.passport.countries).toHaveLength(5);
@@ -230,7 +232,22 @@ describe("retention", () => {
     const r = await retention(db, TODAY);
     expect(r.players).toBe(4);
     expect(r.rates).toEqual([{ after: 1, of: 3, back: 2 }, { after: 7, of: 3, back: 1 }, { after: 30, of: 2, back: 1 }]);
-    expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0 }]);
+    expect(r.daily.slice(0, 2)).toEqual([{ day: "2026-11-05", players: 1, fresh: 0, back: 1, finished: 0, shared: 0 }, { day: "2026-11-04", players: 1, fresh: 1, back: 0, finished: 0, shared: 0 }]);
+  });
+});
+
+describe("share counts", () => {
+  it("counts each player once per flight and channel, only for a finished flight", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const [done, notDone] = [await ensurePlayer(db, undefined), await ensurePlayer(db, undefined)];
+    await db.insert(results).values({ playerId: done, date: TODAY, score: 100, tiers: [], onTime: true });
+    for (const via of ["whatsapp", "whatsapp", "x"]) await recordShare(db, done, TODAY, via);   // tapping twice counts once
+    await recordShare(db, notDone, TODAY, "whatsapp");                                         // no finished flight: not counted
+    await expect(recordShare(db, done, TODAY, "fax")).rejects.toThrow(HttpError);
+    const r = await retention(db, gameToday());
+    expect(r.byVia).toEqual({ whatsapp: 1, x: 1 });
+    expect(r.daily[0].shared).toBe(1);   // one player shared, whatever the buttons
   });
 });
 
@@ -247,5 +264,50 @@ describe("deleting a player", () => {
     expect((await db.select().from(results)).map(r => r.playerId)).toEqual([other]);
     expect(await db.select().from(plays)).toEqual([]);
     expect(await db.select().from(leagues)).toEqual([]);
+  });
+});
+
+describe("archive pass", () => {
+  const OLD = addDays(TODAY, -3), YESTERDAY = addDays(TODAY, -1);
+  it("keeps older flights for pass holders, and for anyone who'd already started one", async () => {
+    const fresh = await createDb(); await seedSamples(fresh, TODAY);
+    const pid = await ensurePlayer(fresh, undefined);
+    await getDay(fresh, pid, YESTERDAY, TODAY);   // yesterday is free
+    await expect(getDay(fresh, pid, OLD, TODAY)).rejects.toMatchObject({ status: 402 });
+    await expect(act(fresh, pid, OLD, 0, { type: "start" }, TODAY)).rejects.toMatchObject({ status: 402 });
+    expect((await getMe(fresh, pid, TODAY)).days.find(d => d.date === OLD)?.locked).toBe(true);
+
+    const early = await ensurePlayer(fresh, undefined);   // played this flight before the pass existed
+    await fresh.insert(plays).values({ playerId: early, date: OLD, stop: 0, state: freshStop() });
+    await getDay(fresh, early, OLD, TODAY);
+
+    await recordPurchase(fresh, { sessionId: "cs_test_1", email: " Buyer@Example.com ", playerId: pid });
+    await recordPurchase(fresh, { sessionId: "cs_test_1", email: "buyer@example.com", playerId: pid });   // the webhook and the return page both record it
+    expect((await getMe(fresh, pid, TODAY)).unlocked).toBe(true);
+    await getDay(fresh, pid, OLD, TODAY);
+    expect(await fresh.select().from(purchases)).toHaveLength(1);
+
+    await forgetPlayer(fresh, pid);   // deleting progress keeps the sale, so the pass can still be restored
+    expect((await fresh.select().from(purchases))[0]).toMatchObject({ email: "buyer@example.com", playerId: null });
+  });
+
+  it("restores a pass on another browser with a one-use emailed link", async () => {
+    const fresh = await createDb(); await seedSamples(fresh, TODAY);
+    await recordPurchase(fresh, { sessionId: "cs_test_2", email: "buyer@example.com", playerId: null });
+    const sent: string[] = [], send = async (_to: string, token: string) => { sent.push(token); };
+    await requestRestore(fresh, "someone@else.com", send);   // didn't buy: no email, and no hint either way
+    await requestRestore(fresh, "BUYER@example.com", send);
+    await requestRestore(fresh, "buyer@example.com", send);   // a second ask straight away doesn't send another
+    expect(sent).toHaveLength(1);
+    await expect(requestRestore(fresh, "not an email", send)).rejects.toMatchObject({ status: 400 });
+
+    const other = await ensurePlayer(fresh, undefined);
+    expect(await redeemRestore(fresh, sent[0], other)).toBe(true);
+    expect((await getMe(fresh, other, TODAY)).unlocked).toBe(true);
+    expect(await redeemRestore(fresh, sent[0], other)).toBe(false);   // used up
+
+    const late = Date.now() + 31 * 60_000, more: string[] = [];
+    await requestRestore(fresh, "buyer@example.com", async (_t, k) => { more.push(k); });
+    expect(await redeemRestore(fresh, more[0], other, late)).toBe(false);   // expired
   });
 });

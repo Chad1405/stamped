@@ -1,7 +1,7 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { itineraries, leagueMembers, leagues, players, plays, results, stamps, stopBank, stopStats } from "@/db/schema";
+import { itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, type TierId, kmBetween } from "@/lib/game/rules";
@@ -164,7 +164,7 @@ function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect, p
   const live = stats && stats.players >= MIN_LIVE_PLAYERS;
   const pct = (n: number) => Math.round(100 * n / stats!.players);
   return {
-    country: r.country, regionName: r.regionName, cityName: r.cityName, spotName: r.spotName, airport: r.airport, fact: r.fact, credit: r.credit ?? null,
+    country: r.country, regionName: r.regionName, cityName: r.cityName, spotName: r.spotName, airport: r.airport, fact: r.fact, tells: r.tells ?? null, credit: r.credit ?? null,
     code: codeFor(r, tier), place: placeFor(r, tier),
     leg: km === null ? null : { from: prev!.cityName, km },   // the flight in from the previous stop
     off: offKm === null ? null : { guess: guess!, capital: cap![0], km: offKm },   // a wrong country: how far off it was (shown, not scored)
@@ -187,6 +187,7 @@ export async function fieldFor(db: Db, playerId: string, date: string) {
 
 export async function getDay(db: Db, playerId: string, date: string, today: string) {
   const it = await itinerary(db, date, today);
+  if (!await canOpen(db, playerId, date, today)) throw new HttpError(402, "Older flights are part of the archive pass.");
   const [rows, stats] = await Promise.all([
     db.select().from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))),
     db.select().from(stopStats).where(eq(stopStats.date, date)),
@@ -208,6 +209,7 @@ export type ActResult = {
 };
 export async function act(db: Db, playerId: string, date: string, stop: number, action: Action, today: string, now = Date.now()): Promise<ActResult> {
   const it = await itinerary(db, date, today);
+  if (!await canOpen(db, playerId, date, today)) throw new HttpError(402, "Older flights are part of the archive pass.");
   if (!Number.isInteger(stop) || stop < 0 || stop >= it.rounds.length) throw new HttpError(400, "No such stop.");
   const r = it.rounds[stop];
   const res = await db.transaction(async (tx): Promise<ActResult> => {
@@ -261,12 +263,12 @@ export async function getMe(db: Db, playerId: string, today: string) {
     streakFor(db, playerId, today, true),
     db.select().from(stamps).where(eq(stamps.playerId, playerId)).orderBy(asc(stamps.firstDate)),
     db.select().from(results).where(eq(results.playerId, playerId)),
-    db.select({ date: itineraries.date, flight: itineraries.flight }).from(itineraries).where(lte(itineraries.date, today)).orderBy(desc(itineraries.date)).limit(30),
+    db.select({ date: itineraries.date, flight: itineraries.flight }).from(itineraries).where(lte(itineraries.date, today)).orderBy(desc(itineraries.date)),
     db.select({ date: plays.date, n: sql<number>`count(*) filter (where ${plays.state}->>'phase' = 'done')::int` }).from(plays).where(eq(plays.playerId, playerId)).groupBy(plays.date),
   ]);
   const onTime = myResults.filter(r => r.onTime);
   return {
-    id: playerId, name: p?.name ?? "", today, streak,
+    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false,
     record: { flights: onTime.length, best: Math.max(0, ...onTime.map(r => r.score)) },
     passport: {
       countries: myStamps.filter(s => s.kind === "country").map(s => ({ name: s.key, first: s.firstDate, code: s.meta.code, cont: s.meta.cont })),
@@ -275,9 +277,50 @@ export async function getMe(db: Db, playerId: string, today: string) {
     },
     days: days.map(d => {
       const res = myResults.find(r => r.date === d.date);
-      return { date: d.date, flight: d.flight, isToday: d.date === today, score: res?.score ?? null, stopsDone: res ? ROUNDS_PER_DAY : progress.find(x => x.date === d.date)?.n ?? 0 };
+      const started = progress.find(x => x.date === d.date);
+      return { date: d.date, flight: d.flight, isToday: d.date === today, score: res?.score ?? null, stopsDone: res ? ROUNDS_PER_DAY : started?.n ?? 0,
+        locked: !p?.unlocked && d.date <= addDays(today, -FREE_DAYS) && !res && !started };
     }),
   };
+}
+
+/* ---- the archive pass ---- */
+/** Today's and yesterday's flights are free. Older ones need the pass, except a flight you'd already started, so nothing played before the pass existed gets locked away. */
+export const FREE_DAYS = 2;
+export async function canOpen(db: Db, playerId: string, date: string, today: string) {
+  if (date > addDays(today, -FREE_DAYS)) return true;
+  const [p] = await db.select({ unlocked: players.unlocked }).from(players).where(eq(players.id, playerId));
+  if (p?.unlocked) return true;
+  const [started] = await db.select({ date: plays.date }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).limit(1);
+  return started !== undefined;
+}
+/** A paid Checkout Session: kept as a sale record, and unlocks the player who bought it. Safe to call twice (the webhook and the return page both do). */
+export async function recordPurchase(db: Db, sale: { sessionId: string; email: string; playerId: string | null }) {
+  const [p] = sale.playerId ? await db.select({ id: players.id }).from(players).where(eq(players.id, sale.playerId)) : [];
+  await db.insert(purchases).values({ sessionId: sale.sessionId, email: sale.email.trim().toLowerCase(), playerId: p?.id ?? null }).onConflictDoNothing();
+  if (p) await db.update(players).set({ unlocked: true }).where(eq(players.id, p.id));
+}
+/** Emails a one-use link to a pass's purchase email. Says nothing about whether the email bought one, and sends at most one link every 5 minutes. */
+const RESTORE_MINUTES = 30;
+export async function requestRestore(db: Db, email: unknown, send: (to: string, token: string) => Promise<void>, now = Date.now()) {
+  const e = String(email ?? "").trim().toLowerCase();
+  if (e.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new HttpError(400, "That doesn't look like an email address.");
+  await db.delete(restoreTokens).where(lt(restoreTokens.expiresAt, new Date(now)));
+  const [bought] = await db.select({ email: purchases.email }).from(purchases).where(eq(purchases.email, e)).limit(1);
+  if (!bought) return;
+  const [recent] = await db.select({ token: restoreTokens.token }).from(restoreTokens)
+    .where(and(eq(restoreTokens.email, e), gt(restoreTokens.expiresAt, new Date(now + (RESTORE_MINUTES - 5) * 60_000)))).limit(1);
+  if (recent) return;
+  const token = newId();
+  await db.insert(restoreTokens).values({ token, email: e, expiresAt: new Date(now + RESTORE_MINUTES * 60_000) });
+  await send(e, token);
+}
+/** Uses up a restore link and unlocks this browser's player. */
+export async function redeemRestore(db: Db, token: unknown, playerId: string, now = Date.now()) {
+  const [t] = await db.delete(restoreTokens).where(eq(restoreTokens.token, String(token ?? ""))).returning();
+  if (!t || t.expiresAt.getTime() < now) return false;
+  await db.update(players).set({ unlocked: true }).where(eq(players.id, playerId));
+  return true;
 }
 
 /* ---- friend leagues ---- */
@@ -334,27 +377,38 @@ export async function myLeagues(db: Db, playerId: string, today: string) {
 }
 
 /* ---- retention, for /admin ---- */
+const SHARE_VIA = ["native", "whatsapp", "messages", "x", "copy"] as const;
+/** A tap on a share button. Counted once per player, flight and channel, and only for a flight the player has finished. */
+export async function recordShare(db: Db, playerId: string, date: unknown, via: unknown) {
+  if (typeof date !== "string" || !SHARE_VIA.includes(via as never)) throw new HttpError(400, "Unknown share.");
+  const [done] = await db.select({ d: results.date }).from(results).where(and(eq(results.playerId, playerId), eq(results.date, date)));
+  if (done) await db.insert(shares).values({ playerId, date, via: via as (typeof SHARE_VIA)[number] }).onConflictDoNothing();
+  return { ok: true as const };
+}
+
 /**
  * Who comes back. A player counts as active on a game day when they touched a stop that day (today's flight or the archive);
  * visitors who never start a stop don't count. Day-N return: of players whose first day is at least N full days ago, how many played exactly N days later.
  */
 // ponytail: reads every (player, day) pair into memory; move the grouping into SQL past ~100k plays
 export async function retention(db: Db, today: string) {
-  const tz = process.env.GAME_TIMEZONE || "UTC", dayOf = (col: typeof plays.updatedAt | typeof results.completedAt) => sql<string>`to_char(${col} at time zone ${tz}, 'YYYY-MM-DD')`;
-  const [active, finished] = await Promise.all([
+  const tz = process.env.GAME_TIMEZONE || "UTC", dayOf = (col: typeof plays.updatedAt | typeof results.completedAt | typeof shares.at) => sql<string>`to_char(${col} at time zone ${tz}, 'YYYY-MM-DD')`;
+  const [active, finished, shared, byVia] = await Promise.all([
     db.selectDistinct({ id: plays.playerId, day: dayOf(plays.updatedAt) }).from(plays),
     db.select({ day: dayOf(results.completedAt), n: sql<number>`count(*)::int` }).from(results).groupBy(sql`1`),
+    db.select({ day: dayOf(shares.at), n: sql<number>`count(distinct ${shares.playerId})::int` }).from(shares).groupBy(sql`1`),
+    db.select({ via: shares.via, n: sql<number>`count(*)::int` }).from(shares).where(sql`${shares.at} > now() - interval '14 days'`).groupBy(shares.via),
   ]);
   const days = new Map<string, Set<string>>();
   for (const { id, day } of active) days.set(id, (days.get(id) ?? new Set()).add(day));
   const first = new Map([...days].map(([id, set]) => [id, [...set].sort()[0]]));
   const daily = Array.from({ length: 14 }, (_, k) => addDays(today, -k)).map(day => {
     const on = [...days].filter(([, set]) => set.has(day)).map(([id]) => id), fresh = on.filter(id => first.get(id) === day).length;
-    return { day, players: on.length, fresh, back: on.length - fresh, finished: finished.find(f => f.day === day)?.n ?? 0 };
+    return { day, players: on.length, fresh, back: on.length - fresh, finished: finished.find(f => f.day === day)?.n ?? 0, shared: shared.find(f => f.day === day)?.n ?? 0 };
   });
   const rates = [1, 7, 30].map(after => {
     const due = [...first].filter(([, d]) => addDays(d, after) < today);   // that later day is over
     return { after, of: due.length, back: due.filter(([id, d]) => days.get(id)!.has(addDays(d, after))).length };
   });
-  return { players: days.size, daily, rates };
+  return { players: days.size, daily, rates, byVia: Object.fromEntries(byVia.map(r => [r.via, r.n])) as Record<string, number> };
 }

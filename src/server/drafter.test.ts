@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createDb } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { stopBank } from "@/db/schema";
+import { itineraries, stopBank } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { STOP_TYPES } from "@/lib/game/rules";
-import { draftStops, needed, type Ask, type Get } from "./drafter";
+import { draftStops, needed, writeTells, type Ask, type Get } from "./drafter";
 import { newId } from "./service";
 
 const samples = (seedDays as { rounds: Round[] }[]).flatMap(d => d.rounds);
@@ -31,7 +31,7 @@ function fakeClaude(seen: { images: number[] }, usable = (type: string) => type 
     const text = content.map(b => b.type === "text" ? b.text : "").join(" "), type = STOP_TYPES.find(t => text.includes(`Write a ${t} stop`))!;
     const r = sampleOf(type);
     seen.images.push(content.filter(b => b.type === "image").length);
-    return { ...r, usable: usable(type), concerns: usable(type) ? "" : "no good photo", photo: 0, alt: r.alt ?? "", spotName: "Zorbatron", spot: ["Zorbatron", "zorbatron", "ZORBATRON"],
+    return { ...r, tells: `What gives the ${type} away.`, usable: usable(type), concerns: usable(type) ? "" : "no good photo", photo: 0, alt: r.alt ?? "", spotName: "Zorbatron", spot: ["Zorbatron", "zorbatron", "ZORBATRON"],
       message: r.postcard?.text ?? "", messageLang: "es", messageFrom: "+54", messageNote: "Text message", translation: r.postcard ? "Hello" : "" };
   }) as Ask;
 }
@@ -59,5 +59,28 @@ describe("drafting stops", () => {
     expect(lang.note).toContain("In English: Hello");
     expect(landmark.round.img).toMatch(/^\/p\//);
     expect(landmark.round.spot).toEqual(["zorbatron"]);   // accepted spellings are normalised, each once
+    expect(landmark.round.tells).toBe("What gives the Landmark away.");
+  });
+
+  it("writes the missing 'what gave it away' lines for flights still to be seen and stops waiting", async () => {
+    const db = await createDb(), images: number[] = [];
+    const ask = (async content => { images.push(content.filter(b => b.type === "image").length); return { tells: " Look at the roofs. " }; }) as Ask;
+    const fetched: string[] = [], get = (async (url: string) => { fetched.push(url); return new Response(new Uint8Array([1])); }) as Get;
+    const land = sampleOf("Landmark"), lang = sampleOf("Language"), food = sampleOf("Food");
+    await db.insert(itineraries).values([
+      { date: "2026-11-16", flight: "001", rounds: [land] },                              // yesterday: already seen, left alone
+      { date: "2026-11-17", flight: "002", rounds: [land, { ...food, tells: "Kept." }, lang] },
+    ]);
+    await db.insert(stopBank).values([{ id: newId(), round: food }, { id: newId(), status: "rejected" as const, round: food }]);
+    const { written, failed } = await writeTells(db, "2026-11-17", { ask, get });
+    expect([written, failed]).toEqual([3, []]);   // two in today's flight, one waiting in the bank
+    const [past, today] = (await db.select().from(itineraries)).toSorted((a, b) => a.date.localeCompare(b.date));
+    expect(past.rounds[0].tells).toBeUndefined();
+    expect(today.rounds.map(r => r.tells)).toEqual(["Look at the roofs.", "Kept.", "Look at the roofs."]);
+    const bank = await db.select().from(stopBank);
+    expect(bank.map(b => [b.status, b.round.tells ?? null]).toSorted()).toEqual([["pending", "Look at the roofs."], ["rejected", null]]);
+    expect(images.toSorted()).toEqual([0, 1, 1]);   // the Language stop sends its message, not a photo
+    expect(fetched.length).toBe(2);
+    expect(fetched.every(u => u.startsWith("https://bornthere.app/clues/"))).toBe(true);   // the sample photos are site paths, fetched from the live site
   });
 });

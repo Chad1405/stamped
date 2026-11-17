@@ -45,9 +45,13 @@ export default function Game() {
   }, [refreshPlayer]);
 
   useEffect(() => {
-    const join = new URLSearchParams(location.search).get("join");
-    if (join) { setInvite(join.toUpperCase()); history.replaceState(null, "", location.pathname); }
-    void load().then(() => { if (join) { backTo.current = "home"; setView("friends"); } });
+    const q = new URLSearchParams(location.search), join = q.get("join"), pass = q.get("pass");
+    if (join) setInvite(join.toUpperCase());
+    if (join || pass) history.replaceState(null, "", location.pathname);   // back from Checkout or a restore link: the archive shows the pass
+    void load().then(() => {
+      if (join) { backTo.current = "home"; setView("friends"); }
+      if (pass === "expired") setError("That restore link has expired or was already used. Ask for a new one under the archive.");
+    });
   }, [load]);
 
   const merge = useCallback((r: ActResult) => {
@@ -76,6 +80,13 @@ export default function Game() {
   const open = (v: View) => { backTo.current = view; setView(v); };
   const back = () => setView(backTo.current === "stop" || !day ? (day && allDone(day) ? "done" : "home") : backTo.current);
   const playing = view === "stop" && !!day && (!!flight || ["input", "decide"].includes(day.stops[idx]?.state.phase));
+
+  // load the next clue photo ahead of time: on a slow connection it used to start only as the plane landed, leaving a grey box for the look-first seconds
+  useEffect(() => {
+    if (!day) return;
+    const at = view === "stop" ? idx : day.stops.findIndex(s => s.state.phase !== "done");
+    if (at >= 0) for (const s of day.stops.slice(at, at + 2)) if (s.img) new Image().src = s.img;
+  }, [day, view, idx]);
 
   // every screen change starts at the top: one place, after the new screen is in the DOM, so no route can miss it
   const scene = `${view}-${view === "stop" ? idx : day?.date}`;
