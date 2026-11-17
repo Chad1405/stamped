@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName, spendVoucher } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -289,6 +289,35 @@ describe("archive pass", () => {
 
     await forgetPlayer(fresh, pid);   // deleting progress keeps the sale, so the pass can still be restored
     expect((await fresh.select().from(purchases))[0]).toMatchObject({ email: "buyer@example.com", playerId: null });
+  });
+
+  it("gives a boarding voucher at a 7-day streak, once, which opens one locked flight for good", async () => {
+    const fresh = await createDb(); await seedSamples(fresh, TODAY); await keepCalendar(fresh, TODAY, true);
+    const pid = await ensurePlayer(fresh, undefined), OLDEST = addDays(TODAY, -7), EXTRA = addDays(TODAY, -8);
+    await fresh.insert(itineraries).values({ date: EXTRA, flight: "000", rounds: (seedDays as { rounds: Round[] }[])[0].rounds });
+    await fresh.insert(results).values([1, 2, 3, 4, 5, 6].map(k => ({ playerId: pid, date: addDays(TODAY, -k), score: 100, tiers: [], onTime: true })));
+    expect((await getMe(fresh, pid, TODAY)).vouchers).toEqual({ left: 0, earned: 0, earnedToday: false, next: 7 });   // six days running, today not flown yet
+    const before = await getDay(fresh, pid, TODAY, TODAY);
+    expect(before.tomorrow).toBeNull();   // the teaser waits until today's flight is done
+    for (let i = 0; i < rounds.length; i++) {   // fly today: the seventh day
+      await act(fresh, pid, TODAY, i, { type: "start" }, TODAY, 0);
+      await act(fresh, pid, TODAY, i, { type: "guess", text: rounds[i].country }, TODAY, PREVIEW_MS);
+      await act(fresh, pid, TODAY, i, { type: "decide", deeper: false }, TODAY, PREVIEW_MS);
+    }
+    const tomorrow = (await getDay(fresh, pid, TODAY, TODAY)).tomorrow;
+    expect(tomorrow).toMatchObject({ flight: expect.any(String), what: expect.stringMatching(/^a /), continent: expect.any(String) });
+    await getMe(fresh, pid, TODAY);   // the page asks more than once: still one voucher
+    const me = await getMe(fresh, pid, TODAY);
+    expect(me.vouchers).toEqual({ left: 1, earned: 1, earnedToday: true, next: 30 });
+    expect(me.days.find(d => d.date === OLDEST)?.locked).toBe(true);
+
+    await expect(spendVoucher(fresh, pid, addDays(TODAY, -1), TODAY)).rejects.toMatchObject({ status: 409 });   // already open: no voucher spent on it
+    const spent = await spendVoucher(fresh, pid, OLDEST, TODAY);
+    expect(spent.vouchers.left).toBe(0);
+    expect(spent.days.find(d => d.date === OLDEST)?.locked).toBe(false);
+    await getDay(fresh, pid, OLDEST, TODAY);
+    await expect(spendVoucher(fresh, pid, EXTRA, TODAY)).rejects.toMatchObject({ status: 402 });   // none left
+    await expect(getDay(fresh, pid, EXTRA, TODAY)).rejects.toMatchObject({ status: 402 });
   });
 
   it("restores a pass on another browser with a one-use emailed link", async () => {
