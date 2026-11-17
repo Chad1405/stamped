@@ -16,19 +16,26 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
   const si = me?.streak, best = me?.record.best ?? 0;
   const league = leagues[0], myRank = league ? league.members.findIndex(m => m.you) + 1 : 0;
   const shortDay = longDate(day.date).replace(/^\S+\s/, "");
+  // before someone's first flight: show what a stop looks like, and keep scores, the archive and the pass out of the way
+  const newcomer = !me?.days.some(d => d.score !== null || d.stopsDone);
   return (
     <div className="home" aria-label={day.isToday ? "Today's flight" : `Archive flight ${day.flight}`}>
       {!day.isToday && <p className="archive-tag">Archive flight from {longDate(day.date)}.</p>}
       <h1>Five stops. Name where you landed.</h1>
-      <p className="lead">Name the country, then risk it for the city and a final question.</p>
+      <p className="lead">Each stop is a photo or a message from somewhere real. Name the country, then risk it for the city and a final question.</p>
       {day.isToday && si && !si.playedToday && (si.pending
         ? <p className="streak-note">Your lounge pass is covering {longDate(si.pending)}. Fly today to keep your {si.n}-day streak.</p>
         : si.n > 0 && <p className="streak-note">{si.n}-day streak. Fly today to make it {si.n + 1}.</p>)}
-      <Fan stops={day.stops} current={open} />
+      {newcomer && day.example ? (
+        <figure className="example">
+          <div className="ex-card"><img src={day.example.img} alt={day.example.alt} width={960} height={720} /><p className="ex-q">{day.example.prompt}</p></div>
+          <figcaption className="small">A stop from flight {day.example.flight}. Today’s five are new.</figcaption>
+        </figure>
+      ) : <Fan stops={day.stops} current={open} />}
       <div className="board-row">
         <button className="btn btn--gold btn--big" type="button" onClick={onBoard}>{midStop || resume ? `Resume at stop ${open + 1}` : `Board flight ${day.flight}`}</button>
         <span className="small">{COUNTRY_MS / 1000} seconds for the country, then {ROUND_MS / 1000} a guess</span>
-        <span className="small">Flight {day.flight} · {shortDay} · top score {MAX_DAY_SCORE} · your best {best}</span>
+        <span className="small">{newcomer ? "A new flight every day, the same for everyone. Free, no sign-up." : `Flight ${day.flight} · ${shortDay} · top score ${MAX_DAY_SCORE} · your best ${best}`}</span>
       </div>
       <details className="card howto"><summary>How to play and points</summary>
         <div className="howto-body">
@@ -46,7 +53,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <p>{league && league.members.length > 1 ? `You are ${ordinal(myRank)} of ${league.members.length} in ${league.name} this week.` : "Play against friends: start a league and send them the code."}</p>
         <button className="btn btn--small" type="button" onClick={onFriends}>{league ? "See the league" : "Start a league"}</button>
       </section>
-      {me && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
+      {me && !newcomer && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
     </div>
   );
 }

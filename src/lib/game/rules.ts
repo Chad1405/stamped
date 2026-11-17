@@ -18,7 +18,7 @@ export type TierId = "native" | "local" | "traveller" | "backpacker" | "lost" | 
 export const TIERS: Record<TierId, { name: string; score: number; blurb: string }> = {
   native:     { name: "Born There",    score: 100, blurb: "All three right. Locals ask you for directions." },
   local:      { name: "Local",         score: 85,  blurb: "Right city. You know where the good coffee is." },
-  traveller:  { name: "Traveller",     score: 60,  blurb: "Right region. You left the capital at least once." },
+  traveller:  { name: "Traveller",     score: 60,  blurb: "Missed the final question, or named the region. You know your way around." },
   backpacker: { name: "Backpacker",    score: 30,  blurb: "Right country. Passport stamped." },
   lost:       { name: "Lost Luggage",  score: 15,  blurb: "Went deeper and got lost. Half a stamp." },
   tourist:    { name: "Tourist",       score: 10,  blurb: "Right continent. You've seen the brochure." },
