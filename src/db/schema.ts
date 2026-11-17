@@ -7,6 +7,8 @@ export const players = pgTable("players", {
   name: text("name").notNull().default(""),
   passes: jsonb("passes").$type<string[]>().notNull().default([]),   // dates a lounge pass covered
   unlocked: boolean("unlocked").notNull().default(false),            // holds the archive pass, bought here or restored by email
+  voucherDates: jsonb("voucher_dates").$type<string[]>().notNull().default([]),   // days a streak milestone earned a boarding voucher
+  voucherFlights: jsonb("voucher_flights").$type<string[]>().notNull().default([]),   // archive flights opened with one, for good
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

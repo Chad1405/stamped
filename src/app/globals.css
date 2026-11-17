@@ -293,8 +293,9 @@ textarea.input { min-height: 6rem; padding: var(--s3); font-weight: 500; line-he
 .choice:disabled { opacity: 0.7; cursor: wait; }
 .choice--bank { background: var(--blue-dark); border-top: 9px solid var(--blue); animation: from-l var(--t-deal) var(--ease-bounce) both; }
 .choice--risk { background: var(--red-dark); border-top: 9px solid var(--red); animation: from-r var(--t-deal) var(--ease-bounce) 80ms both; }
-@keyframes from-l { from { transform: translate(-60px, 120px) rotate(-14deg); opacity: 0; } }
-@keyframes from-r { from { transform: translate(60px, 120px) rotate(14deg); opacity: 0; } }
+/* a short deal, so a quick tap still lands on the card it meant */
+@keyframes from-l { from { transform: translate(-24px, 40px) rotate(-6deg); opacity: 0; } }
+@keyframes from-r { from { transform: translate(24px, 40px) rotate(6deg); opacity: 0; } }
 .choice .c-key { justify-self: start; font: var(--fs-xs)/1 var(--display); background: var(--ink); color: var(--gold); border-radius: 4px; padding: 3px 6px; }
 .choice .c-tag { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .choice .c-title { font: var(--fs-md)/1.05 var(--display); }
@@ -373,6 +374,8 @@ dl.facts dd { margin: 0; font-weight: 700; }
 pre.share { margin: 0; padding: var(--s3); background: var(--cream); border: 2px solid var(--ink); border-radius: var(--r-sm); font: 700 var(--fs-md)/1.4 var(--body); white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
 .share-to { gap: var(--s2); }
 .share-to .help { flex-basis: 100%; min-height: 0; }
+/* phones: Share across the top, the three channels on one row under it */
+@media (max-width: 560px) { .share-to > .btn--gold { flex: 1 0 100%; } .share-to > a.btn { flex: 1 1 0; padding-inline: var(--s2); } }
 dl.stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
 dl.stats div { display: flex; flex-direction: column-reverse; gap: 2px; padding: var(--s2); background: var(--card-2); border: 2px solid var(--ink); border-radius: var(--r-sm); min-width: 0; }
 dl.stats dt { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-ink); }
@@ -405,6 +408,8 @@ dl.stats dd { margin: 0; font: var(--fs-xl)/1 var(--display); }
 .citylist li { padding: 4px 0; border-bottom: 1px dashed var(--muted-ink); }
 .citylist strong { display: inline-block; min-width: 3.2rem; font-family: var(--display); font-weight: 400; }
 .forget { display: flex; flex-direction: column; gap: var(--s2); }
+/* tomorrow's teaser and vouchers */
+.tomorrow-win, .voucher-note { font-weight: 700; }
 
 /* ---------- friends leagues ---------- */
 .friends { display: flex; flex-direction: column; gap: var(--s4); }

@@ -21,6 +21,8 @@ async function player(width = 1440, phone = false) {
 }
 const text = p => p.evaluate(() => document.body.innerText);
 const clickText = (p, label) => p.evaluate(l => { const b = [...document.querySelectorAll("button")].find(x => x.innerText.trim().startsWith(l) && !x.disabled); if (!b) throw new Error("no button " + l); b.click(); }, label);
+// the choices deal in with a short animation: click once they have landed, as a person would
+const settled = p => p.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running" || !a.effect?.target?.closest?.(".choice")));
 async function guess(p, value) {
   await p.waitForSelector("#guess:not([disabled])", { timeout: 8000 });
   await p.$eval("#guess", el => { el.value = ""; });
@@ -58,7 +60,7 @@ for (let i = 0; i < 5; i++) {
   }
   await alice.waitForSelector(".choice--risk"); if (i === 0) await alice.screenshot({ path: `${OUT}/2-decide.png`, fullPage: true });
   await alice.keyboard.press("d");
-  await guess(alice, r.cityName); await alice.waitForSelector(".choice--risk"); await alice.click(".choice--risk");
+  await guess(alice, r.cityName); await alice.waitForSelector(".choice--risk"); await settled(alice); await alice.click(".choice--risk");
   await alice.waitForFunction(q => document.querySelector("h1")?.innerText === q, { timeout: 5000 }, r.spotLabel);
   if (i === 0) ok(true, `the last step asks by category (${r.spotLabel})`);
   await guess(alice, r.spot[0]);
@@ -126,11 +128,11 @@ for (let i = 0; i < 5; i++) {
   await carol.tap("#guess"); await carol.type("#guess", r.country.slice(0, 3)); await tapOption(r.country); await carol.tap("button[type=submit]");
   await carol.waitForSelector(".choice--risk");
   if (risk) {
-    await carol.tap(".choice--risk"); await carol.waitForSelector("#guess:not([disabled])");
+    await settled(carol); await carol.tap(".choice--risk"); await carol.waitForSelector("#guess:not([disabled])");
     await carol.tap("#guess"); await tapOption(r.cityName); await carol.tap("button[type=submit]");
     await carol.waitForSelector(".choice--risk");
   }
-  await carol.tap(".choice:not(.choice--risk)");
+  await settled(carol); await carol.tap(".choice:not(.choice--risk)");
   await carol.waitForFunction(() => /Board stop|See your hand/.test(document.body.innerText));
   phoneTop &&= await atTop();
   await clickText(carol, i < 4 ? "Board stop" : "See your hand");

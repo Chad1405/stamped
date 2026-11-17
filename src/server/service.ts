@@ -4,7 +4,7 @@ import type { Db } from "@/db";
 import { itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
-import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, type TierId, kmBetween } from "@/lib/game/rules";
+import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
 import { addDays, streakInfo, weekOf } from "@/lib/game/streak";
 import citiesData from "@/content/cities.json";
 import iso3Data from "@/content/iso3.json";
@@ -148,7 +148,7 @@ const publicRound = (r: Round, i: number, s: StopState) => {
 };
 export const codeFor = (r: Round, tier: TierId) => {
   if (tier === "native" || tier === "local") return r.airport;
-  if (tier === "miss") return "???";
+  if (tier === "miss") return "—";   // nothing named, so no code to show (a dash, not "???", which reads as missing data)
   if (tier === "tourist") return CONT3[countryByName(r.country)!.cont[0]];
   return ISO3[r.country] ?? r.country.slice(0, 3).toUpperCase();
 };
@@ -197,8 +197,17 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
     return { ...publicRound(r, i, s), state: stopView(r, s), reveal: s.phase === "done" && s.tier ? reveal(r, s.tier, stats.find(x => x.stop === i), it.rounds[i - 1], s.guesses) : null };
   });
   const score = stops.reduce((n, s) => n + s.state.points, 0);
-  const field = stops.every(s => s.state.phase === "done") ? await fieldFor(db, playerId, date) : null;
-  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field };
+  const finished = stops.every(s => s.state.phase === "done");
+  const field = finished ? await fieldFor(db, playerId, date) : null;
+  return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field, tomorrow: finished && date === today ? await teaser(db, today) : null };
+}
+
+const TEASE: Record<string, string> = { Landmark: "a landmark", Food: "a dish", "Street View": "a street", "Close-up": "a close-up", Language: "a text message" };
+/** A reason to come back: what kind of place tomorrow's first stop is, and its continent. Only once today's flight is done. */
+async function teaser(db: Db, today: string) {
+  const [next] = await db.select().from(itineraries).where(eq(itineraries.date, addDays(today, 1)));
+  const r = next?.rounds[0], cont = r && countryByName(r.country)?.cont[0];
+  return r && cont ? { flight: next.flight, what: TEASE[r.type] ?? "a place", continent: CONT[cont] } : null;
 }
 
 /* ---- playing ---- */
@@ -255,12 +264,15 @@ async function streakFor(db: Db, playerId: string, today: string, persist: boole
   const onTime = await db.select({ date: results.date }).from(results).where(and(eq(results.playerId, playerId), eq(results.onTime, true)));
   const info = streakInfo(new Set(onTime.map(r => r.date)), p?.passes ?? [], today);
   if (persist && info.spend) await db.update(players).set({ passes: [...(p?.passes ?? []), info.spend] }).where(eq(players.id, playerId));
+  // a voucher milestone reached today: once, however often the page asks (the condition keeps two requests from both awarding it)
+  if (persist && info.milestone && VOUCHER_AT.includes(info.milestone))
+    await db.update(players).set({ voucherDates: sql`${players.voucherDates} || ${JSON.stringify([today])}::jsonb` }).where(and(eq(players.id, playerId), sql`not ${players.voucherDates} ? ${today}`));
   return info;
 }
 export async function getMe(db: Db, playerId: string, today: string) {
-  const [p] = await db.select().from(players).where(eq(players.id, playerId));
-  const [streak, myStamps, myResults, days, progress] = await Promise.all([
-    streakFor(db, playerId, today, true),
+  const streak = await streakFor(db, playerId, today, true);   // first: it may award a voucher, which the player row below should include
+  const [[p], myStamps, myResults, days, progress] = await Promise.all([
+    db.select().from(players).where(eq(players.id, playerId)),
     db.select().from(stamps).where(eq(stamps.playerId, playerId)).orderBy(asc(stamps.firstDate)),
     db.select().from(results).where(eq(results.playerId, playerId)),
     db.select({ date: itineraries.date, flight: itineraries.flight }).from(itineraries).where(lte(itineraries.date, today)).orderBy(desc(itineraries.date)),
@@ -269,6 +281,7 @@ export async function getMe(db: Db, playerId: string, today: string) {
   const onTime = myResults.filter(r => r.onTime);
   return {
     id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false,
+    vouchers: vouchersOf(p, today, streak.n),
     record: { flights: onTime.length, best: Math.max(0, ...onTime.map(r => r.score)) },
     passport: {
       countries: myStamps.filter(s => s.kind === "country").map(s => ({ name: s.key, first: s.firstDate, code: s.meta.code, cont: s.meta.cont })),
@@ -279,9 +292,27 @@ export async function getMe(db: Db, playerId: string, today: string) {
       const res = myResults.find(r => r.date === d.date);
       const started = progress.find(x => x.date === d.date);
       return { date: d.date, flight: d.flight, isToday: d.date === today, score: res?.score ?? null, stopsDone: res ? ROUNDS_PER_DAY : started?.n ?? 0,
-        locked: !p?.unlocked && d.date <= addDays(today, -FREE_DAYS) && !res && !started };
+        locked: !p?.unlocked && d.date <= addDays(today, -FREE_DAYS) && !res && !started && !p?.voucherFlights.includes(d.date) };
     }),
   };
+}
+
+/* ---- boarding vouchers ---- */
+/** Earned at streak milestones (VOUCHER_AT), each opens one archive flight for good. `next` is the streak that earns the next one. */
+function vouchersOf(p: { voucherDates: string[]; voucherFlights: string[] } | undefined, today: string, streak: number) {
+  const dates = p?.voucherDates ?? [];
+  return { left: Math.max(0, dates.length - (p?.voucherFlights.length ?? 0)), earned: dates.length, earnedToday: dates.includes(today), next: VOUCHER_AT.find(m => m > streak) ?? null };
+}
+/** Opens one locked archive flight with a voucher. The update's own condition stops a double tap spending two. */
+export async function spendVoucher(db: Db, playerId: string, date: unknown, today: string) {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, "Pick a flight.");
+  if (await canOpen(db, playerId, date, today)) throw new HttpError(409, "That flight is already open.");
+  const [it] = await db.select({ date: itineraries.date }).from(itineraries).where(eq(itineraries.date, date));
+  if (!it) throw new HttpError(404, "No flight on that day.");
+  const done = await db.update(players).set({ voucherFlights: sql`${players.voucherFlights} || ${JSON.stringify([date])}::jsonb` })
+    .where(and(eq(players.id, playerId), sql`jsonb_array_length(${players.voucherFlights}) < jsonb_array_length(${players.voucherDates})`)).returning({ id: players.id });
+  if (!done.length) throw new HttpError(402, "You don't have a boarding voucher left.");
+  return getMe(db, playerId, today);
 }
 
 /* ---- the archive pass ---- */
@@ -289,8 +320,8 @@ export async function getMe(db: Db, playerId: string, today: string) {
 export const FREE_DAYS = 2;
 export async function canOpen(db: Db, playerId: string, date: string, today: string) {
   if (date > addDays(today, -FREE_DAYS)) return true;
-  const [p] = await db.select({ unlocked: players.unlocked }).from(players).where(eq(players.id, playerId));
-  if (p?.unlocked) return true;
+  const [p] = await db.select({ unlocked: players.unlocked, voucherFlights: players.voucherFlights }).from(players).where(eq(players.id, playerId));
+  if (p?.unlocked || p?.voucherFlights.includes(date)) return true;
   const [started] = await db.select({ date: plays.date }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).limit(1);
   return started !== undefined;
 }

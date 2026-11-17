@@ -25,6 +25,7 @@ export const api = {
   me: () => call<Me>("/api/me"),
   forget: () => call<{ ok: true }>("/api/me", { method: "DELETE" }),
   rename: (name: string) => call<Me>("/api/me", { method: "PATCH", body: JSON.stringify({ name }) }),
+  voucher: (date: string) => call<Me>("/api/voucher", { method: "POST", body: JSON.stringify({ date }) }),
   checkout: () => call<{ url: string }>("/api/checkout", { method: "POST" }),
   share: (date: string, via: string) => call<{ ok: true }>("/api/share", { method: "POST", body: JSON.stringify({ date, via }), keepalive: true }),
   restore: (email: string) => call<{ ok: true }>("/api/restore", { method: "POST", body: JSON.stringify({ email }) }),

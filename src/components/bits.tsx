@@ -14,7 +14,7 @@ export function MiniCard({ s, i, style }: { s: StopData; i: number; style?: Reac
   return (
     <span className={`mini t-${tier ?? "miss"}`} style={style} role="img" aria-label={`Stop ${i + 1}${s.reveal ? `, ${s.reveal.place}` : ""}: ${t?.name ?? "not played"}, ${s.state.points} points`}>
       <span className="m-n" aria-hidden="true">{i + 1}</span>
-      <span className="m-code" aria-hidden="true">{s.reveal?.code ?? "???"}</span>
+      <span className="m-code" aria-hidden="true">{s.reveal?.code ?? "—"}</span>
       <span className="m-pts" aria-hidden="true">{s.state.points}</span>
       <span className="m-tier" aria-hidden="true">{t?.name ?? ""}</span>
     </span>
