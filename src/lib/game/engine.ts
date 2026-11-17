@@ -12,6 +12,7 @@ export type Round = {
   spotLabel: string; spotWord: string; spotName: string; spot: string[]; spotStrip?: string;   // spotLabel: the question; spotWord: what it asks for, for the ladder and buttons
   lat?: number; lng?: number;   // the answer city, for the distance flown between stops (sent only once a stop is played)
   airport: string; fact: string; crowd: number[];
+  tells?: string;   // what in the photo or message points to the place, shown with the answer
   credit?: { title: string; author: string; license: string; url: string };
 };
 export type Step = "country" | "city" | "spot";

@@ -1,13 +1,15 @@
 // Fills the review queue without anyone typing JSON: Claude picks places, then writes each stop from its Wikipedia article
 // and chooses among real Commons photos. Everything still goes through addDrafts' checks, and a person approves every stop.
 import Anthropic from "@anthropic-ai/sdk";
-import { and, isNull, ne } from "drizzle-orm";
+import { and, eq, gte, isNull, ne } from "drizzle-orm";
 import type { Db } from "@/db";
-import { stopBank } from "@/db/schema";
+import { itineraries, stopBank } from "@/db/schema";
 import { COUNTRIES, countryByName, norm } from "@/lib/game/match";
 import { STOP_TYPES } from "@/lib/game/rules";
 import { addDrafts, commonsPhoto, creditFromCommons, wikimedia, type CommonsInfo, type Draft } from "./bank";
 import { SAMPLES } from "./service";
+import type { Round } from "@/lib/game/engine";
+import { SITE } from "@/lib/site";
 
 const MODEL = "claude-opus-5-5";
 const STOCK_DAYS = 21;          // stops of each type waiting (in review or approved, not yet used) before the job stops drafting more
@@ -53,12 +55,12 @@ const IDEA = obj({ country: str, cityName: str, spotName: str, wikipedia: str, p
 const DRAFT = obj({
   usable: { type: "boolean" }, concerns: str, photo: { type: "integer" }, alt: str, prompt: str,
   cityName: str, city: strs, regionName: str, region: strs, spotLabel: str, spotWord: str, spotName: str, spot: strs,
-  airport: str, fact: str, crowd: { type: "array", items: { type: "number" } }, lat: { type: "number" }, lng: { type: "number" },
+  airport: str, fact: str, tells: str, crowd: { type: "array", items: { type: "number" } }, lat: { type: "number" }, lng: { type: "number" },
   message: str, messageLang: str, messageFrom: str, messageNote: str, translation: str,
 });
 type Idea = { country: string; cityName: string; spotName: string; wikipedia: string; photoSearch: string };
 type Written = { usable: boolean; concerns: string; photo: number; alt: string; prompt: string; cityName: string; city: string[]; regionName: string; region: string[];
-  spotLabel: string; spotWord: string; spotName: string; spot: string[]; airport: string; fact: string; crowd: number[]; lat: number; lng: number;
+  spotLabel: string; spotWord: string; spotName: string; spot: string[]; airport: string; fact: string; tells: string; crowd: number[]; lat: number; lng: number;
   message: string; messageLang: string; messageFrom: string; messageNote: string; translation: string };
 
 const WHAT: Record<string, string> = {
@@ -69,6 +71,11 @@ const WHAT: Record<string, string> = {
   Language: "no photo: a short text message from a local friend, written in the local language, arranging to meet at a named place (a stadium, market, square, district). The final question names that place.",
 };
 const example = (type: string) => { const { img: _i, credit: _c, ...r } = SAMPLES.flatMap(d => d.rounds).find(r => r.type === type)!; return JSON.stringify(r); };
+
+/** What gave the place away: shown with the answer, so a player who missed learns what to look for next time. */
+const tellsRule = (type: string) => `"tells" is one or two sentences, shown with the answer, on what ${type === "Language"
+  ? "in the message points to this country and city: the language, its spelling or slang, the phone number's country code, a place or currency it mentions"
+  : "in the chosen photo points to this country and city: architecture, building materials, landscape and light, vehicles, clothing, how a dish is served"}. Only what is really there, written to the player, for example "The pointed basalt-column tower and the Viking statue out front are the giveaways." Don't repeat the fact.`;
 
 /* ---- sources ---- */
 export type Get = (url: string) => Promise<Response>;
@@ -116,7 +123,8 @@ ${photos.length ? `Choose the photo (by number) that shows ${idea.spotName} clea
   : `Put the message in "message", in the local language, as a friend would text it; "messageLang" is its language code, "messageFrom" a phone number with the country and area code and the rest masked like the example, "messageNote" like "Text message, 19:40", and "translation" an English translation. Set "photo" to -1 and "alt" to "".`}
 The final question reads "What is/are ... called?" and "spotWord" is its one- or two-word short label, each word 8 letters or fewer.
 "airport" is the IATA code of the main airport serving the city; "lat" and "lng" are the city's.
-The fact is one or two sentences a player would enjoy learning, taken from the source.${type === "Language" ? " Start it with the message's translation in quotes, like the example." : ""}
+The fact is one or two sentences a player would enjoy learning, taken from the source.
+${tellsRule(type)}${type === "Language" ? " Start it with the message's translation in quotes, like the example." : ""}
 Set "usable" to false, and say why in "concerns", if no photo works, the source doesn't support a good fact, or the stop would be unfair or confusing. Otherwise put anything the reviewer should double-check in "concerns".
 
 Source (${source.url}):
@@ -129,7 +137,7 @@ ${source.text}` },
   if (type !== "Language" && !photo) throw new Error("Claude didn't pick a photo");
   return {
     type, prompt: w.prompt, country, cityName: w.cityName, city: spellings(w.city), regionName: w.regionName, region: spellings(w.region),
-    spotLabel: w.spotLabel, spotWord: w.spotWord, spotName: w.spotName, spot: spellings(w.spot), airport: w.airport.toUpperCase(), fact: w.fact,
+    spotLabel: w.spotLabel, spotWord: w.spotWord, spotName: w.spotName, spot: spellings(w.spot), airport: w.airport.toUpperCase(), fact: w.fact, tells: w.tells,
     crowd: w.crowd.map(Math.round), lat: w.lat, lng: w.lng,
     ...(photo ? { alt: w.alt, photo: photo.page } : { postcard: { text: w.message, lang: w.messageLang, from: w.messageFrom, note: w.messageNote } }),
     note: ["Drafted by Claude.", w.translation && `In English: ${w.translation}`, w.concerns && `Check: ${w.concerns}`].filter(Boolean).join(" "),
@@ -181,4 +189,39 @@ For each type, mix them: about half that most players would recognise, the rest 
     return added;
   }));
   return { added: runs.reduce((n, r) => n + r, 0), skipped, need };
+}
+
+/* ---- what gave it away, for stops written before the line existed ---- */
+const TELLS = obj({ tells: str });
+async function tellsFor(r: Round, ask: Ask, get: Get) {
+  const content: Block[] = [{ type: "text", text: `A ${r.type} stop. The answer: ${r.spotName}, ${r.cityName}, ${r.country}. The clue read "${r.prompt}".
+${r.postcard ? `The message: "${r.postcard.text}"${r.postcard.from ? `, from ${r.postcard.from}` : ""}.` : "The photo is below."}
+The fact players already see (don't repeat it): ${r.fact}
+${tellsRule(r.type)}` }];
+  if (!r.postcard) {
+    if (!r.img) throw new Error("no photo");
+    const res = await get(new URL(r.img, SITE.url).href);
+    if (!res.ok) throw new Error(`the photo didn't load (${res.status})`);
+    content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: Buffer.from(await res.arrayBuffer()).toString("base64") } });
+  }
+  return (await ask<{ tells: string }>(content, TELLS)).tells.trim();
+}
+
+/** Writes the line for every stop players will still see without one: today's and later flights, then stops waiting in the bank. */
+export async function writeTells(db: Db, today: string, { ask = claude, get = fetch }: { ask?: Ask; get?: Get } = {}) {
+  if (ask === claude && !process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY isn't set");
+  let written = 0;
+  const failed: string[] = [];
+  const one = async (r: Round) => {
+    if (r.tells) return r;
+    try { const tells = await tellsFor(r, ask, get); written++; return { ...r, tells }; }
+    catch (e) { failed.push(`${r.spotName}: ${e instanceof Error ? e.message : e}`); return r; }
+  };
+  for (const f of await db.select().from(itineraries).where(gte(itineraries.date, today))) {
+    if (f.rounds.every(r => r.tells)) continue;
+    await db.update(itineraries).set({ rounds: await mapLimit(f.rounds, 3, one) }).where(eq(itineraries.date, f.date));   // saved per flight, so a run cut off by the time limit keeps what it wrote
+  }
+  const bank = (await db.select().from(stopBank).where(and(ne(stopBank.status, "rejected"), isNull(stopBank.usedOn)))).filter(b => !b.round.tells);
+  await mapLimit(bank, 3, async b => { const round = await one(b.round); if (round.tells) await db.update(stopBank).set({ round }).where(eq(stopBank.id, b.id)); });
+  return { written, failed };
 }

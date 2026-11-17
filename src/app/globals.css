@@ -713,10 +713,13 @@ footer p { max-width: 65ch; }
 .clues .c-left strong { color: var(--color-plate); }
 /* the reveal leads with something worth knowing, and a miss says it is a common one */
 .fact-lead { font-size: var(--text-lg); line-height: 1.45; animation: arrive-in 480ms var(--ease-out) 380ms both; }
+.tells { animation: arrive-in 480ms var(--ease-out) 300ms both; }
+.tells h2 { margin: 0 0 4px; font-weight: 700; color: var(--color-ink-2); }
+.tells p { margin: 0; line-height: 1.5; }
 .company { margin: 0; font-weight: 600; color: var(--color-ink-2); animation: arrive-in 480ms var(--ease-out) 460ms both; }
 .visited { margin-top: 8px; color: var(--color-ink-2); }
 .field-note { margin-top: 8px; font-weight: 700; }
-@media (prefers-reduced-motion: reduce) { .fact-lead, .company { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fact-lead, .company, .tells { animation: none; } }
 
 /* ---- The stop bank (admin only) ---- */
 .bank .small { margin: 0; }

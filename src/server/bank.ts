@@ -154,7 +154,7 @@ export function applyReviewForm(r: Round, f: FormData): Round {
   const text = (k: string) => String(f.get(k) ?? "").trim();
   return {
     ...r, prompt: text("prompt"), country: text("country"), cityName: text("cityName"), city: list(text("city")), regionName: text("regionName"), region: list(text("region")),
-    spotLabel: text("spotLabel"), spotWord: text("spotWord"), spotName: text("spotName"), spot: list(text("spot")), airport: text("airport"), fact: text("fact"),
+    spotLabel: text("spotLabel"), spotWord: text("spotWord"), spotName: text("spotName"), spot: list(text("spot")), airport: text("airport"), fact: text("fact"), tells: text("tells") || undefined,
     crowd: text("crowd").split(",").map(Number),
     ...(r.postcard ? { postcard: { ...r.postcard, text: text("message") } } : { alt: text("alt") }),
   };

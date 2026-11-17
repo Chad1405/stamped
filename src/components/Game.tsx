@@ -81,6 +81,13 @@ export default function Game() {
   const back = () => setView(backTo.current === "stop" || !day ? (day && allDone(day) ? "done" : "home") : backTo.current);
   const playing = view === "stop" && !!day && (!!flight || ["input", "decide"].includes(day.stops[idx]?.state.phase));
 
+  // load the next clue photo ahead of time: on a slow connection it used to start only as the plane landed, leaving a grey box for the look-first seconds
+  useEffect(() => {
+    if (!day) return;
+    const at = view === "stop" ? idx : day.stops.findIndex(s => s.state.phase !== "done");
+    if (at >= 0) for (const s of day.stops.slice(at, at + 2)) if (s.img) new Image().src = s.img;
+  }, [day, view, idx]);
+
   // every screen change starts at the top: one place, after the new screen is in the DOM, so no route can miss it
   const scene = `${view}-${view === "stop" ? idx : day?.date}`;
   useLayoutEffect(toTop, [scene]);

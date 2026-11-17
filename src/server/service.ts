@@ -164,7 +164,7 @@ function reveal(r: Round, tier: TierId, stats?: typeof stopStats.$inferSelect, p
   const live = stats && stats.players >= MIN_LIVE_PLAYERS;
   const pct = (n: number) => Math.round(100 * n / stats!.players);
   return {
-    country: r.country, regionName: r.regionName, cityName: r.cityName, spotName: r.spotName, airport: r.airport, fact: r.fact, credit: r.credit ?? null,
+    country: r.country, regionName: r.regionName, cityName: r.cityName, spotName: r.spotName, airport: r.airport, fact: r.fact, tells: r.tells ?? null, credit: r.credit ?? null,
     code: codeFor(r, tier), place: placeFor(r, tier),
     leg: km === null ? null : { from: prev!.cityName, km },   // the flight in from the previous stop
     off: offKm === null ? null : { guess: guess!, capital: cap![0], km: offKm },   // a wrong country: how far off it was (shown, not scored)

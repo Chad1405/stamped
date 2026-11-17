@@ -248,6 +248,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
               {st.points > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{st.points}</span>}
               <div><h1>{r.cityName}, {r.country}</h1><p className="small">{st.note}</p></div>
             </div>
+            {r.tells && <div className="tells"><h2 className="small">What gave it away</h2><p>{r.tells}</p></div>}
             <p className="fact-lead">{r.fact}</p>
             {company && <p className="company">{company}</p>}
             <div className="actions"><button className="btn btn--primary" type="button" onClick={onNext} ref={nextRef}>{last ? "Open your passport" : `Board stop ${idx + 2}`}</button></div>

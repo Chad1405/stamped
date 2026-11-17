@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { addDrafts, applyReviewForm, bankOverview, reviewStop, stopProblems } from "@/server/bank";
-import { draftStops } from "@/server/drafter";
+import { draftStops, writeTells } from "@/server/drafter";
 import { gameToday, retention } from "@/server/service";
 import type { Round } from "@/lib/game/engine";
 
@@ -26,6 +26,16 @@ async function draftNow() {
     const { added, skipped, need } = await draftStops(await db());
     msg = Object.values(need).some(n => n > 0) ? `Drafted ${added} for review.${skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(" | ")}` : ""}` : "Every type already has three weeks of stops waiting, so nothing was drafted.";
   } catch (e) { msg = `Drafting failed: ${e instanceof Error ? e.message : e}`; }
+  redirect(`/admin?msg=${encodeURIComponent(msg.slice(0, 1500))}`);
+}
+
+async function tellsNow() {
+  "use server";
+  let msg: string;
+  try {
+    const { written, failed } = await writeTells(await db(), gameToday());
+    msg = `Wrote ${written} "what gave it away" lines.${failed.length ? ` Couldn't write ${failed.length}: ${failed.join(" | ")}` : ""}`;
+  } catch (e) { msg = `Writing them failed: ${e instanceof Error ? e.message : e}`; }
   redirect(`/admin?msg=${encodeURIComponent(msg.slice(0, 1500))}`);
 }
 
@@ -69,6 +79,7 @@ function StopCard({ id, round: r, note, source, repeat }: { id: string; round: R
         <div className="bank-pair"><Field name="regionName" label="Region" value={r.regionName} /><Field name="region" label="Accepted, comma-separated" value={r.region.join(", ")} /></div>
         <div className="bank-pair"><Field name="spotLabel" label="Final question" value={r.spotLabel} /><Field name="spotWord" label="Short label" value={r.spotWord} /></div>
         <div className="bank-pair"><Field name="spotName" label="Final answer" value={r.spotName} /><Field name="spot" label="Accepted, comma-separated" value={r.spot.join(", ")} /></div>
+        <Field name="tells" label="What gave it away (only what the photo or message shows)" value={r.tells ?? ""} long />
         <Field name="fact" label="Fact" value={r.fact} long />
         <Field name="crowd" label="Who gets it: country, city, final (%)" value={r.crowd.join(", ")} />
         <div className="actions">
@@ -123,6 +134,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <h2>Draft stops</h2>
         <p>Claude drafts a week of each stop type every Monday, up to three weeks waiting. This runs it now; it takes about two minutes.</p>
         <form action={draftNow}><button className="btn btn--primary" type="submit">Draft stops now</button></form>
+        <p>Stops written before the &ldquo;what gave it away&rdquo; line existed don&rsquo;t have one. This writes it for today&rsquo;s and later flights and every stop waiting, from each photo or message. Stops that already have one are left alone.</p>
+        <form action={tellsNow}><button className="btn" type="submit">Write the missing lines</button></form>
       </section>
 
       <section className="panel">
