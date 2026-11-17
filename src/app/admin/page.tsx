@@ -33,8 +33,8 @@ async function tellsNow() {
   "use server";
   let msg: string;
   try {
-    const { written, failed } = await writeTells(await db(), gameToday());
-    msg = `Wrote ${written} "what gave it away" lines.${failed.length ? ` Couldn't write ${failed.length}: ${failed.join(" | ")}` : ""}`;
+    const { written, failed, left } = await writeTells(await db(), gameToday());
+    msg = `Wrote ${written} "what gave it away" lines.${left ? ` ${left} still to write: press the button again.` : ""}${failed.length ? ` Couldn't write ${failed.length}: ${failed.join(" | ")}` : ""}`;
   } catch (e) { msg = `Writing them failed: ${e instanceof Error ? e.message : e}`; }
   redirect(`/admin?msg=${encodeURIComponent(msg.slice(0, 1500))}`);
 }

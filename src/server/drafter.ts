@@ -75,7 +75,7 @@ const example = (type: string) => { const { img: _i, credit: _c, ...r } = SAMPLE
 /** What gave the place away: shown with the answer, so a player who missed learns what to look for next time. */
 const tellsRule = (type: string) => `"tells" is one or two sentences, shown with the answer, on what ${type === "Language"
   ? "in the message points to this country and city: the language, its spelling or slang, the phone number's country code, a place or currency it mentions"
-  : "in the chosen photo points to this country and city: architecture, building materials, landscape and light, vehicles, clothing, how a dish is served"}. Only what is really there, written to the player, for example "The pointed basalt-column tower and the Viking statue out front are the giveaways." Don't repeat the fact.`;
+  : "in the chosen photo points to this country and city: architecture, building materials, landscape and light, vehicles, clothing, how a dish is served"}. Only what is really there, in no more than 35 words, written to the player, for example "The pointed basalt-column tower and the Viking statue out front are the giveaways." Don't repeat the fact.`;
 
 /* ---- sources ---- */
 export type Get = (url: string) => Promise<Response>;
@@ -207,21 +207,22 @@ ${tellsRule(r.type)}` }];
   return (await ask<{ tells: string }>(content, TELLS)).tells.trim();
 }
 
-/** Writes the line for every stop players will still see without one: today's and later flights, then stops waiting in the bank. */
-export async function writeTells(db: Db, today: string, { ask = claude, get = fetch }: { ask?: Ask; get?: Get } = {}) {
+/** Writes the line for every stop players will still see without one: today's and later flights, then stops waiting in the bank.
+ *  Stops starting new work after `until`, so a run ends inside the function's time limit and says how many are left for the next press. */
+export async function writeTells(db: Db, today: string, { ask = claude, get = fetch, until = Date.now() + 240_000 }: { ask?: Ask; get?: Get; until?: number } = {}) {
   if (ask === claude && !process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY isn't set");
-  let written = 0;
+  let written = 0, left = 0;
   const failed: string[] = [];
   const one = async (r: Round) => {
     if (r.tells) return r;
+    if (Date.now() > until) { left++; return r; }
     try { const tells = await tellsFor(r, ask, get); written++; return { ...r, tells }; }
     catch (e) { failed.push(`${r.spotName}: ${e instanceof Error ? e.message : e}`); return r; }
   };
-  for (const f of await db.select().from(itineraries).where(gte(itineraries.date, today))) {
-    if (f.rounds.every(r => r.tells)) continue;
-    await db.update(itineraries).set({ rounds: await mapLimit(f.rounds, 3, one) }).where(eq(itineraries.date, f.date));   // saved per flight, so a run cut off by the time limit keeps what it wrote
-  }
+  const flights = (await db.select().from(itineraries).where(gte(itineraries.date, today))).filter(f => !f.rounds.every(r => r.tells));
+  // two flights at a time, three stops each: fast enough for a full calendar, gentle on the API's rate limit
+  await mapLimit(flights, 2, async f => db.update(itineraries).set({ rounds: await mapLimit(f.rounds, 3, one) }).where(eq(itineraries.date, f.date)));   // saved per flight, so a cut-off run keeps what it wrote
   const bank = (await db.select().from(stopBank).where(and(ne(stopBank.status, "rejected"), isNull(stopBank.usedOn)))).filter(b => !b.round.tells);
-  await mapLimit(bank, 3, async b => { const round = await one(b.round); if (round.tells) await db.update(stopBank).set({ round }).where(eq(stopBank.id, b.id)); });
-  return { written, failed };
+  await mapLimit(bank, 6, async b => { const round = await one(b.round); if (round.tells) await db.update(stopBank).set({ round }).where(eq(stopBank.id, b.id)); });
+  return { written, failed, left };
 }
