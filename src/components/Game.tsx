@@ -107,7 +107,7 @@ export default function Game() {
       </header>
       <main aria-live="polite">
         {error && <p className="help is-error" role="alert">{error} <button className="linkish" type="button" onClick={() => void load(day?.date)}>Try again</button></p>}
-        {!day && !error && <p className="small">Shuffling today’s deck…</p>}
+        {!day && !error && <p className="small">Checking in for today’s flight…</p>}
         <div className="scene" key={scene}>
           {day && view === "home" && <Home day={day} me={me} leagues={leagues} onBoard={board} onOpenDay={d => void load(d)} onFriends={() => open("friends")} />}
           {day && view === "stop" && <StopScreen key={`${day.date}-${idx}`} day={day} idx={idx} offset={offset} onResult={merge} onNext={next} onError={setError} />}
