@@ -277,7 +277,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
   return (
     <div className="play">
       <div className={`stage${st.phase === "decide" ? " deciding" : ""}`} ref={stageRef}>
-        <span className="tab tab-bank" aria-hidden="true">Bank {st.banked ? p(st.banked) : ""}</span>
+        <span className="tab tab-bank" aria-hidden="true">Stay {st.banked ? p(st.banked) : ""}</span>
         <span className="tab tab-risk" aria-hidden="true">Risk {nextScore} · drop to {dropScore}</span>
         <div ref={dragRef} className={`drag${st.phase === "decide" ? " can-drag" : ""}`}
           onPointerDown={e => { if (st.phase !== "decide" || busy || e.button > 0) return; pd.current = { x: e.clientX, dx: 0 }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not capturable */ } e.currentTarget.classList.remove("hint"); e.currentTarget.classList.add("dragging"); }}
@@ -326,7 +326,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                   </div>
                   <div className="p-head"><h1>{r.cityName}, {r.country}</h1>{st.points > 0 && (weight !== "top" || gold) && <span className="gain" aria-hidden="true">+{st.points}</span>}</div>
                   <p className="p-note">{st.note}</p>
-                  <div className="actions"><button className="btn btn--gold" type="button" onClick={onNext} ref={nextRef}>{last ? "See your hand" : `Board stop ${idx + 2}`}</button></div>
+                  <div className="actions"><button className="btn btn--gold" type="button" onClick={onNext} ref={nextRef}>{last ? "See your route" : `Board stop ${idx + 2}`}</button></div>
                   {r.tells && <div className="tells"><h2>What gave it away</h2><p>{r.tells}</p></div>}
                   <p className="fact-lead">{r.fact}</p>
                   {company && <p className="company">{company}</p>}
@@ -340,7 +340,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                   {r.credit && <p className="credit">Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</p>}
                 </section>
               ) : (
-                <div className="face back pattern" aria-hidden="true"><span className="emblem">{idx + 1}</span></div>
+                <div className="face back pattern" aria-hidden="true"><span className="emblem"><small>Stop</small>{idx + 1}</span></div>
               )}
             </div>
           </div>
@@ -348,10 +348,10 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
 
         {st.phase === "decide" && (
           <div className="choices">
-            <p className="stopped">Clock stopped while you decide. Drag the card right to risk it, left to bank it.</p>
+            <p className="stopped">Clock stopped while you decide. Drag the card right to risk it, left to stay.</p>
             <div className="pick">
               <button className="choice choice--bank" type="button" aria-keyshortcuts="B" disabled={busy} onClick={() => decide(false)}>
-                <span className="c-key" aria-hidden="true">B</span><span className="c-tag">Play safe</span><span className="c-title">Bank it</span>
+                <span className="c-key" aria-hidden="true">B</span><span className="c-tag">Play safe</span><span className="c-title">Stay here</span>
                 <span className="c-pts">{p(st.banked)} <span>points</span></span><span className="c-risk">Keep the {TIERS[st.banked!].name} stamp</span>
               </button>
               <button className="choice choice--risk" type="button" aria-keyshortcuts="D" disabled={busy} onClick={() => decide(true)}>

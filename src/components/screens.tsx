@@ -45,7 +45,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <div className="howto-body">
           <ol className="steps">
             <li><span><strong>Name the country.</strong> Look first, then type. You get three tries, with a clue after each miss; every extra try takes 10 off.</span></li>
-            <li><span><strong>Risk it or bank it.</strong> Get the country and the Backpacker stamp is yours. Drag the card right to risk it for the city, left to bank it, or use the buttons.</span></li>
+            <li><span><strong>Risk it or stay.</strong> Get the country and the Backpacker stamp is yours. Drag the card right to risk it for the city, left to stay, or use the buttons.</span></li>
             <li><span><strong>Go deeper.</strong> Name the city, then risk it again for the final question. A miss drops you a tier.</span></li>
           </ol>
           <ul className="tiers" aria-label="Stamps and their points">
@@ -86,7 +86,7 @@ function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDa
               <td>{done ? `Landed, ${d.score} of ${MAX_DAY_SCORE}` : d.stopsDone ? `Stop ${d.stopsDone + 1} of 5` : ""}</td>
               <td className="num">{here ? <span className="small">Open now</span>
                 : d.locked ? (left > 0 ? <button className="btn btn--small" type="button" onClick={() => spend(d.date, d.flight)}>Use voucher</button> : <a className="btn btn--small" href="#archive-pass">Unlock</a>)
-                : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See the hand" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
+                : <button className="btn btn--small" type="button" onClick={() => onOpenDay(d.date)}>{done ? "See the route" : d.stopsDone ? "Resume" : "Board"}</button>}</td>
             </tr>
           );
         })}</tbody>
@@ -148,15 +148,14 @@ export function Done({ day, me, onPassport, onFriends, onOpenDay }: { day: Day; 
   const shareNow = () => canShare
     ? navigator.share({ text: share }).then(() => count("native"), () => {})   // closing the sheet isn't a share
     : navigator.clipboard.writeText(share).then(() => { setCopied("Copied to your clipboard."); count("copy"); }, () => setCopied("Select the text and copy it."));
-  const text = encodeURIComponent(share), n = day.stops.length;
+  const text = encodeURIComponent(share);
   return (
     <div className="done">
       <div className="col col-main">
-      <p className="done-title">{day.isToday ? "Your hand today" : `Your hand, flight ${day.flight}`}</p>
+      <p className="done-title">{day.isToday ? "Your route today" : `Your route, flight ${day.flight}`}</p>
       <ol className="hand" aria-label="Your five stops">
         {day.stops.map((x, i) => {
-          const off = i - (n - 1) / 2;
-          return <li key={i} style={{ ["--k" as string]: i, ["--r" as string]: `${off * 7}deg`, ["--y" as string]: `${Math.abs(off) * 5}px`, ["--fx" as string]: `${-off * 60}px` }}><MiniCard s={x} i={i} /></li>;
+          return <li key={i} style={{ ["--k" as string]: i, ["--r" as string]: `${i % 2 ? 2 : -2}deg` }}><MiniCard s={x} i={i} /></li>;
         })}
       </ol>
       <div className="total"><span>{day.isToday ? "Today's score" : `Flight ${day.flight} score`}</span><b><CountUp to={s} ms={1400} /></b><span>of {MAX_DAY_SCORE}</span></div>

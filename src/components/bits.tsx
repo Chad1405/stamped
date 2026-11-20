@@ -27,9 +27,9 @@ export function Fan({ stops, current }: { stops: StopData[]; current: number }) 
   return (
     <ol className="fan" aria-label={`Today's ${n} stops, ${stops.filter(s => s.state.phase === "done").length} played`}>
       {stops.map((s, k) => {
-        const done = s.state.phase === "done", off = k - (n - 1) / 2;
+        const done = s.state.phase === "done";
         return (
-          <li key={k} className={!done && k === current ? "is-live" : undefined} style={{ ["--r" as string]: `${off * 9}deg`, ["--y" as string]: `${Math.abs(off) * 6}px`, ["--k" as string]: k }}>
+          <li key={k} className={!done && k === current ? "is-live" : undefined} style={{ ["--r" as string]: `${k % 2 ? 2 : -2}deg`, ["--k" as string]: k }}>
             {done ? <MiniCard s={s} i={k} /> : <span className="cardback" aria-hidden="true">{k === current && <span>{k + 1}</span>}</span>}
           </li>
         );
@@ -41,9 +41,9 @@ export function Fan({ stops, current }: { stops: StopData[]; current: number }) 
 /** The rest of the day, peeking at the bottom of the screen. */
 export function Deck({ left }: { left: number }) {
   return (
-    <div className="deck" role="img" aria-label={left ? `${left} ${left === 1 ? "card" : "cards"} left in the deck` : "The last card of the day"}>
+    <div className="deck" role="img" aria-label={left ? `${left} more ${left === 1 ? "stop" : "stops"} today` : "The last stop of the day"}>
       <div className="stack" aria-hidden="true">{Array.from({ length: Math.max(1, Math.min(left, 4)) }, (_, k) => <i key={k} className="cardback" style={{ ["--k" as string]: k }} />)}</div>
-      <span className="deck-left" aria-hidden="true">{left ? `${left} left` : "Last card"}</span>
+      <span className="deck-left" aria-hidden="true">{left ? `${left} to go` : "Last stop"}</span>
     </div>
   );
 }
