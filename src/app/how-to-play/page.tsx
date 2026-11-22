@@ -5,7 +5,7 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: `How to play ${SITE.name}, ${SITE.tagline}`,
-  description: `The rules of ${SITE.name}: five photos a day, ${COUNTRY_MS / 1000} seconds to name the country, then risk it for the city and a final question. Points, stamps and the archive pass explained.`,
+  description: `The rules of ${SITE.name}: five photos a day, ${COUNTRY_MS / 1000} seconds to guess the country, then risk it for the city and a final question. Points, stamps and the archive pass explained.`,
   alternates: { canonical: "/how-to-play" },
 };
 
@@ -30,12 +30,12 @@ export default function HowToPlay() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED).replace(/</g, "\\u003c") }} />
       <p><Link href="/">Play today&apos;s flight</Link></p>
       <h1>How to play {SITE.name}</h1>
-      <p>{SITE.name} is a free daily geography game. Each day there is one flight of five stops. Every stop is a photo or a message from somewhere real, and your job is to say where you landed.</p>
+      <p>{SITE.name} is a free daily geography game. Each day there is one flight of five stops. Every stop is a photo or a message from somewhere real, and your job is to guess where you landed: the country first, then the city.</p>
 
       <section>
         <h2>The rules</h2>
         <ol>
-          <li><strong>Name the country.</strong> You have {COUNTRY_MS / 1000} seconds and three tries, with a clue after each miss. Every extra try takes 10 points off.</li>
+          <li><strong>Guess the country.</strong> You have {COUNTRY_MS / 1000} seconds and three tries, with a clue after each miss. Every extra try takes 10 points off.</li>
           <li><strong>Risk it or stay.</strong> Get the country right and the Backpacker stamp is yours. Then choose: stay and keep it, or risk it for the city.</li>
           <li><strong>Go deeper.</strong> Name the city in {ROUND_MS / 1000} seconds, then risk it again for a final question about the place. A miss drops you a tier.</li>
         </ol>
