@@ -126,6 +126,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <thead><tr><th>Day</th><th>Played</th><th>New</th><th>Returning</th><th>Finished a flight</th><th>Shared</th></tr></thead>
           <tbody>{who.daily.map(r => <tr key={r.day}><td>{r.day}</td><td>{r.players}</td><td>{r.fresh}</td><td>{r.back}</td><td>{r.finished}</td><td>{r.shared}</td></tr>)}</tbody>
         </table>
+        <h3>Where players came from</h3>
+        <p className="small">From a tagged link like bornthere.app/?src=tiktok, or the site that linked here. Each player keeps their first source. Untagged covers direct visits and links that hide where they came from.</p>
+        <table className="bank-table">
+          <thead><tr><th>Source</th><th>Visited</th><th>Started a flight</th><th>Finished one</th><th>Came back another day</th><th>Shared</th></tr></thead>
+          <tbody>{who.sources.map(r => <tr key={r.source}><td>{r.source}</td><td>{r.visited ?? "–"}</td><td>{r.started}</td><td>{r.finished}</td><td>{r.back}</td><td>{r.shared}</td></tr>)}</tbody>
+        </table>
       </section>
 
       <section className="panel">

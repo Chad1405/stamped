@@ -37,6 +37,14 @@ export async function forgetPlayer(db: Db, playerId: string) {
   await db.delete(players).where(eq(players.id, playerId));
 }
 export const cleanName = (s: unknown) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
+/** Where a new player came from: a link's ?src= label (like "tiktok") or the site that sent them (like "reddit.com").
+ *  The first source wins, and only within a player's first hour, so a later visit from somewhere else doesn't rewrite it. */
+export async function setSource(db: Db, playerId: string, source: unknown) {
+  const s = String(source ?? "").trim().toLowerCase().split(/[/?#\s]/)[0].replace(/^www\./, "").replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+  if (!s) return;
+  await db.update(players).set({ source: s })
+    .where(and(eq(players.id, playerId), isNull(players.source), gt(players.createdAt, sql`now() - interval '1 hour'`)));
+}
 export async function setName(db: Db, playerId: string, name: unknown) {
   await db.update(players).set({ name: cleanName(name) }).where(eq(players.id, playerId));
 }
@@ -498,5 +506,21 @@ export async function retention(db: Db, today: string) {
     const due = [...first].filter(([, d]) => addDays(d, after) < today);   // that later day is over
     return { after, of: due.length, back: due.filter(([id, d]) => days.get(id)!.has(addDays(d, after))).length };
   });
-  return { players: days.size, daily, rates, byVia: Object.fromEntries(byVia.map(r => [r.via, r.n])) as Record<string, number> };
+  // each source's players through the funnel; "visited" counts only tagged sources, since untagged visits include every bot
+  const [tagged, done, sent] = await Promise.all([
+    db.select({ id: players.id, source: players.source }).from(players).where(sql`${players.source} is not null`),
+    db.selectDistinct({ id: results.playerId }).from(results),
+    db.selectDistinct({ id: shares.playerId }).from(shares),
+  ]);
+  const sourceOf = new Map(tagged.map(t => [t.id, t.source!])), doneSet = new Set(done.map(d => d.id)), sentSet = new Set(sent.map(s => s.id));
+  const bySource = new Map<string, { source: string; visited: number | null; started: number; finished: number; back: number; shared: number }>();
+  const row = (source: string | undefined) => {
+    const k = source ?? "untagged";
+    if (!bySource.has(k)) bySource.set(k, { source: k, visited: source ? 0 : null, started: 0, finished: 0, back: 0, shared: 0 });
+    return bySource.get(k)!;
+  };
+  for (const t of tagged) row(t.source!).visited!++;
+  for (const [id, set] of days) { const r = row(sourceOf.get(id)); r.started++; if (doneSet.has(id)) r.finished++; if (set.size > 1) r.back++; if (sentSet.has(id)) r.shared++; }
+  const sources = [...bySource.values()].sort((a, b) => b.started - a.started || (b.visited ?? 0) - (a.visited ?? 0));
+  return { players: days.size, daily, rates, byVia: Object.fromEntries(byVia.map(r => [r.via, r.n])) as Record<string, number>, sources };
 }
