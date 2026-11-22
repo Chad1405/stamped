@@ -17,7 +17,8 @@ export const metadata: Metadata = {
   title: TITLE,
   description: SITE.description,
   applicationName: SITE.name,
-  openGraph: { title: TITLE, description: SITE.description, siteName: SITE.name, type: "website", url: "/" },
+  // no og:url here: every page would inherit the homepage address; crawlers fall back to each page's canonical.
+  openGraph: { title: TITLE, description: SITE.description, siteName: SITE.name, type: "website" },
   twitter: { card: "summary_large_image", title: TITLE, description: SITE.description },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0a2b20" };

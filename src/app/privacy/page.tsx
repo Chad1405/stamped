@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: `Privacy · ${SITE.name}`, description: `What ${SITE.name} keeps about you, and why.` };
+export const metadata: Metadata = { title: `Privacy · ${SITE.name}`, description: `What ${SITE.name} keeps about you, and why.`, alternates: { canonical: "/privacy" } };
 
 export default function Privacy() {
   return (
