@@ -17,6 +17,7 @@ const FAQ: [string, string][] = [
   ["How is Born There different from GeoGuessr or Worldle?", "GeoGuessr drops you into Street View and Worldle shows a country's outline. Born There gives you five photos or messages from real places, and asks for the country first, then lets you risk your points to name the exact city and answer a final question."],
   ["Where do the photos come from?", "From Wikimedia Commons, under their own free licences. Each photo is credited with its answer once you have played that stop. Stops are drafted with help from AI and checked by a person before they go live."],
   ["Who makes Born There?", `${SITE.name} is made by ${SITE.operator}, a small independent studio in the UK. You can reach us at ${SITE.email}.`],
+  ["Where can I follow Born There?", `On TikTok at @bornthere (${SITE.social.tiktok}) and on Instagram at @bornthere.app (${SITE.social.instagram}). Those are the only official accounts.`],
 ];
 
 const STRUCTURED = {

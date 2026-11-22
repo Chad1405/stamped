@@ -134,7 +134,7 @@ export default function Game() {
         <footer>
           <p>Born There is a free daily geography game: five photos from real places, the same for everyone. Guess the country from the photo, then risk it for the city.</p>
           <p>Each photo is credited with its answer, once you have played that stop.</p>
-          <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
+          <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href={SITE.social.tiktok} target="_blank" rel="noopener me">TikTok</a><a href={SITE.social.instagram} target="_blank" rel="noopener me">Instagram</a></nav>
         </footer>
       )}
     </div>

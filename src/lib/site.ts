@@ -8,5 +8,6 @@ export const SITE = {
   email: "chad@yumejilabs.com",     // where privacy questions and requests go
   country: "England and Wales",     // whose law the terms follow (the UK has three legal systems)
   updated: "22 November 2026",
+  social: { tiktok: "https://www.tiktok.com/@bornthere", instagram: "https://www.instagram.com/bornthere.app/" },   // the official accounts
   passPrice: "£4.99",               // shown on the unlock panel; keep in step with the Stripe price (STRIPE_PRICE_ID)
 };
