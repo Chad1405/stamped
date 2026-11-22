@@ -190,7 +190,7 @@ textarea.input { min-height: 6rem; padding: var(--s3); font-weight: 500; line-he
 .pass-restore .actions { flex-wrap: nowrap; }
 
 /* ---------- a stop: the one card ---------- */
-.play { display: flex; flex-direction: column; gap: var(--s3); }
+.play { display: flex; flex-direction: column; gap: var(--s3); position: relative; z-index: 1; }   /* above the envelope pile, so a suggestion list hanging over it takes the click */
 .stage { position: relative; display: flex; flex-direction: column; gap: var(--s3); --risk: 0; --bank: 0; }
 .drag { position: relative; z-index: 3; isolation: isolate; transition: transform var(--t-mid) var(--ease-bounce); touch-action: manipulation; }
 .drag.dragging { transition: none; }
