@@ -14,18 +14,30 @@ export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 const MIGRATIONS = path.join(process.cwd(), "drizzle");
 const MIGRATE_LOCK = 7_210_444;   // any fixed number: the advisory lock every server takes before migrating
 
+/** True when the database already has the newest migration in drizzle/, read the way Drizzle's migrator decides (by each entry's `when`). */
+async function migrated(pool: import("pg").Pool) {
+  const journal: { entries: { when: number }[] } = JSON.parse(fs.readFileSync(path.join(MIGRATIONS, "meta", "_journal.json"), "utf8"));
+  try {
+    const { rows } = await pool.query(`select max(created_at) as at from drizzle.__drizzle_migrations`);
+    return Number(rows[0]?.at) >= journal.entries.at(-1)!.when;
+  } catch { return false; }   // no migrations table yet: a brand-new database
+}
+
 /** `url` is the pooled connection for app traffic; `directUrl` (unpooled) runs migrations, as Neon advises. */
 export async function createDb(opts: { url?: string; directUrl?: string; dataDir?: string } = {}): Promise<Db> {
   if (opts.url) {
     const { Client, Pool } = await import("pg");
     const { attachDatabasePool } = await import("@vercel/functions");
-    const direct = new Client({ connectionString: opts.directUrl ?? opts.url });
-    await direct.connect();
-    // servers that start together queue here, so only one applies a new migration and the rest find it done
-    try { await direct.query("select pg_advisory_lock($1)", [MIGRATE_LOCK]); await migratePg(drizzlePg(direct), { migrationsFolder: MIGRATIONS }); }
-    finally { await direct.end(); }   // closing the session releases the lock
     const pool = new Pool({ connectionString: opts.url });
     attachDatabasePool(pool);   // on Vercel Fluid compute, closes idle clients before the instance suspends
+    // a traffic spike starts hundreds of servers at once; one pooled read lets them all skip the direct connection and the lock queue
+    if (!await migrated(pool)) {
+      const direct = new Client({ connectionString: opts.directUrl ?? opts.url });
+      await direct.connect();
+      // servers that start together queue here, so only one applies a new migration and the rest find it done
+      try { await direct.query("select pg_advisory_lock($1)", [MIGRATE_LOCK]); await migratePg(drizzlePg(direct), { migrationsFolder: MIGRATIONS }); }
+      finally { await direct.end(); }   // closing the session releases the lock
+    }
     return drizzlePg(pool, { schema }) as unknown as Db;
   }
   const { PGlite } = await import("@electric-sql/pglite");

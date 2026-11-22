@@ -1,6 +1,8 @@
 // Shared plumbing for the API routes: the anonymous player cookie, dev seeding, and error mapping.
 import { NextResponse, type NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
 import { db, type Db } from "@/db";
+import { itineraries } from "@/db/schema";
 import { ensurePlayer, forgetPlayer, gameToday, HttpError, keepCalendar } from "./service";
 
 const COOKIE = "stamped_pid";
@@ -11,7 +13,11 @@ type Ctx = { db: Db; playerId: string; today: string };
 export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown>) {
   try {
     const d = await db(), today = gameToday();
-    if (seededFor !== today) { await keepCalendar(d, today); seededFor = today; }   // once per day per server, so a day still has a flight if the daily job failed
+    if (seededFor !== today) {   // once per day per server, so a day still has a flight if the daily job failed
+      // on Vercel the daily job does the full top-up; a new server only looks for today's flight, so a spike of new servers doesn't queue on the bank's lock
+      if (!process.env.VERCEL || !(await d.select({ date: itineraries.date }).from(itineraries).where(eq(itineraries.date, today))).length) await keepCalendar(d, today);
+      seededFor = today;
+    }
     const cookieId = req.cookies.get(COOKIE)?.value;
     const playerId = await ensurePlayer(d, cookieId);
     const out = await fn({ db: d, playerId, today });
