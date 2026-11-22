@@ -91,7 +91,7 @@ export default function Game() {
   return (
     <div className={`shell${playing ? " is-playing" : ""}${view === "passport" || view === "friends" ? " is-wide" : ""}`}>
       <header className="bar">
-        <Link className="mark" href="/" aria-label="Born There, back to today's flight" onClick={e => { e.preventDefault(); if (!playing) void load(); }}>Born There</Link>
+        <Link className="mark" href="/" aria-label="Born There, back to today's flight" onClick={e => { e.preventDefault(); if (!playing) void load(); }}>Born There<span className="mark-url" aria-hidden="true">bornthere.app</span></Link>
         <dl className="hud">
           <div className="hud-stop"><dt>Stop</dt><dd>{stopNo}/{day?.stops.length ?? 5}</dd></div>
           <div className="hud-score"><dt>Score</dt><dd key={hudScore} className={hudScore > fromScore ? "bumping" : undefined}><CountUp from={fromScore} to={hudScore} /></dd></div>
@@ -128,7 +128,7 @@ export default function Game() {
       </main>
       {!playing && (
         <footer>
-          <p>Born There is a free daily geography game: five photos from real places, the same for everyone. Name the country, then risk it for the city.</p>
+          <p>Born There is a free daily geography game: five photos from real places, the same for everyone. Guess the country from the photo, then risk it for the city.</p>
           <p>Each photo is credited with its answer, once you have played that stop.</p>
           <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
         </footer>

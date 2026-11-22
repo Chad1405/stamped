@@ -1,6 +1,6 @@
 # Born There
 
-> Born There is a free daily geography game at https://www.bornthere.app. Each day there is one flight of five stops, the same for every player. Every stop is a photo or a message from a real place: name the country, then risk your points to name the city and answer a final question. No sign-up, no ads. Made by Yumeji Labs, a small independent studio in the UK.
+> Born There is a free daily geography game at https://www.bornthere.app. Each day there is one flight of five stops, the same for every player. Every stop is a photo or a message from a real place: guess the country, then risk your points to name the city and answer a final question. No sign-up, no ads. Made by Yumeji Labs, a small independent studio in the UK.
 
 ## Pages
 
