@@ -274,9 +274,7 @@ textarea.input { min-height: 6rem; padding: var(--s3); font-weight: 500; line-he
 .wm-land path.is-wrong { fill: var(--red); }
 .wm-land path.is-tapped { fill: var(--cream); }
 .wm-land path.is-answer { fill: var(--gold); }
-.wm-ring { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; }
 .wm-dir { stroke: var(--gold); stroke-width: 3; vector-effect: non-scaling-stroke; }
-#wm-arrow path { fill: var(--gold); }
 .wm-guess circle { fill: var(--red-dark); stroke: var(--cream); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .wm-svg text { font-family: var(--body); font-weight: 700; fill: var(--cream); paint-order: stroke; stroke: var(--ink); stroke-width: 3px; stroke-linejoin: round; }
 .wm-scroll text { font-size: 15px; }
