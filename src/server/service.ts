@@ -366,14 +366,18 @@ const cleanEmail = (email: unknown) => {
 export async function requestSignIn(db: Db, email: unknown, browserPlayerId: string, send: (to: string, code: string) => Promise<void>, now = Date.now()) {
   const e = cleanEmail(email);
   await db.delete(restoreTokens).where(lt(restoreTokens.expiresAt, new Date(now)));
-  const [bought] = await db.select({ email: purchases.email }).from(purchases).where(eq(purchases.email, e)).limit(1);
-  if (!bought) return;
-  const [recent] = await db.select({ token: restoreTokens.token }).from(restoreTokens)
-    .where(and(eq(restoreTokens.email, e), gt(restoreTokens.expiresAt, new Date(now + (CODE_MINUTES - 1) * 60_000)))).limit(1);
-  if (recent) return;
-  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
-  await db.insert(restoreTokens).values({ token: newId(), email: e, playerId: browserPlayerId, codeHash: hashCode(e, code), expiresAt: new Date(now + CODE_MINUTES * 60_000) });
-  await send(e, code);
+  // the email's first purchase row is locked while checking and recording, so requests arriving together send one code; the email goes after
+  const code = await db.transaction(async tx => {
+    const [bought] = await tx.select({ email: purchases.email }).from(purchases).where(eq(purchases.email, e)).orderBy(asc(purchases.sessionId)).limit(1).for("update");
+    if (!bought) return null;
+    const [recent] = await tx.select({ token: restoreTokens.token }).from(restoreTokens)
+      .where(and(eq(restoreTokens.email, e), gt(restoreTokens.expiresAt, new Date(now + (CODE_MINUTES - 1) * 60_000)))).limit(1);
+    if (recent) return null;
+    const c = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+    await tx.insert(restoreTokens).values({ token: newId(), email: e, playerId: browserPlayerId, codeHash: hashCode(e, c), expiresAt: new Date(now + CODE_MINUTES * 60_000) });
+    return c;
+  });
+  if (code) await send(e, code);
 }
 /** Checks a typed code and answers with the account's player, which this browser then plays as. An email with no account yet
  *  becomes this browser's account: the person has just proved the mailbox is theirs, here. Each code allows CODE_TRIES guesses. */
