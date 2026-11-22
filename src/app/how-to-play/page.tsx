@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // The questions people (and AI answers) ask about the game. The page shows them and the structured data repeats them word for word.
 const FAQ: [string, string][] = [
   ["Is Born There free?", `Yes. Today's and yesterday's flights are free to play, with no sign-up and no ads. An optional archive pass (${SITE.passPrice}, paid once, not a subscription) opens every earlier flight.`],
-  ["Do I need an account?", "No. Your streak, passport and leagues are kept for your browser without an account. If you buy the archive pass, the email you pay with becomes your sign-in: sign in on another device and your pass, streak and passport come with you."],
+  ["Do I need an account?", "No. Your streak, passport and leagues are kept for your browser without an account. If you buy the archive pass, confirm the email you paid with using a code we send, and it becomes your sign-in: sign in on another device and your pass, streak and passport come with you."],
   ["How often is there a new game?", "Every day. There is one flight of five stops a day, and it is the same for every player, so you can compare scores with friends."],
   ["How is Born There different from GeoGuessr or Worldle?", "GeoGuessr drops you into Street View and Worldle shows a country's outline. Born There gives you five photos or messages from real places, and asks for the country first, then lets you risk your points to name the exact city and answer a final question."],
   ["Where do the photos come from?", "From Wikimedia Commons, under their own free licences. Each photo is credited with its answer once you have played that stop. Stops are drafted with help from AI and checked by a person before they go live."],

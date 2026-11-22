@@ -1,7 +1,8 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
+import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, scoreCounts, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
@@ -180,9 +181,11 @@ const stopView = (r: Round, s: StopState) => ({ phase: s.phase, step: s.step, ba
 export async function fieldFor(db: Db, playerId: string, date: string) {
   const [mine] = await db.select({ score: results.score }).from(results).where(and(eq(results.playerId, playerId), eq(results.date, date)));
   if (!mine) return null;
-  const [n] = await db.select({ others: sql<number>`count(*)::int`, below: sql<number>`(count(*) filter (where ${results.score} < ${mine.score}))::int` })
-    .from(results).where(and(eq(results.date, date), ne(results.playerId, playerId)));
-  return n.others >= MIN_LIVE_PLAYERS ? { players: n.others + 1, better: Math.round(100 * n.below / n.others) } : null;
+  // one row per distinct score, not per player: this runs on every finish, so it must not grow with the crowd
+  const [n] = await db.select({ all: sql<number>`coalesce(sum(${scoreCounts.n}), 0)::int`, below: sql<number>`coalesce(sum(${scoreCounts.n}) filter (where ${scoreCounts.score} < ${mine.score}), 0)::int` })
+    .from(scoreCounts).where(eq(scoreCounts.date, date));
+  const others = n.all - 1;   // the count includes this player, at their own score, so never among those below
+  return others >= MIN_LIVE_PLAYERS ? { players: others + 1, better: Math.round(100 * n.below / others) } : null;
 }
 
 export async function getDay(db: Db, playerId: string, date: string, today: string) {
@@ -291,9 +294,12 @@ export async function getMe(db: Db, playerId: string, today: string) {
     db.select({ date: plays.date, n: sql<number>`count(*) filter (where ${plays.state}->>'phase' = 'done')::int` }).from(plays).where(eq(plays.playerId, playerId)).groupBy(plays.date),
   ]);
   const onTime = myResults.filter(r => r.onTime);
-  const [acct] = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, playerId));
+  const [[acct], [bought]] = await Promise.all([
+    db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, playerId)),
+    db.select({ email: purchases.email }).from(purchases).where(eq(purchases.playerId, playerId)).orderBy(desc(purchases.createdAt)).limit(1),
+  ]);
   return {
-    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false, email: acct?.email ?? null,
+    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false, email: acct?.email ?? null, passEmail: bought?.email || null,   // passEmail: what they paid with, to prefill confirming it
     vouchers: vouchersOf(p, today, streak.n),
     record: { flights: onTime.length, best: Math.max(0, ...onTime.map(r => r.score)) },
     passport: {
@@ -338,47 +344,57 @@ export async function canOpen(db: Db, playerId: string, date: string, today: str
   const [started] = await db.select({ date: plays.date }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).limit(1);
   return started !== undefined;
 }
-/** A paid Checkout Session: kept as a sale record, and unlocks the player who bought it. The email they paid with becomes their
- *  account, so they can sign in on another device. Safe to call twice (the webhook and the return page both do). */
+/** A paid Checkout Session: kept as a sale record, and unlocks the player who bought it. The email typed at Checkout is not proof
+ *  of owning it, so it only becomes a sign-in once someone confirms it with an emailed code (verifySignIn). Safe to call twice. */
 export async function recordPurchase(db: Db, sale: { sessionId: string; email: string; playerId: string | null }) {
   const email = sale.email.trim().toLowerCase();
   const [p] = sale.playerId ? await db.select({ id: players.id }).from(players).where(eq(players.id, sale.playerId)) : [];
   await db.insert(purchases).values({ sessionId: sale.sessionId, email, playerId: p?.id ?? null }).onConflictDoNothing();
   if (!p) return;
   await db.update(players).set({ unlocked: true }).where(eq(players.id, p.id));
-  // a second purchase from the same email keeps the account it already has; a player belongs to one account
-  await db.insert(accounts).values({ email, playerId: p.id }).onConflictDoNothing();
 }
-/** Emails a one-use sign-in link to a pass holder. Says nothing about whether the email bought one, and sends at most one link every 5 minutes. */
-const RESTORE_MINUTES = 30;
-export async function requestSignIn(db: Db, email: unknown, send: (to: string, token: string) => Promise<void>, now = Date.now()) {
+/** Sign-in is a 6-digit code emailed to a pass holder and typed into the browser that asked for it. Typing it proves both that
+ *  the person reads that mailbox and that this browser is theirs, so nobody can sign a browser in from a link or a guess. */
+const CODE_MINUTES = 15, CODE_TRIES = 5;
+const hashCode = (email: string, code: string) => createHash("sha256").update(`${email}:${code}`).digest("hex");
+const cleanEmail = (email: unknown) => {
   const e = String(email ?? "").trim().toLowerCase();
   if (e.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new HttpError(400, "That doesn't look like an email address.");
+  return e;
+};
+/** Emails a code if the address bought a pass. Says nothing about whether it did, and sends at most one code a minute per address. */
+export async function requestSignIn(db: Db, email: unknown, browserPlayerId: string, send: (to: string, code: string) => Promise<void>, now = Date.now()) {
+  const e = cleanEmail(email);
   await db.delete(restoreTokens).where(lt(restoreTokens.expiresAt, new Date(now)));
   const [bought] = await db.select({ email: purchases.email }).from(purchases).where(eq(purchases.email, e)).limit(1);
   if (!bought) return;
   const [recent] = await db.select({ token: restoreTokens.token }).from(restoreTokens)
-    .where(and(eq(restoreTokens.email, e), gt(restoreTokens.expiresAt, new Date(now + (RESTORE_MINUTES - 5) * 60_000)))).limit(1);
+    .where(and(eq(restoreTokens.email, e), gt(restoreTokens.expiresAt, new Date(now + (CODE_MINUTES - 1) * 60_000)))).limit(1);
   if (recent) return;
-  const token = newId();
-  await db.insert(restoreTokens).values({ token, email: e, expiresAt: new Date(now + RESTORE_MINUTES * 60_000) });
-  await send(e, token);
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+  await db.insert(restoreTokens).values({ token: newId(), email: e, playerId: browserPlayerId, codeHash: hashCode(e, code), expiresAt: new Date(now + CODE_MINUTES * 60_000) });
+  await send(e, code);
 }
-/** Uses up a sign-in link and answers with the account's player, which this browser then plays as. A pass bought before accounts
- *  existed gets its account now: on the player that bought it if that player is still here, otherwise on this browser's player.
- *  Null when the link is unknown, used or expired. */
-export async function redeemSignIn(db: Db, token: unknown, browserPlayerId: string, now = Date.now()): Promise<string | null> {
-  const [t] = await db.delete(restoreTokens).where(eq(restoreTokens.token, String(token ?? ""))).returning();
-  if (!t || t.expiresAt.getTime() < now) return null;
-  let [acct] = await db.select({ playerId: accounts.playerId }).from(accounts).where(eq(accounts.email, t.email));
+/** Checks a typed code and answers with the account's player, which this browser then plays as. An email with no account yet
+ *  becomes this browser's account: the person has just proved the mailbox is theirs, here. Each code allows CODE_TRIES guesses. */
+export async function verifySignIn(db: Db, email: unknown, code: unknown, browserPlayerId: string, now = Date.now()): Promise<string> {
+  const e = cleanEmail(email), c = String(code ?? "").replace(/\D/g, "");
+  if (c.length !== 6) throw new HttpError(400, "Enter the 6-digit code from the email.");
+  const [t] = await db.select().from(restoreTokens)
+    .where(and(eq(restoreTokens.email, e), eq(restoreTokens.playerId, browserPlayerId), gt(restoreTokens.expiresAt, new Date(now))))
+    .orderBy(desc(restoreTokens.expiresAt)).limit(1);
+  // count the guess before checking it, so parallel guesses can't exceed the limit
+  const [counted] = t ? await db.update(restoreTokens).set({ attempts: sql`${restoreTokens.attempts} + 1` })
+    .where(and(eq(restoreTokens.token, t.token), lt(restoreTokens.attempts, CODE_TRIES))).returning({ token: restoreTokens.token }) : [];
+  if (!t?.codeHash || !counted) throw new HttpError(400, "That code has expired. Ask for a new one.");
+  if (!timingSafeEqual(Buffer.from(t.codeHash, "hex"), Buffer.from(hashCode(e, c), "hex"))) throw new HttpError(400, "That code isn't right. Check the email and try again.");
+  await db.delete(restoreTokens).where(eq(restoreTokens.email, e));
+  let [acct] = await db.select({ playerId: accounts.playerId }).from(accounts).where(eq(accounts.email, e));
   if (!acct) {
-    const bought = await db.select({ playerId: purchases.playerId }).from(purchases).innerJoin(players, eq(players.id, purchases.playerId))
-      .where(eq(purchases.email, t.email)).orderBy(asc(purchases.createdAt)).limit(1);
-    const owner = bought[0]?.playerId ?? browserPlayerId;
-    const taken = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, owner));
-    const home = taken.length ? browserPlayerId : owner;   // that player already belongs to another email: start this account here
-    await db.insert(accounts).values({ email: t.email, playerId: home }).onConflictDoNothing();
-    [acct] = await db.select({ playerId: accounts.playerId }).from(accounts).where(eq(accounts.email, t.email));
+    const [other] = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, browserPlayerId));
+    if (other) throw new HttpError(409, "This browser is signed in with another email. Sign out first, from your Passport.");
+    await db.insert(accounts).values({ email: e, playerId: browserPlayerId });
+    acct = { playerId: browserPlayerId };
   }
   await db.update(players).set({ unlocked: true }).where(eq(players.id, acct.playerId));
   // ponytail: this browser's own progress isn't merged in; an empty one is tidied away, one with plays stays as it was (the form says so)

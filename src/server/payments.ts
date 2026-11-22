@@ -21,10 +21,20 @@ export async function startCheckout(playerId: string, origin: string) {
   return { url: s.url };
 }
 
+/** A sale of the pass: a completed, paid session for exactly the pass price, made for a player by startCheckout. Anything else in
+ *  the Stripe account (another product, a Payment Link, a free or setup session) is not a pass, whatever it carries. */
+type SessionLike = Pick<Stripe.Checkout.Session, "mode" | "status" | "payment_status" | "client_reference_id"> & { line_items?: { data: readonly { price?: { id: string } | null }[] } | null };
+export function isPassSale(s: SessionLike, price: string) {
+  const items = s.line_items?.data ?? [];
+  return s.mode === "payment" && s.status === "complete" && s.payment_status === "paid" && !!s.client_reference_id && items.length === 1 && items[0].price?.id === price;
+}
+
 /** Records a session once it's paid. Asks Stripe rather than trusting the caller, so the return page can't fake a sale. */
 export async function fulfill(db: Db, sessionId: string) {
-  const s = await stripe().checkout.sessions.retrieve(sessionId);
-  if (s.payment_status === "unpaid") return false;   // a delayed payment method: the webhook calls again when it succeeds
+  const price = process.env.STRIPE_PRICE_ID;
+  if (!price) throw new HttpError(503, "Payments aren't set up yet.");
+  const s = await stripe().checkout.sessions.retrieve(sessionId, { expand: ["line_items"] });
+  if (!isPassSale(s, price)) return false;   // includes a delayed payment method that hasn't settled: the webhook calls again when it does
   await recordPurchase(db, { sessionId: s.id, email: s.customer_details?.email ?? "", playerId: s.client_reference_id });
   return true;
 }

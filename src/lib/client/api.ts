@@ -29,6 +29,7 @@ export const api = {
   checkout: () => call<{ url: string }>("/api/checkout", { method: "POST" }),
   share: (date: string, via: string) => call<{ ok: true }>("/api/share", { method: "POST", body: JSON.stringify({ date, via }), keepalive: true }),
   signIn: (email: string) => call<{ ok: true }>("/api/restore", { method: "POST", body: JSON.stringify({ email }) }),
+  verifySignIn: (email: string, code: string) => call<{ ok: true }>("/api/restore", { method: "PUT", body: JSON.stringify({ email, code }) }),
   signOut: () => call<{ ok: true }>("/api/restore", { method: "DELETE" }),
   leagues: () => call<League[]>("/api/leagues"),
   createLeague: (name: string) => call<{ joined: string; leagues: League[] }>("/api/leagues", { method: "POST", body: JSON.stringify({ name }) }),

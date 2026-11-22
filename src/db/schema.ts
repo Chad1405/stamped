@@ -28,10 +28,14 @@ export const accounts = pgTable("accounts", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** One-use sign-in links, sent to a pass holder's email. (The table keeps its first name, from when the link only restored the pass.) */
+/** One-use sign-in codes, emailed to a pass holder and typed into the browser that asked for them. Only a hash of the code is kept.
+ *  (The table keeps its first name, from when sign-in was an emailed restore link.) */
 export const restoreTokens = pgTable("restore_tokens", {
-  token: text("token").primaryKey(),
+  token: text("token").primaryKey(),                  // a random row id; the code itself is never stored
   email: text("email").notNull(),
+  playerId: text("player_id").references(() => players.id, { onDelete: "cascade" }),   // the browser that asked; only it can use the code
+  codeHash: text("code_hash"),
+  attempts: integer("attempts").notNull().default(0),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
@@ -98,6 +102,14 @@ export const stopStats = pgTable("stop_stats", {
   city: integer("city").notNull().default(0),
   spot: integer("spot").notNull().default(0),
 }, t => [primaryKey({ columns: [t.date, t.stop] })]);
+
+/** How many players finished each flight with each score. A trigger on results keeps it (migration 0007),
+ *  so "you beat X%" reads a few rows instead of counting every result for the day. */
+export const scoreCounts = pgTable("score_counts", {
+  date: text("date").notNull(),
+  score: integer("score").notNull(),
+  n: integer("n").notNull(),
+}, t => [primaryKey({ columns: [t.date, t.score] })]);
 
 /** Friend leagues, joined by invite code. */
 export const leagues = pgTable("leagues", {
