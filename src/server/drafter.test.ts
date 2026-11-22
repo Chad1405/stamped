@@ -4,6 +4,7 @@ import seedDays from "@/content/itineraries.json";
 import { itineraries, stopBank } from "@/db/schema";
 import type { Round } from "@/lib/game/engine";
 import { STOP_TYPES } from "@/lib/game/rules";
+import { SITE } from "@/lib/site";
 import { draftStops, needed, writeTells, type Ask, type Get } from "./drafter";
 import { newId } from "./service";
 
@@ -83,6 +84,6 @@ describe("drafting stops", () => {
     expect(bank.map(b => [b.status, b.round.tells ?? null]).toSorted()).toEqual([["pending", "Look at the roofs."], ["rejected", null]]);
     expect(images.toSorted()).toEqual([0, 1, 1]);   // the Language stop sends its message, not a photo
     expect(fetched.length).toBe(2);
-    expect(fetched.every(u => u.startsWith("https://bornthere.app/clues/"))).toBe(true);   // the sample photos are site paths, fetched from the live site
+    expect(fetched.every(u => u.startsWith(`${SITE.url}/clues/`))).toBe(true);   // the sample photos are site paths, fetched from the live site
   });
 });

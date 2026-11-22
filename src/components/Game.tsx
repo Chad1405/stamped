@@ -125,8 +125,9 @@ export default function Game() {
       </main>
       {!playing && (
         <footer>
+          <p>Born There is a free daily geography game: five photos from real places, the same for everyone. Name the country, then risk it for the city.</p>
           <p>Each photo is credited with its answer, once you have played that stop.</p>
-          <nav aria-label="About"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
+          <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
         </footer>
       )}
     </div>
