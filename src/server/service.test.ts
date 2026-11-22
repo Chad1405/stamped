@@ -364,6 +364,15 @@ describe("archive pass", () => {
     expect(await fresh.select().from(purchases)).toHaveLength(1);
   });
 
+  it("sends one code even when many requests arrive at once", async () => {
+    const fresh = await createDb(); await seedSamples(fresh, TODAY);
+    const b = await ensurePlayer(fresh, undefined);
+    await recordPurchase(fresh, { sessionId: "cs_race", email: "race@example.com", playerId: b });
+    const sent: string[] = [];
+    await Promise.all(Array.from({ length: 8 }, () => requestSignIn(fresh, "race@example.com", b, async (_t, c) => { sent.push(c); })));
+    expect(sent).toHaveLength(1);
+  });
+
   it("allows five guesses per code, and codes expire", async () => {
     const fresh = await createDb(); await seedSamples(fresh, TODAY);
     const b = await ensurePlayer(fresh, undefined);
