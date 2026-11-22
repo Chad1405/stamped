@@ -16,7 +16,7 @@ export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown
     const playerId = await ensurePlayer(d, cookieId);
     const out = await fn({ db: d, playerId, today });
     const res = out instanceof NextResponse ? out : NextResponse.json(out);   // a route may answer with a redirect instead of JSON
-    if (playerId !== cookieId) res.cookies.set(COOKIE, playerId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: YEAR, path: "/" });
+    if (playerId !== cookieId && !res.cookies.get(COOKIE)) setPlayer(res, playerId);   // a sign-in has already pointed the cookie at its account
     res.headers.set("Cache-Control", "no-store");
     return res;
   } catch (e) {
@@ -24,6 +24,18 @@ export async function handle(req: NextRequest, fn: (ctx: Ctx) => Promise<unknown
     console.error(e);
     return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment." }, { status: 500 });
   }
+}
+
+/** Points this browser's cookie at a player. */
+export function setPlayer(res: NextResponse, playerId: string) {
+  res.cookies.set(COOKIE, playerId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: YEAR, path: "/" });
+}
+
+/** Signs this browser out: drops the cookie and keeps everything, so signing in again brings it all back. */
+export function signOut() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete(COOKIE);
+  return res;
 }
 
 /** Deletes the player behind this browser's cookie and the cookie itself; the next visit starts a new, empty player. */

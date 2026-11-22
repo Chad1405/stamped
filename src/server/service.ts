@@ -1,7 +1,7 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
 import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
+import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
@@ -291,8 +291,9 @@ export async function getMe(db: Db, playerId: string, today: string) {
     db.select({ date: plays.date, n: sql<number>`count(*) filter (where ${plays.state}->>'phase' = 'done')::int` }).from(plays).where(eq(plays.playerId, playerId)).groupBy(plays.date),
   ]);
   const onTime = myResults.filter(r => r.onTime);
+  const [acct] = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, playerId));
   return {
-    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false,
+    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false, email: acct?.email ?? null,
     vouchers: vouchersOf(p, today, streak.n),
     record: { flights: onTime.length, best: Math.max(0, ...onTime.map(r => r.score)) },
     passport: {
@@ -337,15 +338,20 @@ export async function canOpen(db: Db, playerId: string, date: string, today: str
   const [started] = await db.select({ date: plays.date }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).limit(1);
   return started !== undefined;
 }
-/** A paid Checkout Session: kept as a sale record, and unlocks the player who bought it. Safe to call twice (the webhook and the return page both do). */
+/** A paid Checkout Session: kept as a sale record, and unlocks the player who bought it. The email they paid with becomes their
+ *  account, so they can sign in on another device. Safe to call twice (the webhook and the return page both do). */
 export async function recordPurchase(db: Db, sale: { sessionId: string; email: string; playerId: string | null }) {
+  const email = sale.email.trim().toLowerCase();
   const [p] = sale.playerId ? await db.select({ id: players.id }).from(players).where(eq(players.id, sale.playerId)) : [];
-  await db.insert(purchases).values({ sessionId: sale.sessionId, email: sale.email.trim().toLowerCase(), playerId: p?.id ?? null }).onConflictDoNothing();
-  if (p) await db.update(players).set({ unlocked: true }).where(eq(players.id, p.id));
+  await db.insert(purchases).values({ sessionId: sale.sessionId, email, playerId: p?.id ?? null }).onConflictDoNothing();
+  if (!p) return;
+  await db.update(players).set({ unlocked: true }).where(eq(players.id, p.id));
+  // a second purchase from the same email keeps the account it already has; a player belongs to one account
+  await db.insert(accounts).values({ email, playerId: p.id }).onConflictDoNothing();
 }
-/** Emails a one-use link to a pass's purchase email. Says nothing about whether the email bought one, and sends at most one link every 5 minutes. */
+/** Emails a one-use sign-in link to a pass holder. Says nothing about whether the email bought one, and sends at most one link every 5 minutes. */
 const RESTORE_MINUTES = 30;
-export async function requestRestore(db: Db, email: unknown, send: (to: string, token: string) => Promise<void>, now = Date.now()) {
+export async function requestSignIn(db: Db, email: unknown, send: (to: string, token: string) => Promise<void>, now = Date.now()) {
   const e = String(email ?? "").trim().toLowerCase();
   if (e.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new HttpError(400, "That doesn't look like an email address.");
   await db.delete(restoreTokens).where(lt(restoreTokens.expiresAt, new Date(now)));
@@ -358,12 +364,30 @@ export async function requestRestore(db: Db, email: unknown, send: (to: string, 
   await db.insert(restoreTokens).values({ token, email: e, expiresAt: new Date(now + RESTORE_MINUTES * 60_000) });
   await send(e, token);
 }
-/** Uses up a restore link and unlocks this browser's player. */
-export async function redeemRestore(db: Db, token: unknown, playerId: string, now = Date.now()) {
+/** Uses up a sign-in link and answers with the account's player, which this browser then plays as. A pass bought before accounts
+ *  existed gets its account now: on the player that bought it if that player is still here, otherwise on this browser's player.
+ *  Null when the link is unknown, used or expired. */
+export async function redeemSignIn(db: Db, token: unknown, browserPlayerId: string, now = Date.now()): Promise<string | null> {
   const [t] = await db.delete(restoreTokens).where(eq(restoreTokens.token, String(token ?? ""))).returning();
-  if (!t || t.expiresAt.getTime() < now) return false;
-  await db.update(players).set({ unlocked: true }).where(eq(players.id, playerId));
-  return true;
+  if (!t || t.expiresAt.getTime() < now) return null;
+  let [acct] = await db.select({ playerId: accounts.playerId }).from(accounts).where(eq(accounts.email, t.email));
+  if (!acct) {
+    const bought = await db.select({ playerId: purchases.playerId }).from(purchases).innerJoin(players, eq(players.id, purchases.playerId))
+      .where(eq(purchases.email, t.email)).orderBy(asc(purchases.createdAt)).limit(1);
+    const owner = bought[0]?.playerId ?? browserPlayerId;
+    const taken = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, owner));
+    const home = taken.length ? browserPlayerId : owner;   // that player already belongs to another email: start this account here
+    await db.insert(accounts).values({ email: t.email, playerId: home }).onConflictDoNothing();
+    [acct] = await db.select({ playerId: accounts.playerId }).from(accounts).where(eq(accounts.email, t.email));
+  }
+  await db.update(players).set({ unlocked: true }).where(eq(players.id, acct.playerId));
+  // ponytail: this browser's own progress isn't merged in; an empty one is tidied away, one with plays stays as it was (the form says so)
+  if (acct.playerId !== browserPlayerId) {
+    const [played] = await db.select({ date: plays.date }).from(plays).where(eq(plays.playerId, browserPlayerId)).limit(1);
+    const [owns] = await db.select({ email: accounts.email }).from(accounts).where(eq(accounts.playerId, browserPlayerId));
+    if (!played && !owns) await db.delete(players).where(eq(players.id, browserPlayerId));
+  }
+  return acct.playerId;
 }
 
 /* ---- friend leagues ---- */

@@ -3,9 +3,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemRestore, requestRestore, seedSamples, setName, spendVoucher } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, redeemSignIn, requestSignIn, seedSamples, setName, spendVoucher } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
+import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
@@ -326,23 +326,45 @@ describe("archive pass", () => {
     await expect(getDay(fresh, pid, EXTRA, TODAY)).rejects.toMatchObject({ status: 402 });
   });
 
-  it("restores a pass on another browser with a one-use emailed link", async () => {
+  it("signs a pass holder in on another browser with a one-use emailed link, onto the same progress", async () => {
     const fresh = await createDb(); await seedSamples(fresh, TODAY);
-    await recordPurchase(fresh, { sessionId: "cs_test_2", email: "buyer@example.com", playerId: null });
-    const sent: string[] = [], send = async (_to: string, token: string) => { sent.push(token); };
-    await requestRestore(fresh, "someone@else.com", send);   // didn't buy: no email, and no hint either way
-    await requestRestore(fresh, "BUYER@example.com", send);
-    await requestRestore(fresh, "buyer@example.com", send);   // a second ask straight away doesn't send another
-    expect(sent).toHaveLength(1);
-    await expect(requestRestore(fresh, "not an email", send)).rejects.toMatchObject({ status: 400 });
+    const buyer = await ensurePlayer(fresh, undefined);
+    await recordPurchase(fresh, { sessionId: "cs_test_2", email: " Buyer@Example.com ", playerId: buyer });
+    expect((await getMe(fresh, buyer, TODAY)).email).toBe("buyer@example.com");   // the email they paid with is now their sign-in
+    await fresh.insert(results).values({ playerId: buyer, date: addDays(TODAY, -1), score: 120, tiers: [], onTime: true });
 
-    const other = await ensurePlayer(fresh, undefined);
-    expect(await redeemRestore(fresh, sent[0], other)).toBe(true);
-    expect((await getMe(fresh, other, TODAY)).unlocked).toBe(true);
-    expect(await redeemRestore(fresh, sent[0], other)).toBe(false);   // used up
+    const sent: string[] = [], send = async (_to: string, token: string) => { sent.push(token); };
+    await requestSignIn(fresh, "someone@else.com", send);   // didn't buy: no email, and no hint either way
+    await requestSignIn(fresh, "BUYER@example.com", send);
+    await requestSignIn(fresh, "buyer@example.com", send);   // a second ask straight away doesn't send another
+    expect(sent).toHaveLength(1);
+    await expect(requestSignIn(fresh, "not an email", send)).rejects.toMatchObject({ status: 400 });
+
+    const phone = await ensurePlayer(fresh, undefined);   // a new browser, nothing played yet
+    expect(await redeemSignIn(fresh, sent[0], phone)).toBe(buyer);   // the browser now plays as the buyer
+    const me = await getMe(fresh, buyer, TODAY);
+    expect(me).toMatchObject({ unlocked: true, email: "buyer@example.com", record: { flights: 1, best: 120 } });
+    expect(await fresh.select().from(players).where(eq(players.id, phone))).toHaveLength(0);   // the empty browser player is tidied away
+    expect(await redeemSignIn(fresh, sent[0], phone)).toBeNull();   // used up
 
     const late = Date.now() + 31 * 60_000, more: string[] = [];
-    await requestRestore(fresh, "buyer@example.com", async (_t, k) => { more.push(k); });
-    expect(await redeemRestore(fresh, more[0], other, late)).toBe(false);   // expired
+    await requestSignIn(fresh, "buyer@example.com", async (_t, k) => { more.push(k); });
+    const laptop = await ensurePlayer(fresh, undefined);
+    expect(await redeemSignIn(fresh, more[0], laptop, late)).toBeNull();   // expired
+
+    await forgetPlayer(fresh, buyer);   // deleting progress deletes the sign-in, keeps the sale
+    expect(await fresh.select().from(accounts)).toHaveLength(0);
+    expect(await fresh.select().from(purchases)).toHaveLength(1);
+  });
+
+  it("gives a pass bought before accounts existed an account at its first sign-in", async () => {
+    const fresh = await createDb(); await seedSamples(fresh, TODAY);
+    await recordPurchase(fresh, { sessionId: "cs_test_3", email: "old@example.com", playerId: null });   // the buying player is gone
+    const sent: string[] = [];
+    await requestSignIn(fresh, "old@example.com", async (_t, k) => { sent.push(k); });
+    const browser = await ensurePlayer(fresh, undefined);
+    await fresh.insert(plays).values({ playerId: browser, date: TODAY, stop: 0, state: freshStop() });
+    expect(await redeemSignIn(fresh, sent[0], browser)).toBe(browser);   // the account starts on this browser, keeping its progress
+    expect((await getMe(fresh, browser, TODAY))).toMatchObject({ unlocked: true, email: "old@example.com" });
   });
 });

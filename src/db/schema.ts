@@ -20,7 +20,15 @@ export const purchases = pgTable("purchases", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("purchases_email_idx").on(t.email)]);
 
-/** One-use links that restore a pass on another browser, sent to the purchase email. */
+/** Pass holders' accounts: the email they paid with, pointing at the one player their progress lives on. Signing in on another
+ *  browser points that browser at the same player. Deleting the player deletes the account (the purchase record stays). */
+export const accounts = pgTable("accounts", {
+  email: text("email").primaryKey(),   // lower-cased, as in purchases
+  playerId: text("player_id").notNull().unique().references(() => players.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One-use sign-in links, sent to a pass holder's email. (The table keeps its first name, from when the link only restored the pass.) */
 export const restoreTokens = pgTable("restore_tokens", {
   token: text("token").primaryKey(),
   email: text("email").notNull(),
