@@ -18,6 +18,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
   const shortDay = longDate(day.date).replace(/^\S+\s/, "");
   // before someone's first flight: show what a stop looks like, and keep scores, the archive and the pass out of the way
   const newcomer = !me?.days.some(d => d.score !== null || d.stopsDone);
+  const [showArchive, setShowArchive] = useState(false);   // a first-timer can still reach past flights and sign in, one tap away
   return (
     <div className="home" aria-label={day.isToday ? "Today's flight" : `Archive flight ${day.flight}`}>
       <div className="col col-main">
@@ -57,7 +58,9 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <p>{league && league.members.length > 1 ? `You are ${ordinal(myRank)} of ${league.members.length} in ${league.name} this week.` : "Play against friends: start a league and send them the code."}</p>
         <button className="btn btn--small" type="button" onClick={onFriends}>{league ? "See the league" : "Start a league"}</button>
       </section>
-      {me && !newcomer && <Archive me={me} current={day.date} onOpenDay={onOpenDay} />}
+      {me && (newcomer && !showArchive
+        ? <p className="small"><button className="linkish" type="button" onClick={() => setShowArchive(true)}>Past flights, or sign in with your archive pass</button></p>
+        : <Archive me={me} current={day.date} onOpenDay={onOpenDay} />)}
       </div>
     </div>
   );
@@ -104,15 +107,16 @@ function ArchivePass({ me }: { me: Me }) {
   if (me.unlocked) return <p className="small">Archive pass active. Every past flight is open.</p>;
   if (!me.days.some(d => d.locked)) return null;
   const buy = () => { setBusy(true); setMsg(""); api.checkout().then(r => location.assign(r.url), e => { setBusy(false); setMsg(e.message); }); };
-  const restore = (e: React.FormEvent) => { e.preventDefault(); api.restore(email).then(() => setMsg("If that email bought a pass, a link is on its way. It works once, within 30 minutes."), err => setMsg(err.message)); };
+  const signIn = (e: React.FormEvent) => { e.preventDefault(); api.signIn(email).then(() => setMsg("If that email bought a pass, a sign-in link is on its way. It works once, within 30 minutes."), err => setMsg(err.message)); };
+  const played = me.days.some(d => d.score !== null || d.stopsDone);
   return (
     <div className="pass" id="archive-pass">
       <h3>Archive pass</h3>
-      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once.</p>
+      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once. The email you pay with becomes your sign-in, so your pass, streak and passport go with you to any device.</p>
       <button className="btn btn--gold" type="button" onClick={buy} disabled={busy}>{busy ? "Opening checkout…" : `Unlock the archive, ${SITE.passPrice}`}</button>
-      <form className="pass-restore" onSubmit={restore}>
-        <label htmlFor="restore-email">Bought it already? Enter the email you paid with and we’ll send a link to unlock this browser.</label>
-        <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit">Send link</button></div>
+      <form className="pass-restore" onSubmit={signIn}>
+        <label htmlFor="restore-email">Have the pass already? Sign in with the email you paid with and we’ll send you a link.{played ? " Signing in swaps this browser’s progress for your account’s." : ""}</label>
+        <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit">Send sign-in link</button></div>
       </form>
       {msg && <p className="small" role="status">{msg}</p>}
     </div>
@@ -252,21 +256,25 @@ export function Passport({ me, onBack }: { me: Me; onBack: () => void }) {
         {p.cities.length ? <ul className="citylist">{p.cities.map(c => <li key={c.name}><strong>{c.airport}</strong> {c.name}</li>)}</ul> : <p className="small">Go deeper and name a city to add it here.</p>}
       </section>
       <div className="actions"><button className="btn btn--gold" type="button" onClick={onBack}>Back to the flight</button></div>
-      <Forget />
+      <Forget me={me} />
     </div>
   );
 }
 
 /** Deletes everything kept about this browser's player, after a second, explicit yes. */
-function Forget() {
+function Forget({ me }: { me: Me }) {
   const [asking, setAsking] = useState(false), [msg, setMsg] = useState("");
   const forget = () => api.forget().then(() => location.assign("/"), () => setMsg("That didn't work. Try again in a moment."));
+  const signOut = () => api.signOut().then(() => location.assign("/"), () => setMsg("That didn't work. Try again in a moment."));
   return (
     <section className="card forget">
       <h2>Your data</h2>
-      <p className="small">Your progress is tied to this browser, not an account. <a href="/privacy">What we keep, and why</a>.</p>
+      {me.email
+        ? <><p className="small">Signed in as <strong>{me.email}</strong>, the email you bought the pass with. Sign in on another device from the archive. <a href="/privacy">What we keep, and why</a>.</p>
+          <div className="actions"><button className="btn btn--small" type="button" onClick={signOut}>Sign out of this browser</button></div></>
+        : <p className="small">Your progress is tied to this browser. Buying the archive pass gives you a sign-in for other devices. <a href="/privacy">What we keep, and why</a>.</p>}
       {asking ? <>
-        <p>This deletes your streak, passport, results and league places, and any league you started. It can&apos;t be undone.</p>
+        <p>This deletes your streak, passport, results and league places, and any league you started{me.email ? ", and your sign-in. Your pass can still be restored with the email you paid with" : ""}. It can&apos;t be undone.</p>
         <div className="actions"><button className="btn" type="button" onClick={forget}>Yes, delete everything</button><button className="btn btn--small" type="button" onClick={() => setAsking(false)}>Keep it</button></div>
       </> : <div className="actions"><button className="btn btn--small" type="button" onClick={() => setAsking(true)}>Delete my progress</button></div>}
       {msg && <p className="help is-error" role="status">{msg}</p>}
