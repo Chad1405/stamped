@@ -5,7 +5,7 @@ Prototype: `prototype/deck/index.html` (open it in a browser; rebuild its rules 
 
 ## Direction
 - **Job:** play today's five stops, then share the score and come back tomorrow · **audience:** people who like geography and daily puzzles, mostly on a phone.
-- **Look:** a traveller's kit on dark green: postcards, airmail, luggage tags and tickets. Each stop is a postcard pulled from the pile of airmail still to come. Chunky display type, thick ink borders, a faint CRT scanline glow over everything. Nothing from a casino: no playing cards, chips, fanned hands or gold halos (a tester read the old card-table look as gambling, 20 Nov 2026).
+- **Look:** a traveller's kit on dark green: postcards, airmail, luggage tags and tickets. Each stop is a postcard pulled from the pile of airmail still to come. Chunky display type, thick ink borders, a soft vignette at the edges. No scanlines: they strained the eyes (removed 22 Nov 2026). Nothing from a casino: no playing cards, chips, fanned hands or gold halos (a tester read the old card-table look as gambling, 20 Nov 2026).
 - **Dials:** variance 4 · motion 7 (juicy) · density 5.
 - **Colour:** one dark green as the ground, cream paper on it, and three colours (red, blue, gold) that each mean something. Red and blue together are also the airmail stripe. Dark, because a daily game is often played in bed.
 - **Type:** Bungee for anything you'd read across a table (questions, places, scores, buttons, card labels), Barlow Semi Condensed for facts and help.
@@ -28,7 +28,7 @@ Protect it: one postcard on screen at a time during play, the pile always visibl
 | Cards | `--card #f4ead5` · `--card-2 #e2d4b5` · `--ink #1a1310` · `--muted-ink #5c4d3f` (6.8:1 on card) |
 | Colours | `--red #e2412e` / `--red-dark #a42a1c` (risk, the live step, misses) · `--blue #2d6cdf` / `--blue-dark #1d4a9e` (stay, stamps) · red and blue with cream make the airmail stripe · `--gold #f3c24f` (score, Born There, primary button; a fill or outline, never a glow) |
 | Text on the green | `--cream #fbf3e2` · `--muted-cream` cream at 80% |
-| Scanlines | `--scan` black at 16%, 1px every 3px, plus a soft vignette |
+| Vignette | soft radial darkening at the edges, black up to 35%; no scanlines |
 | Type | `--display` Bungee · `--body` Barlow Semi Condensed 500/700 · sizes 12, 14, 16, 18, 20 (question), 24, 32, 44, 72px |
 | Space | 4, 8, 12, 16, 24, 32px |
 | Radius | `--r-sm 6px` · `--r-md 10px` · `--r-lg 16px` |

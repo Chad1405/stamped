@@ -1,5 +1,5 @@
 /* Born There · Departure Deck. The design source of truth is DESIGN.md; the playable reference is prototype/deck/index.html.
- * One look in every viewer theme: cream postcards and tickets on dark green, under a faint CRT scanline. Each stop is a postcard from the pile of airmail still to come. */
+ * One look in every viewer theme: cream postcards and tickets on dark green, under a soft vignette. Each stop is a postcard from the pile of airmail still to come. */
 :root {
   color-scheme: dark;
   /* felt, cards, chips */
@@ -7,7 +7,6 @@
   --card: #f4ead5; --card-2: #e2d4b5; --ink: #1a1310; --muted-ink: #5c4d3f;
   --red: #e2412e; --red-dark: #a42a1c; --blue: #2d6cdf; --blue-dark: #1d4a9e; --gold: #f3c24f;
   --cream: #fbf3e2; --muted-cream: rgb(251 243 226 / 0.8);
-  --scan: rgb(0 0 0 / 0.16);
   /* type: Bungee for anything read across the table, Barlow Semi Condensed for reading (loaded in layout.tsx) */
   --display: var(--font-bungee), "Arial Black", system-ui, sans-serif;
   --body: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
@@ -35,9 +34,9 @@ body {
   color: var(--cream); font: 500 var(--fs-md)/1.45 var(--body); font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; caret-color: var(--red-dark);
 }
-/* the CRT: scanlines and a soft vignette over everything, never in the way of a tap */
+/* a soft vignette over everything, never in the way of a tap (scanlines were removed: they strained the eyes) */
 body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: var(--z-scan);
-  background: repeating-linear-gradient(to bottom, var(--scan) 0 1px, transparent 1px 3px), radial-gradient(130% 100% at 50% 40%, transparent 60%, rgb(0 0 0 / 0.35)); }
+  background: radial-gradient(130% 100% at 50% 40%, transparent 60%, rgb(0 0 0 / 0.35)); }
 ::selection { background: var(--gold); color: var(--ink); }
 :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 a { color: inherit; text-underline-offset: 0.16em; }
