@@ -50,13 +50,6 @@
       "when": 1795368064743,
       "tag": "0006_signin_codes",
       "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1795368979631,
-      "tag": "0007_score_counts",
-      "breakpoints": true
     }
   ]
 }
