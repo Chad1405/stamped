@@ -103,6 +103,14 @@ export const stopStats = pgTable("stop_stats", {
   spot: integer("spot").notNull().default(0),
 }, t => [primaryKey({ columns: [t.date, t.stop] })]);
 
+/** How many players finished each flight with each score. A trigger on results keeps it (migration 0007),
+ *  so "you beat X%" reads a few rows instead of counting every result for the day. */
+export const scoreCounts = pgTable("score_counts", {
+  date: text("date").notNull(),
+  score: integer("score").notNull(),
+  n: integer("n").notNull(),
+}, t => [primaryKey({ columns: [t.date, t.score] })]);
+
 /** Friend leagues, joined by invite code. */
 export const leagues = pgTable("leagues", {
   id: text("id").primaryKey(),

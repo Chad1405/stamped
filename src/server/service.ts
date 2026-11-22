@@ -1,8 +1,8 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
 import { createHash, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, sql, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, shares, stamps, stopBank, stopStats } from "@/db/schema";
+import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, scoreCounts, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
@@ -181,9 +181,11 @@ const stopView = (r: Round, s: StopState) => ({ phase: s.phase, step: s.step, ba
 export async function fieldFor(db: Db, playerId: string, date: string) {
   const [mine] = await db.select({ score: results.score }).from(results).where(and(eq(results.playerId, playerId), eq(results.date, date)));
   if (!mine) return null;
-  const [n] = await db.select({ others: sql<number>`count(*)::int`, below: sql<number>`(count(*) filter (where ${results.score} < ${mine.score}))::int` })
-    .from(results).where(and(eq(results.date, date), ne(results.playerId, playerId)));
-  return n.others >= MIN_LIVE_PLAYERS ? { players: n.others + 1, better: Math.round(100 * n.below / n.others) } : null;
+  // one row per distinct score, not per player: this runs on every finish, so it must not grow with the crowd
+  const [n] = await db.select({ all: sql<number>`coalesce(sum(${scoreCounts.n}), 0)::int`, below: sql<number>`coalesce(sum(${scoreCounts.n}) filter (where ${scoreCounts.score} < ${mine.score}), 0)::int` })
+    .from(scoreCounts).where(eq(scoreCounts.date, date));
+  const others = n.all - 1;   // the count includes this player, at their own score, so never among those below
+  return others >= MIN_LIVE_PLAYERS ? { players: others + 1, better: Math.round(100 * n.below / others) } : null;
 }
 
 export async function getDay(db: Db, playerId: string, date: string, today: string) {
