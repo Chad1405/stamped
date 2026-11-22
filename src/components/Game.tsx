@@ -45,9 +45,13 @@ export default function Game() {
 
   useEffect(() => {
     const q = new URLSearchParams(location.search), join = q.get("join"), pass = q.get("pass");
+    // where a new player came from: a tagged link (?src=tiktok) or the site that linked here; the server keeps only the first, on new players
+    const from = document.referrer ? new URL(document.referrer).hostname : "";
+    const src = q.get("src") ?? q.get("utm_source") ?? (from && from !== location.hostname ? from : null);
     if (join) setInvite(join.toUpperCase());
-    if (join || pass) history.replaceState(null, "", location.pathname);   // back from Checkout or an old sign-in link: the archive shows the pass
+    if (join || pass || q.has("src") || q.has("utm_source")) history.replaceState(null, "", location.pathname);   // back from Checkout, an invite or a tagged link: a clean address to share
     void load().then(() => {
+      if (src) api.source(src).catch(() => {});
       if (join) { backTo.current = "home"; setView("friends"); }
       if (pass === "expired") setError("Sign-in links no longer work: sign-in now uses a 6-digit code. Ask for one under the archive.");
     });

@@ -20,6 +20,7 @@ export default function Privacy() {
         <h2>What we keep</h2>
         <ul>
           <li>A random player ID, stored in a cookie so the game recognises your browser.</li>
+          <li>Where you first came from, if we can tell: the label on the link you followed (such as &quot;tiktok&quot;) or the name of the website that sent you (such as reddit.com), never the page itself. It tells us which places bring players.</li>
           <li>Your play: the guesses you type, your answers and choices, when you made them, and your scores.</li>
           <li>What that adds up to: your streak, lounge pass use, finished flights, and the countries, cities and stamps in your passport.</li>
           <li>If you use friends leagues: the name you choose and the leagues you join or start.</li>

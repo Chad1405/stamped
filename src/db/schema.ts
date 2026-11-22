@@ -9,6 +9,7 @@ export const players = pgTable("players", {
   unlocked: boolean("unlocked").notNull().default(false),            // holds the archive pass, bought here or restored by email
   voucherDates: jsonb("voucher_dates").$type<string[]>().notNull().default([]),   // days a streak milestone earned a boarding voucher
   voucherFlights: jsonb("voucher_flights").$type<string[]>().notNull().default([]),   // archive flights opened with one, for good
+  source: text("source"),   // where this player first came from: a link's ?src= label or the site that sent them; null when unknown
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

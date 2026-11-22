@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setName, spendVoucher } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setName, setSource, spendVoucher } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -219,6 +219,33 @@ describe("how a day compares", () => {
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });   // 17 of 22 below
     await forgetPlayer(db, await finish(10));   // a deleted player's result leaves the counts with them
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });
+  });
+});
+
+describe("where players came from", () => {
+  it("keeps a new player's first source, cleaned, and counts each source through the funnel", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const tiktok = await ensurePlayer(db, undefined), reddit = await ensurePlayer(db, undefined), plain = await ensurePlayer(db, undefined), old = await ensurePlayer(db, undefined);
+    await setSource(db, tiktok, " TikTok ");
+    await setSource(db, tiktok, "instagram");                     // a later visit from somewhere else doesn't rewrite it
+    await setSource(db, reddit, "www.reddit.com/r/geography?x=1");   // only the site name survives; paths and odd characters are dropped
+    await setSource(db, plain, "");                                // nothing to record
+    await db.update(players).set({ createdAt: new Date(Date.now() - 2 * 3600_000) }).where(eq(players.id, old));
+    await setSource(db, old, "tiktok");                            // not a new player any more
+    const src = Object.fromEntries((await db.select({ id: players.id, source: players.source }).from(players)).map(r => [r.id, r.source]));
+    expect([src[tiktok], src[reddit], src[plain], src[old]]).toEqual(["tiktok", "reddit.com", null, null]);
+
+    // the tiktok player starts and finishes a flight; the plain one only starts
+    const day = (id: string) => db.insert(plays).values({ playerId: id, date: TODAY, stop: 0, state: freshStop() });
+    await day(tiktok); await day(plain);
+    await db.insert(results).values({ playerId: tiktok, date: TODAY, score: 100, tiers: [], onTime: true });
+    const r = await retention(db, TODAY);
+    expect(r.sources).toEqual([
+      { source: "tiktok", visited: 1, started: 1, finished: 1, back: 0, shared: 0 },
+      { source: "untagged", visited: null, started: 1, finished: 0, back: 0, shared: 0 },
+      { source: "reddit.com", visited: 1, started: 0, finished: 0, back: 0, shared: 0 },
+    ]);
   });
 });
 
