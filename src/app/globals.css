@@ -259,6 +259,32 @@ textarea.input { min-height: 6rem; padding: var(--s3); font-weight: 500; line-he
 .c-dir b { color: var(--red-dark); font-family: var(--display); font-weight: 400; }
 .c-dir .from { font-weight: 500; color: var(--muted-ink); font-size: var(--fs-sm); }
 .c-left { margin: 4px 0 0; font-weight: 700; }
+/* the world map: a sheet over the card in the country step, and a framed map on the back of the card */
+.wm-open { margin-top: var(--s2); }
+.wm-sheet { width: min(100% - 2 * var(--s4), var(--wide)); max-height: calc(100svh - 2 * var(--s4)); padding: var(--s3); border: var(--bw) solid var(--ink); border-radius: var(--r-lg); background: var(--card); color: var(--ink); box-shadow: var(--sh-card); }
+.wm-sheet::backdrop { background: rgb(0 0 0 / 0.6); }
+.wm-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin-bottom: var(--s2); }
+.wm-head h2 { margin: 0; font: var(--fs-lg)/1.1 var(--display); flex: 1 0 auto; white-space: nowrap; }
+.wm-clock { font: var(--fs-md)/1 var(--display); color: var(--red-dark); }
+.wm-scroll { overflow: auto; max-height: 62svh; border: 2px solid var(--ink); border-radius: var(--r-md); background: var(--felt-deep); overscroll-behavior: contain; }
+.wm-scroll .wm-svg { display: block; width: max(100%, 900px); height: auto; }
+.wm-wait, .wm-note { margin: var(--s2) 0 0; font-size: var(--fs-sm); }
+.wm-svg { touch-action: pan-x pan-y pinch-zoom; }
+.wm-land path { fill: var(--card-2); stroke: var(--felt-dark); stroke-width: 0.6; vector-effect: non-scaling-stroke; cursor: pointer; }
+.wm-land path.is-wrong { fill: var(--red); }
+.wm-land path.is-tapped { fill: var(--cream); }
+.wm-land path.is-answer { fill: var(--gold); }
+.wm-ring { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; }
+.wm-dir { stroke: var(--gold); stroke-width: 3; vector-effect: non-scaling-stroke; }
+#wm-arrow path { fill: var(--gold); }
+.wm-guess circle { fill: var(--red-dark); stroke: var(--cream); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.wm-svg text { font-family: var(--body); font-weight: 700; fill: var(--cream); paint-order: stroke; stroke: var(--ink); stroke-width: 3px; stroke-linejoin: round; }
+.wm-scroll text { font-size: 15px; }
+.wm-place circle { fill: var(--gold); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.wm-answer { margin-top: var(--s3); padding-top: var(--s3); border-top: 2px dashed var(--ink); }
+.wm-answer h2 { margin: 0 0 var(--s2); font: var(--fs-sm)/1 var(--display); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-ink); }
+.wm-answer .wm-svg { display: block; width: 100%; height: auto; border: 2px solid var(--ink); border-radius: var(--r-md); background: var(--felt-deep); }
+.wm-answer .wm-land path { cursor: default; }
 .front .field { margin-top: var(--s3); }
 .front .field label { color: var(--muted-ink); }
 .front.is-final .input { border-color: var(--red); box-shadow: inset 0 0 0 2px var(--red); }

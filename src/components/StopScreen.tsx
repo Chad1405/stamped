@@ -8,6 +8,7 @@ import { legFlown, stepMs, TIERS } from "@/lib/game/rules";
 import { stopPoints } from "@/lib/game/engine";
 import { reducedMotion, sfx, shake, toTop } from "@/lib/client/fx";
 import { CrowdBars, useReplay } from "./bits";
+import { AnswerMap, GuessMap } from "./WorldMap";
 
 // the question leaves before the next one lands; the card is drawn, then flipped; the stamp slams once the flip is done (see --t-* in globals.css)
 const DEPART_MS = 650, DRAW_MS = 560, FLIP_MS = 640, SLAM_PEAK_MS = FLIP_MS - 80 + 250, GOLD_MS = 1500, DRAG_MS = 230;
@@ -113,8 +114,8 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
 
 const clockText = (secs: number) => Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
 
-/** After a wrong country: how far off each try was and which way to head, then the continent. */
-function Clues({ c }: { c: NonNullable<StopData["state"]["clues"]> }) {
+/** After a wrong country: how far off each try was and which way to head, then the continent, and a map to work it out on. */
+function Clues({ c, secs }: { c: NonNullable<StopData["state"]["clues"]>; secs: number }) {
   return (
     <div className="clues" role="status" aria-live="polite">
       <ol>
@@ -128,6 +129,7 @@ function Clues({ c }: { c: NonNullable<StopData["state"]["clues"]> }) {
         ))}
       </ol>
       <p className="c-left">{c.continent ? <>Hint: it’s in <strong>{c.continent}</strong>. </> : null}{c.triesLeft} {c.triesLeft === 1 ? "try" : "tries"} left.</p>
+      <GuessMap tries={c.tries} secs={secs} />
     </div>
   );
 }
@@ -300,7 +302,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                 <h1 key={question} className="q q-arrive">{question}</h1>
                 <Ladder s={s} />
                 {preview && <p className="lead-help">Look first. Typing opens when the clock starts. You get three tries at the country.</p>}
-                {st.clues && <Clues c={st.clues} />}
+                {st.clues && <Clues c={st.clues} secs={secs} />}
                 {st.phase === "input" && !preview && (
                   <form className="field" autoComplete="off" noValidate onSubmit={e => { e.preventDefault(); if (draft.trim()) void send({ type: "guess", text: draft }); }}>
                     <label htmlFor="guess">{label}</label>
@@ -336,6 +338,7 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                     {r.off && <><dt>How close</dt><dd>{r.off.guess}: {r.off.capital} is {r.off.km.toLocaleString("en-GB")} km from {r.cityName}</dd></>}
                     {st.guesses.length > 0 && <><dt>Your route</dt><dd>{st.guesses.join(", then ")}</dd></>}
                   </dl>
+                  {r.at && <AnswerMap country={r.country} city={r.cityName} lat={r.at.lat} lng={r.at.lng} guesses={st.guesses.slice(0, (st.misses ?? 0) + 1)} />}
                   <CrowdBars crowd={r.crowd} spot={s.spotWord!} />
                   {r.credit && <p className="credit">Photo: <a href={r.credit.url} target="_blank" rel="noopener">{r.credit.title}</a> by {r.credit.author} ({r.credit.license}), resized.</p>}
                 </section>
