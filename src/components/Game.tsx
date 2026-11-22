@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, type ActResult, type Day, type League, type Me } from "@/lib/client/api";
 import { isMuted, setMuted, sfx, toTop } from "@/lib/client/fx";
+import { SITE } from "@/lib/site";
 import { CountUp, Deck } from "./bits";
 import { Done, Friends, Home, Passport } from "./screens";
 import { StopScreen } from "./StopScreen";
@@ -107,6 +108,8 @@ export default function Game() {
       </header>
       <main aria-live="polite">
         {error && <p className="help is-error" role="alert">{error} <button className="linkish" type="button" onClick={() => void load(day?.date)}>Try again</button></p>}
+        {/* the server HTML is this loading state, so it carries the page heading; each view brings its own h1 once the day loads */}
+        {!day && <h1 className="visually-hidden">{SITE.name}: {SITE.tagline}</h1>}
         {!day && !error && <p className="small">Checking in for today’s flight…</p>}
         <div className="scene" key={scene}>
           {day && view === "home" && <Home day={day} me={me} leagues={leagues} onBoard={board} onOpenDay={d => void load(d)} onFriends={() => open("friends")} />}

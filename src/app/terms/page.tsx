@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: `Terms · ${SITE.name}`, description: `The rules for playing ${SITE.name}.` };
+export const metadata: Metadata = { title: `Terms · ${SITE.name}`, description: `The rules for playing ${SITE.name}.`, alternates: { canonical: "/terms" } };
 
 export default function Terms() {
   return (
