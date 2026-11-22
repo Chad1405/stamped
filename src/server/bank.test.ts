@@ -32,6 +32,11 @@ describe("what can go live", () => {
     has({ crowd: [10, 50, 5] }, "Crowd");
     has({ credit: undefined }, "credit");
     has({ spot: ["x"], spotStrip: "^.*$" }, "played through");
+    has({ lat: 0, lng: 0 }, "coordinates");
+    has({ lat: 120 }, "coordinates");
+    const msg = days.flat().find(r => r.postcard)!;   // a Language stop: its sender and time lines show before the guess
+    expect(stopProblems({ ...msg, postcard: { ...msg.postcard!, from: `${msg.cityName} friend +351` } }).join(" ")).toContain("message sender gives away");
+    expect(stopProblems({ ...msg, postcard: { ...msg.postcard!, note: `Text message, ${msg.cityName}` } }).join(" ")).toContain("message time line gives away");
   });
 });
 
@@ -136,6 +141,17 @@ describe("the review form", () => {
     const f = new FormData();
     for (const [k, v] of Object.entries({ city: "Brussels, brussels, Bruxelles, BRUSSELS", region: "", spot: "", crowd: "61, 55, 47" })) f.set(k, v);
     expect(applyReviewForm(stop, f).city).toEqual(["brussels", "bruxelles"]);
+  });
+  it("binds every field players see before guessing, and the coordinates, to what the reviewer approved", () => {
+    const msg = days.flat().find(r => r.postcard)!, f = new FormData();
+    for (const [k, v] of Object.entries({ city: "a", region: "b", spot: "c", crowd: "61, 55, 47", message: "Olá", messageFrom: "+351 ••• •••", messageNote: "Text message, 09:15", messageLang: "pt", lat: "38.72", lng: "-9.14" })) f.set(k, v);
+    const r = applyReviewForm({ ...msg, postcard: { ...msg.postcard!, from: "Lisbon friend" }, lat: 0, lng: 0 }, f);
+    expect(r.postcard).toEqual({ text: "Olá", from: "+351 ••• •••", note: "Text message, 09:15", lang: "pt" });
+    expect([r.lat, r.lng]).toEqual([38.72, -9.14]);
+    const old = new FormData();   // a card from before these fields existed keeps the stored values
+    for (const [k, v] of Object.entries({ city: "a", region: "b", spot: "c", crowd: "61, 55, 47", message: "Olá" })) old.set(k, v);
+    const kept = applyReviewForm(msg, old);
+    expect([kept.postcard?.from, kept.postcard?.note, kept.postcard?.lang, kept.lat, kept.lng]).toEqual([msg.postcard!.from, msg.postcard!.note, msg.postcard!.lang, msg.lat, msg.lng]);
   });
 });
 

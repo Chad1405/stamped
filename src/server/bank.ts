@@ -32,10 +32,10 @@ export function stopProblems(r: Round): string[] {
   if (!r.spot.length || !r.city.length || !r.region.length) out.push("Each answer needs at least one accepted spelling.");
   if (!/^[A-Z]{3}$/.test(r.airport)) out.push("The airport must be a three-letter code.");
   if (r.crowd.length !== 3 || r.crowd.some(n => !(n >= 0 && n <= 100)) || r.crowd[0] < r.crowd[1] || r.crowd[1] < r.crowd[2]) out.push("Crowd estimates must be three percentages, falling from country to final question.");
-  if (typeof r.lat !== "number" || typeof r.lng !== "number") out.push("The city's coordinates are missing.");
+  if (typeof r.lat !== "number" || typeof r.lng !== "number" || !(Math.abs(r.lat) <= 90 && Math.abs(r.lng) <= 180) || (r.lat === 0 && r.lng === 0)) out.push("The city's coordinates are missing or out of range.");
   // these reach the browser before the player has guessed
   const answers = [r.country, r.cityName, ...r.city, r.spotName, r.spot[0]].map(norm).filter(a => a.length > 3);   // only the main final answer: a stop may also accept a plain word like "balcony"
-  for (const [label, text] of [["photo description", r.alt], ["clue", r.prompt], ["final question", r.spotLabel]] as const)
+  for (const [label, text] of [["photo description", r.alt], ["clue", r.prompt], ["final question", r.spotLabel], ["message sender", r.postcard?.from], ["message time line", r.postcard?.note]] as const)
     if (text && answers.some(a => ` ${norm(text)} `.includes(` ${a} `))) out.push(`The ${label} gives away the answer.`);
   if (!out.length && !playsPerfectly(r)) out.push("The answers don't work when played through. Check the accepted spellings.");
   return out;
@@ -152,11 +152,14 @@ const list = (s: string) => [...new Set(s.split(",").map(norm).filter(Boolean))]
 /** A review form's fields over the stop they were drawn from. */
 export function applyReviewForm(r: Round, f: FormData): Round {
   const text = (k: string) => String(f.get(k) ?? "").trim();
+  // every field a player sees, or that drives a hint, is on the card, so approving binds what goes live; a form without a field keeps the stored value
+  const num = (k: string, old?: number) => f.has(k) && text(k) !== "" ? Number(text(k)) : old;
+  const keep = (k: string, old?: string) => f.has(k) ? text(k) || undefined : old;
   return {
     ...r, prompt: text("prompt"), country: text("country"), cityName: text("cityName"), city: list(text("city")), regionName: text("regionName"), region: list(text("region")),
     spotLabel: text("spotLabel"), spotWord: text("spotWord"), spotName: text("spotName"), spot: list(text("spot")), airport: text("airport"), fact: text("fact"), tells: text("tells") || undefined,
-    crowd: text("crowd").split(",").map(Number),
-    ...(r.postcard ? { postcard: { ...r.postcard, text: text("message") } } : { alt: text("alt") }),
+    crowd: text("crowd").split(",").map(Number), lat: num("lat", r.lat), lng: num("lng", r.lng),
+    ...(r.postcard ? { postcard: { ...r.postcard, text: text("message"), note: keep("messageNote", r.postcard.note) ?? "", from: keep("messageFrom", r.postcard.from), lang: keep("messageLang", r.postcard.lang) } } : { alt: text("alt") }),
   };
 }
 
