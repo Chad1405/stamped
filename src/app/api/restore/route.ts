@@ -1,26 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { body, handle, sendEmail, setPlayer, signOut } from "@/server/http";
-import { redeemSignIn, requestSignIn } from "@/server/service";
+import { requestSignIn, verifySignIn } from "@/server/service";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/restore {email}: email a pass holder a link that signs this browser in. Always answers the same way. */
+/** POST /api/restore {email}: email a pass holder a 6-digit sign-in code for this browser. Always answers the same way.
+ *  The email holds no link: the code works only when typed into the browser that asked for it. */
 export function POST(req: NextRequest) {
-  return handle(req, async ({ db }) => {
-    await requestSignIn(db, (await body(req)).email, (to, token) => sendEmail(to, "Sign in to Born There",
-      `Open this link in the browser you want to play on. It signs you in there, with your archive pass, streak and passport. It works once, within 30 minutes:\n\n${req.nextUrl.origin}/api/restore?token=${token}\n\nIf you didn't ask for this, you can ignore it.`));
+  return handle(req, async ({ db, playerId }) => {
+    await requestSignIn(db, (await body(req)).email, playerId, (to, code) => sendEmail(to, `Your Born There sign-in code: ${code}`,
+      `Your sign-in code is ${code.slice(0, 3)} ${code.slice(3)}\n\nType it into Born There in the browser where you asked for it. It works for 15 minutes.\n\nIf you didn't ask for this, you can ignore it: nobody can sign in without the code.`));
     return { ok: true };
   });
 }
 
-/** GET /api/restore?token=…: the link from that email. Points this browser at the account's player. */
-export function GET(req: NextRequest) {
+/** PUT /api/restore {email, code}: check the code and point this browser at the account's player. */
+export function PUT(req: NextRequest) {
   return handle(req, async ({ db, playerId }) => {
-    const home = await redeemSignIn(db, req.nextUrl.searchParams.get("token"), playerId);
-    const res = NextResponse.redirect(new URL(home ? "/?pass=1" : "/?pass=expired", req.nextUrl.origin), 303);
-    if (home) setPlayer(res, home);
+    const b = await body(req);
+    const home = await verifySignIn(db, b.email, b.code, playerId);
+    const res = NextResponse.json({ ok: true });
+    setPlayer(res, home);
     return res;
   });
+}
+
+/** GET /api/restore?token=…: sign-in links from before codes. They no longer sign anyone in. */
+export function GET(req: NextRequest) {
+  return NextResponse.redirect(new URL("/?pass=expired", req.nextUrl.origin), 303);
 }
 
 /** DELETE /api/restore: sign this browser out. */

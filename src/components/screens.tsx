@@ -103,23 +103,47 @@ function Archive({ me, current, onOpenDay }: { me: Me; current: string; onOpenDa
 
 /** Today's and yesterday's flights are free; the pass opens the rest, once and for good. */
 function ArchivePass({ me }: { me: Me }) {
-  const [msg, setMsg] = useState(""), [busy, setBusy] = useState(false), [email, setEmail] = useState("");
-  if (me.unlocked) return <p className="small">Archive pass active. Every past flight is open.</p>;
+  const [msg, setMsg] = useState(""), [busy, setBusy] = useState(false);
+  const played = me.days.some(d => d.score !== null || d.stopsDone);
+  if (me.unlocked) return me.email || !me.passEmail ? <p className="small">Archive pass active. Every past flight is open.</p> : (
+    <div className="pass" id="archive-pass">
+      <p className="small">Archive pass active. Every past flight is open.</p>
+      <SignIn initial={me.passEmail} label="To use your pass on another device, confirm the email you paid with. We’ll email you a 6-digit code." />
+    </div>
+  );
   if (!me.days.some(d => d.locked)) return null;
   const buy = () => { setBusy(true); setMsg(""); api.checkout().then(r => location.assign(r.url), e => { setBusy(false); setMsg(e.message); }); };
-  const signIn = (e: React.FormEvent) => { e.preventDefault(); api.signIn(email).then(() => setMsg("If that email bought a pass, a sign-in link is on its way. It works once, within 30 minutes."), err => setMsg(err.message)); };
-  const played = me.days.some(d => d.score !== null || d.stopsDone);
   return (
     <div className="pass" id="archive-pass">
       <h3>Archive pass</h3>
-      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once. The email you pay with becomes your sign-in, so your pass, streak and passport go with you to any device.</p>
+      <p>Today’s and yesterday’s flights are free. The pass opens every earlier flight, for good: {SITE.passPrice}, paid once. Confirm the email you pay with and it becomes your sign-in, so your pass, streak and passport go with you to any device.</p>
       <button className="btn btn--gold" type="button" onClick={buy} disabled={busy}>{busy ? "Opening checkout…" : `Unlock the archive, ${SITE.passPrice}`}</button>
-      <form className="pass-restore" onSubmit={signIn}>
-        <label htmlFor="restore-email">Have the pass already? Sign in with the email you paid with and we’ll send you a link.{played ? " Signing in swaps this browser’s progress for your account’s." : ""}</label>
-        <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit">Send sign-in link</button></div>
-      </form>
       {msg && <p className="small" role="status">{msg}</p>}
+      <SignIn initial="" label={`Have the pass already? Sign in with the email you paid with. We’ll email you a 6-digit code.${played ? " Signing in swaps this browser’s progress for your account’s." : ""}`} />
     </div>
+  );
+}
+
+/** Email, then the emailed code, typed here: the code only works in the browser that asked for it. */
+function SignIn({ initial, label }: { initial: string; label: string }) {
+  const [email, setEmail] = useState(initial), [code, setCode] = useState(""), [sent, setSent] = useState(false), [msg, setMsg] = useState(""), [busy, setBusy] = useState(false);
+  const ask = (e: React.FormEvent) => { e.preventDefault(); setBusy(true); setMsg("");
+    api.signIn(email).then(() => { setSent(true); setMsg("If that email bought a pass, a code is on its way. It works for 15 minutes, in this browser only."); }, err => setMsg(err.message)).finally(() => setBusy(false)); };
+  const check = (e: React.FormEvent) => { e.preventDefault(); setBusy(true); setMsg("");
+    api.verifySignIn(email, code).then(() => location.assign("/?pass=1"), err => { setMsg(err.message); setBusy(false); }); };
+  return sent ? (
+    <form className="pass-restore" onSubmit={check}>
+      <label htmlFor="signin-code">Code sent to {email}</label>
+      <div className="actions"><input id="signin-code" className="input" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]*" maxLength={7} required value={code} onChange={e => setCode(e.target.value)} /><button className="btn btn--small" type="submit" disabled={busy}>Sign in</button></div>
+      <button className="linkish" type="button" onClick={() => { setSent(false); setCode(""); setMsg(""); }}>Use a different email or send a new code</button>
+      {msg && <p className="small" role="status">{msg}</p>}
+    </form>
+  ) : (
+    <form className="pass-restore" onSubmit={ask}>
+      <label htmlFor="restore-email">{label}</label>
+      <div className="actions"><input id="restore-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /><button className="btn btn--small" type="submit" disabled={busy}>Send code</button></div>
+      {msg && <p className="small" role="status">{msg}</p>}
+    </form>
   );
 }
 
@@ -270,9 +294,9 @@ function Forget({ me }: { me: Me }) {
     <section className="card forget">
       <h2>Your data</h2>
       {me.email
-        ? <><p className="small">Signed in as <strong>{me.email}</strong>, the email you bought the pass with. Sign in on another device from the archive. <a href="/privacy">What we keep, and why</a>.</p>
+        ? <><p className="small">Signed in as <strong>{me.email}</strong>, the email you bought the pass with. Sign in on another device from the archive with a code sent to it. <a href="/privacy">What we keep, and why</a>.</p>
           <div className="actions"><button className="btn btn--small" type="button" onClick={signOut}>Sign out of this browser</button></div></>
-        : <p className="small">Your progress is tied to this browser. Buying the archive pass gives you a sign-in for other devices. <a href="/privacy">What we keep, and why</a>.</p>}
+        : <p className="small">Your progress is tied to this browser. Buying the archive pass and confirming your email gives you a sign-in for other devices. <a href="/privacy">What we keep, and why</a>.</p>}
       {asking ? <>
         <p>This deletes your streak, passport, results and league places, and any league you started{me.email ? ", and your sign-in. Your pass can still be restored with the email you paid with" : ""}. It can&apos;t be undone.</p>
         <div className="actions"><button className="btn" type="button" onClick={forget}>Yes, delete everything</button><button className="btn btn--small" type="button" onClick={() => setAsking(false)}>Keep it</button></div>

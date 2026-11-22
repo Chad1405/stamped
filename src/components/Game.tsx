@@ -45,10 +45,10 @@ export default function Game() {
   useEffect(() => {
     const q = new URLSearchParams(location.search), join = q.get("join"), pass = q.get("pass");
     if (join) setInvite(join.toUpperCase());
-    if (join || pass) history.replaceState(null, "", location.pathname);   // back from Checkout or a sign-in link: the archive shows the pass
+    if (join || pass) history.replaceState(null, "", location.pathname);   // back from Checkout or an old sign-in link: the archive shows the pass
     void load().then(() => {
       if (join) { backTo.current = "home"; setView("friends"); }
-      if (pass === "expired") setError("That sign-in link has expired or was already used. Ask for a new one under the archive.");
+      if (pass === "expired") setError("Sign-in links no longer work: sign-in now uses a 6-digit code. Ask for one under the archive.");
     });
   }, [load]);
 
