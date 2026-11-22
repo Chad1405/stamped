@@ -1,6 +1,6 @@
 "use client";
-// The world map: during the country step, where each wrong guess's capital is and which way and how far the hint points;
-// on the back of the card, where the place really is. Mercator, so the compass arrows match the hints, which use the same flat map.
+// The world map: during the country step, the countries already guessed, so players can find them; the distance and direction stay
+// in the text hints, because drawn on a map they read as exact. On the back of the card, where the place really is. Mercator, the hints' flat map.
 import { useEffect, useRef, useState } from "react";
 import capitalsData from "@/content/capitals.json";
 
@@ -19,25 +19,7 @@ function useWorld() {
   return w;
 }
 
-/** The great circle `km` from a point, as path data on the map; split where it crosses the edge of the map. */
-function ring(lat: number, lng: number, km: number) {
-  const rad = Math.PI / 180, d = km / 6371, a = lat * rad, segs: string[] = [];
-  let seg = "", prevX: number | null = null;
-  for (let i = 0; i <= 96; i++) {
-    const b = (i / 96) * 2 * Math.PI;
-    const la = Math.asin(Math.sin(a) * Math.cos(d) + Math.cos(a) * Math.sin(d) * Math.cos(b));
-    let lo = lng * rad + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(a), Math.cos(d) - Math.sin(a) * Math.sin(la));
-    lo = ((lo / rad + 540) % 360) - 180;
-    const [x, y] = project(la / rad, lo);
-    if (prevX !== null && Math.abs(x - prevX) > W / 2) { segs.push(seg); seg = ""; }
-    seg += `${seg ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
-    prevX = x;
-  }
-  return [...segs, seg].join("");
-}
-
-const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
-export type Try = { name: string; km: number | null; dir: string | null };
+export type Try = { name: string };
 
 function Shapes({ world, mark, onTap }: { world: World; mark: (n: string) => string | undefined; onTap?: (n: string) => void }) {
   return <g className="wm-land">{world.countries.map(c => <path key={c.n} d={c.d} className={mark(c.n)} onClick={onTap && (() => onTap(c.n))} />)}</g>;
@@ -66,7 +48,7 @@ export function GuessMap({ tries, secs }: { tries: Try[]; secs: number }) {
 function GuessMapBody({ tries }: { tries: Try[] }) {
   const world = useWorld(), box = useRef<HTMLDivElement>(null);
   const [tapped, setTapped] = useState<string | null>(null);
-  const pts = tries.flatMap(t => { const c = CAPITALS[t.name]; return c ? [{ ...t, capital: c[0], at: project(c[1], c[2]), lat: c[1], lng: c[2] }] : []; });
+  const pts = tries.flatMap(t => { const c = CAPITALS[t.name]; return c ? [{ name: t.name, at: project(c[1], c[2]) }] : []; });
   const last = pts.at(-1)?.at;
   // start centred on the latest guess
   useEffect(() => { const el = box.current, svg = el?.querySelector("svg"); if (!el || !svg || !last) return; const k = svg.clientWidth / W; el.scrollLeft = last[0] * k - el.clientWidth / 2; el.scrollTop = last[1] * k - el.clientHeight / 2; }, [world, last]);
@@ -75,23 +57,17 @@ function GuessMapBody({ tries }: { tries: Try[] }) {
   return (
     <>
       <div className="wm-scroll" ref={box}>
-        <svg viewBox={`0 0 ${W} ${world.h}`} className="wm-svg" role="img" aria-label={`World map showing ${pts.map(p => `${p.name}, ${p.km?.toLocaleString("en-GB")} km ${p.dir} of ${p.capital}`).join("; ")}`}>
-          <defs><marker id="wm-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" /></marker></defs>
+        <svg viewBox={`0 0 ${W} ${world.h}`} className="wm-svg" role="img" aria-label={`World map showing your guesses: ${pts.map(p => p.name).join(", ")}`}>
           <Shapes world={world} mark={n => guessed.has(n) ? "is-wrong" : n === tapped ? "is-tapped" : undefined} onTap={setTapped} />
-          {pts.map(p => {
-            const k = p.dir ? COMPASS.indexOf(p.dir) : -1, a = k * Math.PI / 4;
-            return (
-              <g key={p.name} className="wm-guess">
-                {p.km && <path d={ring(p.lat, p.lng, p.km)} className="wm-ring" />}
-                {k >= 0 && <line x1={p.at[0]} y1={p.at[1]} x2={p.at[0] + 60 * Math.sin(a)} y2={p.at[1] - 60 * Math.cos(a)} className="wm-dir" markerEnd="url(#wm-arrow)" />}
-                <circle cx={p.at[0]} cy={p.at[1]} r="4" />
-                <text x={p.at[0] + 7} y={p.at[1] - 6}>{p.capital}</text>
-              </g>
-            );
-          })}
+          {pts.map(p => (
+            <g key={p.name} className="wm-guess">
+              <circle cx={p.at[0]} cy={p.at[1]} r="4" />
+              <text x={p.at[0] + 7} y={p.at[1] - 6}>{p.name}</text>
+            </g>
+          ))}
         </svg>
       </div>
-      <p className="wm-note" role="status">{tapped ? <>That’s <strong>{tapped}</strong>.</> : "Tap a country to see its name."} The dashed circle is how far each guess was; the arrow is which way to head.</p>
+      <p className="wm-note" role="status">{tapped ? <>That’s <strong>{tapped}</strong>.</> : "Tap a country to see its name."} Your guesses are in red; the hints under the clue say how far off they were and which way to head.</p>
     </>
   );
 }
