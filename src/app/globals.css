@@ -458,7 +458,7 @@ dl.stats dd { margin: 0; font: var(--fs-xl)/1 var(--display); }
 
 /* ---------- footer, privacy, terms ---------- */
 footer { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted-cream); padding-top: var(--s3); border-top: 1px dashed rgb(251 243 226 / 0.3); }
-footer nav { display: flex; gap: var(--s4); }
+footer nav { display: flex; flex-wrap: wrap; column-gap: var(--s4); }
 footer a { display: inline-flex; align-items: center; min-height: var(--tap); }
 .legal { max-width: 70ch; gap: var(--s5); padding-block: var(--s6) var(--s7); }
 .legal h1 { font-size: var(--fs-2xl); color: var(--gold); }

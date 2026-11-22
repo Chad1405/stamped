@@ -12,6 +12,7 @@ const STRUCTURED = {
     { "@type": "Organization", "@id": `${SITE.url}/#org`, name: SITE.operator, email: SITE.email },
     {
       "@type": "VideoGame", name: SITE.name, url: `${SITE.url}/`, description: SITE.description, image: `${SITE.url}/opengraph-image.png`,
+      sameAs: [SITE.social.tiktok, SITE.social.instagram],   // the official accounts, so search engines tie them to this game
       genre: ["Geography", "Trivia", "Puzzle"], gamePlatform: "Web browser", applicationCategory: "GameApplication", operatingSystem: "Any",
       inLanguage: "en", isAccessibleForFree: true, publisher: { "@id": `${SITE.url}/#org` },
       offers: [
