@@ -215,6 +215,10 @@ describe("how a day compares", () => {
     await finish(380);
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 21, better: 75 });   // 15 of the 20 others scored less
     expect(await fieldFor(db, await ensurePlayer(db, undefined), TODAY)).toBeNull();   // not finished: nothing to compare
+    await finish(0); await finish(0);
+    expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });   // 17 of 22 below
+    await forgetPlayer(db, await finish(10));   // a deleted player's result leaves the counts with them
+    expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });
   });
 });
 
