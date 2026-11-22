@@ -73,10 +73,16 @@ function StopCard({ id, round: r, note, source, repeat }: { id: string; round: R
       <div className="bank-fields">
         {(problems.length > 0 || repeat) && <ul className="bank-problems">{[...problems, ...(repeat ? [repeat] : [])].map(p => <li key={p}>{p}</li>)}</ul>}
         <Field name="prompt" label="Clue" value={r.prompt} />
-        {r.postcard ? <Field name="message" label="Message" value={r.postcard.text} long /> : <Field name="alt" label="Photo description (no place names)" value={r.alt ?? ""} />}
+        {r.postcard ? <>
+          <Field name="message" label="Message" value={r.postcard.text} long />
+          <div className="bank-pair"><Field name="messageFrom" label="Sender line (players see it before guessing)" value={r.postcard.from ?? ""} /><Field name="messageNote" label="Time line, e.g. Text message, 19:40" value={r.postcard.note} /></div>
+          <Field name="messageLang" label="Language code, e.g. pt" value={r.postcard.lang ?? ""} />
+        </> : <Field name="alt" label="Photo description (no place names)" value={r.alt ?? ""} />}
         <div className="bank-pair"><Field name="country" label="Country" value={r.country} /><Field name="airport" label="Airport" value={r.airport} /></div>
         <div className="bank-pair"><Field name="cityName" label="City" value={r.cityName} /><Field name="city" label="Accepted, comma-separated" value={r.city.join(", ")} /></div>
         <div className="bank-pair"><Field name="regionName" label="Region" value={r.regionName} /><Field name="region" label="Accepted, comma-separated" value={r.region.join(", ")} /></div>
+        <div className="bank-pair"><Field name="lat" label="City latitude (drives the distance hint)" value={String(r.lat ?? "")} /><Field name="lng" label="City longitude" value={String(r.lng ?? "")} /></div>
+        {typeof r.lat === "number" && typeof r.lng === "number" && <p className="small"><a href={`https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lng}#map=9/${r.lat}/${r.lng}`} target="_blank" rel="noopener">Check these coordinates on a map</a></p>}
         <div className="bank-pair"><Field name="spotLabel" label="Final question" value={r.spotLabel} /><Field name="spotWord" label="Short label" value={r.spotWord} /></div>
         <div className="bank-pair"><Field name="spotName" label="Final answer" value={r.spotName} /><Field name="spot" label="Accepted, comma-separated" value={r.spot.join(", ")} /></div>
         <Field name="tells" label="What gave it away (only what the photo or message shows)" value={r.tells ?? ""} long />
