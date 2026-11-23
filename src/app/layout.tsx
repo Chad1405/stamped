@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Semi_Condensed, Bungee } from "next/font/google";
 import { SITE } from "@/lib/site";
 import "./globals.css";
+import "./themes/anime.css";
 
 // The Departure Deck type (DESIGN.md): next/font downloads both faces at build time and serves them from this app, so players never fetch from Google.
 const display = Bungee({ weight: "400", subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-bungee", display: "swap" });
@@ -25,7 +26,9 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+      {/* the chosen look (src/lib/client/theme.ts) goes on before first paint, so a themed player never sees a flash of the classic colours */}
+      <head><script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("stamped:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}` }} /></head>
       {/* browser extensions write attributes onto <body> before React loads (e.g. style="isolation:isolate"); that is not our markup */}
       <body suppressHydrationWarning>{children}</body>
     </html>

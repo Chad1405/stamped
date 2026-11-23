@@ -57,6 +57,28 @@ Redrawn 20 Nov 2026 as a luggage tag (it was a playing card, which read as casin
 - **Minimum size:** the mark at 16px only as `favicon.svg`; the full mark from 32px; the logo from 140px wide.
 - **Never:** redraw the pointer as a map pin or arrow, recolour the pointer away from red, fill the hole, put the tag on a tile of any colour other than the dark green, set the name in live text in place of the outlines, add gradients, glows or outlines, or stretch it.
 
+## Themes
+The game can wear other looks. Classic (everything above) is the default and the reference; a theme restyles it without changing the objects, the layout, the words or the rules. Added 23 Nov 2026.
+
+- **How it works:** the header's look menu (`ThemeMenu.tsx`) stores the choice in the browser (`stamped:theme`) and sets `data-theme` on `<html>`; a script in `layout.tsx` does the same before first paint. Each theme is one file of token overrides in `src/app/themes/`, listed in `src/lib/client/theme.ts`. A theme's own typefaces load only when it is chosen (`src/themes/`).
+- **What a theme may change:** the tokens (colours, radius, shadows, display face), the ground behind the cards, and small ornaments (a glint, the burst's shapes).
+- **What no theme may change:** clue photos (never tinted or filtered), what red, blue and gold mean, the postcard signature, sizes and tap targets, the copy, and the motion rule (transform and opacity only, all of it off under reduced motion).
+- **Text must pass on the theme's own ground:** 4.5:1 for body text, checked where the ground is brightest.
+
+### Anime (twilight sky)
+The same trip at dusk, the way a film-anime paints a sky. `src/app/themes/anime.css`.
+
+| Group | Tokens |
+|---|---|
+| Ground | a fixed sky from `#0f1440` through `#1f1f63` and `#4a2c7c` to `#7d3570`, with a coral afterglow at the bottom · `--felt #2b2466` · `--felt-dark #141a44` · `--felt-deep #0c1030` |
+| Sky | a few stars that twinkle, and a band of underlit clouds in three flat tones (`#4a3a94`, `#8a55a8`, coral rim) drifting once every 3 minutes |
+| Cards | `--card #fff6ea` · `--card-2 #f2dde6` · `--ink #1d1a4a` (line art in indigo, not brown-black) · `--muted-ink #5a4f7d` |
+| Colours | `--red #ff5d68` / `--red-dark #c22f4d` · `--blue #4aa3ff` / `--blue-dark #2456c8` · `--gold #ffd166` |
+| Gold | here gold may bloom (a soft glow on the name, the score and the day's total) and gold surfaces carry a hard double glint |
+| Type | `--display` Dela Gothic One (falls back to Bungee until it loads) · body unchanged |
+| Radius | 8, 14, 22px |
+| Burst | four-point sparkles in place of dots |
+
 ## Voice
 Plain, short, British spelling, travel words ("Board flight 001", "Stamp it", "Stay here", "Risk it", "Window Seat", "4 to go", "Your route today"). No card words (deck, hand, deal, shuffle, bank) and nothing from a casino: no "bet", "wager", "jackpot", "all in" or "cash out".
 
