@@ -91,6 +91,16 @@ button { cursor: pointer; }
 .btn--icon:hover, .btn--icon:active { box-shadow: none; }
 .btn--icon svg { width: 20px; height: 20px; }
 .btn[aria-current="page"] { background: var(--ink); color: var(--gold); }
+/* the look menu in the header: a short list of themes, each with a swatch of its colours */
+.theme { position: relative; display: inline-flex; }
+.theme-menu { position: absolute; z-index: var(--z-list); top: calc(100% + 8px); right: 0; width: max-content; max-width: calc(100vw - 2 * var(--s4)); padding: 6px; display: grid; gap: 4px;
+  background: var(--card); color: var(--ink); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-card); animation: q-in 200ms var(--ease-out); }
+.theme-opt { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: var(--s3); align-items: center; text-align: left; min-height: 52px; padding: 6px 12px 6px 8px; border: 2px solid transparent; border-radius: var(--r-sm); background: none; color: inherit; }
+.theme-opt:hover { background: var(--card-2); }
+.theme-opt[aria-checked="true"] { border-color: var(--ink); background: var(--card-2); }
+.theme-opt b { align-self: end; font: var(--fs-sm)/1.1 var(--display); }
+.theme-blurb { grid-column: 2; align-self: start; font-size: var(--fs-xs); color: var(--muted-ink); }
+.theme-chip { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--ink); }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
 .linkish { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-decoration: underline; text-underline-offset: 0.16em; cursor: pointer; min-height: var(--tap); }
 .field { display: flex; flex-direction: column; gap: var(--s1); }
@@ -496,6 +506,7 @@ footer a.social { min-width: var(--tap); justify-content: center; }
   .bar-nav { order: 3; width: 100%; }
   .bar-nav .btn { flex: 1 1 0; }
   .bar-nav .btn--icon { flex: none; }
+  .shell:not(.is-playing) .theme-menu { left: 0; right: auto; }   /* the buttons run along the left here */
   .is-playing .bar-nav { order: 0; width: auto; }
   .passport-head { flex-direction: column; align-items: flex-start; }
   .league .c-days, .league .c-streak { display: none; }

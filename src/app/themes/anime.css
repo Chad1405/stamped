@@ -1,0 +1,67 @@
+/* Anime mode: the same traveller's kit under a film-anime twilight sky. Chosen in the header's look menu (src/lib/client/theme.ts).
+ * THESIS: nothing about the trip changes (postcards, airmail, stamps, tickets, tags); only the light does. The dark green table becomes a dusk sky.
+ * OWN-WORLD: indigo-to-plum sky with a coral afterglow, underlit cel-shaded clouds drifting, a few stars; paper lit warm-white, line art in indigo
+ *   instead of brown-black; star-gold that blooms; hard two-tone glints on gold; sparkles where the classic burst throws dots. Dela Gothic One.
+ * RULES KEPT: clue photos are untouched; red is risk, blue is staying, gold is points; motion is transform and opacity only.
+ * Generated first by a script, then kept by hand: edit this file directly. */
+:root[data-theme="anime"] {
+  --felt: #2b2466; --felt-dark: #141a44; --felt-deep: #0c1030;
+  --card: #fff6ea; --card-2: #f2dde6; --ink: #1d1a4a; --muted-ink: #5a4f7d;
+  --red: #ff5d68; --red-dark: #c22f4d; --blue: #4aa3ff; --blue-dark: #2456c8; --gold: #ffd166;
+  --cream: #fff4e6; --muted-cream: rgb(255 244 230 / 0.84);
+  --display: var(--font-anime-display), var(--font-bungee), "Arial Black", system-ui, sans-serif;
+  --r-sm: 8px; --r-md: 14px; --r-lg: 22px;
+  --sh-card: 0 10px 0 -3px rgb(12 10 48 / 0.55), 0 26px 44px rgb(8 6 40 / 0.5);
+  --sh-mini: 0 6px 0 -1px rgb(12 10 48 / 0.55);
+}
+
+/* the sky: night at the top, the sun just gone at the bottom */
+:root[data-theme="anime"] body {
+  background:
+    radial-gradient(95% 44% at 50% 110%, rgb(255 158 107 / 0.3), rgb(255 110 130 / 0.14) 55%, transparent 80%) fixed,
+    linear-gradient(180deg, #0f1440 0%, #1f1f63 32%, #4a2c7c 64%, #7d3570 100%) fixed,
+    var(--felt-dark);
+}
+:root[data-theme="anime"] body::after { background: radial-gradient(130% 100% at 50% 40%, transparent 62%, rgb(8 6 40 / 0.4)); }
+:root[data-theme="anime"]::before { content: ""; position: fixed; inset: 0 0 50% 0; z-index: -1; pointer-events: none; animation: anime-twinkle 4.5s ease-in-out infinite alternate;
+  background-image:
+    radial-gradient(2.2px 2.2px at 6% 9%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 14% 22%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.6px 1.6px at 23% 6%, #fff8e8 55%, transparent 60%),
+    radial-gradient(2.4px 2.4px at 31% 17%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 38% 30%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.8px 1.8px at 46% 8%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 53% 21%, #fff8e8 55%, transparent 60%),
+    radial-gradient(2.3px 2.3px at 61% 12%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 27%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 75% 5%, #fff8e8 55%, transparent 60%),
+    radial-gradient(2px 2px at 82% 18%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 89% 10%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.8px 1.8px at 95% 25%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 18% 38%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 57% 40%, #fff8e8 55%, transparent 60%),
+    radial-gradient(1.4px 1.4px at 86% 36%, #fff8e8 55%, transparent 60%); }
+@keyframes anime-twinkle { to { opacity: 0.45; } }
+:root[data-theme="anime"] body::before { content: ""; position: fixed; left: 0; bottom: 5svh; width: calc(100vw + 1200px); height: 260px; z-index: -1; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 260' width='1200' height='260'%3E%3Cg fill='%23ff9d8c' opacity='.55'%3E%3Crect x='60' y='155' width='280' height='30' rx='15'/%3E%3Ccircle cx='108' cy='155' r='32'/%3E%3Ccircle cx='158' cy='135' r='44'/%3E%3Ccircle cx='222' cy='123' r='56'/%3E%3Ccircle cx='286' cy='145' r='38'/%3E%3Crect x='556' y='97' width='210' height='22' rx='11'/%3E%3Ccircle cx='598' cy='97' r='22'/%3E%3Ccircle cx='638' cy='83' r='32'/%3E%3Ccircle cx='690' cy='75' r='38'/%3E%3Ccircle cx='734' cy='91' r='24'/%3E%3Crect x='846' y='191' width='312' height='34' rx='17'/%3E%3Ccircle cx='902' cy='191' r='36'/%3E%3Ccircle cx='962' cy='167' r='50'/%3E%3Ccircle cx='1040' cy='151' r='62'/%3E%3Ccircle cx='1108' cy='179' r='42'/%3E%3Crect x='388' y='227' width='132' height='10' rx='5'/%3E%3Crect x='768' y='243' width='120' height='8' rx='4'/%3E%3C/g%3E%3Cg fill='%238a55a8'%3E%3Crect x='60' y='150' width='280' height='30' rx='15'/%3E%3Ccircle cx='108' cy='150' r='32'/%3E%3Ccircle cx='158' cy='130' r='44'/%3E%3Ccircle cx='222' cy='118' r='56'/%3E%3Ccircle cx='286' cy='140' r='38'/%3E%3Crect x='556' y='92' width='210' height='22' rx='11'/%3E%3Ccircle cx='598' cy='92' r='22'/%3E%3Ccircle cx='638' cy='78' r='32'/%3E%3Ccircle cx='690' cy='70' r='38'/%3E%3Ccircle cx='734' cy='86' r='24'/%3E%3Crect x='846' y='186' width='312' height='34' rx='17'/%3E%3Ccircle cx='902' cy='186' r='36'/%3E%3Ccircle cx='962' cy='162' r='50'/%3E%3Ccircle cx='1040' cy='146' r='62'/%3E%3Ccircle cx='1108' cy='174' r='42'/%3E%3Crect x='388' y='222' width='132' height='10' rx='5'/%3E%3Crect x='768' y='238' width='120' height='8' rx='4'/%3E%3C/g%3E%3Cg fill='%234a3a94'%3E%3Crect x='60' y='141' width='280' height='30' rx='15'/%3E%3Ccircle cx='108' cy='141' r='32'/%3E%3Ccircle cx='158' cy='121' r='44'/%3E%3Ccircle cx='222' cy='109' r='56'/%3E%3Ccircle cx='286' cy='131' r='38'/%3E%3Crect x='556' y='83' width='210' height='22' rx='11'/%3E%3Ccircle cx='598' cy='83' r='22'/%3E%3Ccircle cx='638' cy='69' r='32'/%3E%3Ccircle cx='690' cy='61' r='38'/%3E%3Ccircle cx='734' cy='77' r='24'/%3E%3Crect x='846' y='177' width='312' height='34' rx='17'/%3E%3Ccircle cx='902' cy='177' r='36'/%3E%3Ccircle cx='962' cy='153' r='50'/%3E%3Ccircle cx='1040' cy='137' r='62'/%3E%3Ccircle cx='1108' cy='165' r='42'/%3E%3Crect x='388' y='213' width='132' height='10' rx='5'/%3E%3Crect x='768' y='229' width='120' height='8' rx='4'/%3E%3C/g%3E%3C/svg%3E") repeat-x left bottom / 1200px 260px; opacity: 0.8; animation: anime-drift 180s linear infinite; }
+@keyframes anime-drift { to { transform: translateX(-1200px); } }
+
+/* star-gold blooms: the name, the score, the day's total */
+:root[data-theme="anime"] .mark { text-shadow: 0 3px 0 var(--red-dark), 0 0 22px rgb(255 209 102 / 0.45); }
+:root[data-theme="anime"] .mark-url { text-shadow: none; }
+:root[data-theme="anime"] .hud-score dd { text-shadow: 0 3px 0 var(--red-dark), 0 0 22px rgb(255 209 102 / 0.45); }
+:root[data-theme="anime"] .total b { text-shadow: 0 5px 0 var(--red-dark), 0 0 36px rgb(255 209 102 / 0.5); }
+/* the glint: a hard double streak of light, the way a cel shows something shiny */
+:root[data-theme="anime"] :is(.btn--gold, .btn--primary, .mini.t-native, .stamp.is-gold) {
+  background-image: linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / 0.55) 14% 19%, transparent 19% 22%, rgb(255 255 255 / 0.55) 22% 24%, transparent 24%); }
+/* Born There lands in sparkles */
+:root[data-theme="anime"] .burst i { width: 20px; height: 20px; border: 0; border-radius: 0; background: #fff8dc;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
+
+/* places where the classic look names its colours outright */
+:root[data-theme="anime"] .stamp { background-color: rgb(255 246 234 / 0.92); }
+:root[data-theme="anime"] .is-top .stamp.is-gold { background-color: var(--gold); }
+:root[data-theme="anime"] .count { background: rgb(20 16 64 / 0.62); }
+:root[data-theme="anime"] .count--chat { background: rgb(20 16 64 / 0.45); }
+:root[data-theme="anime"] .fuse { border-radius: 19px 19px 0 0; }   /* the card's corner, less its border */
+:root[data-theme="anime"] footer { color: var(--cream); border-top-color: rgb(255 244 230 / 0.35); }   /* the footer sits on the afterglow, the brightest part of the sky */
