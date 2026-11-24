@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setName, setSource, spendVoucher } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -219,6 +219,29 @@ describe("how a day compares", () => {
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });   // 17 of 22 below
     await forgetPlayer(db, await finish(10));   // a deleted player's result leaves the counts with them
     expect(await fieldFor(db, me, TODAY)).toEqual({ players: 23, better: 77 });
+  });
+});
+
+describe("which look players use", () => {
+  it("keeps only known looks, stores classic as none, and counts players who started a flight", async () => {
+    const db = await createDb();
+    await keepCalendar(db, TODAY);
+    const anime = await ensurePlayer(db, undefined), back = await ensurePlayer(db, undefined), junk = await ensurePlayer(db, undefined), idle = await ensurePlayer(db, undefined);
+    await setLook(db, anime, "anime");
+    await setLook(db, back, "anime"); await setLook(db, back, "classic");   // tried it, switched back
+    await setLook(db, junk, "<script>");                                    // not a theme: ignored
+    await setLook(db, idle, "anime");                                       // never starts a flight, so never counted
+    const look = Object.fromEntries((await db.select({ id: players.id, look: players.look }).from(players)).map(r => [r.id, r.look]));
+    expect([look[anime], look[back], look[junk], look[idle]]).toEqual(["anime", null, null, "anime"]);
+    expect((await getMe(db, anime, TODAY)).look).toBe("anime");
+    expect((await getMe(db, back, TODAY)).look).toBe("classic");
+
+    const day = (id: string, on: string, stop = 0) => db.insert(plays).values({ playerId: id, date: TODAY, stop, state: freshStop(), updatedAt: new Date(`${on}T12:00:00Z`) });
+    await day(anime, TODAY); await day(anime, addDays(TODAY, -1), 1); await day(back, TODAY); await day(junk, TODAY);   // the anime player played on two days
+    expect((await retention(db, TODAY)).looks).toEqual([
+      { look: "Classic", players: 2, back: 0 },
+      { look: "Anime", players: 1, back: 1 },
+    ]);
   });
 });
 

@@ -60,7 +60,7 @@ Redrawn 20 Nov 2026 as a luggage tag (it was a playing card, which read as casin
 ## Themes
 The game can wear other looks. Classic (everything above) is the default and the reference; a theme restyles it without changing the objects, the layout, the words or the rules. Added 23 Nov 2026.
 
-- **How it works:** the header's look menu (`ThemeMenu.tsx`) stores the choice in the browser (`stamped:theme`) and sets `data-theme` on `<html>`; a script in `layout.tsx` does the same before first paint. Each theme is one file of token overrides in `src/app/themes/`, listed in `src/lib/client/theme.ts`. A theme's own typefaces load only when it is chosen (`src/themes/`).
+- **How it works:** the header's look menu (`ThemeMenu.tsx`) stores the choice in the browser (`stamped:theme`), reports it to the server (`players.look`, for the admin page's count of each look) and sets `data-theme` on `<html>`; a script in `layout.tsx` does the same before first paint. Each theme is one file of token overrides in `src/app/themes/`, listed in `src/lib/client/theme.ts`. A theme's own typefaces load only when it is chosen (`src/themes/`).
 - **What a theme may change:** the tokens (colours, radius, shadows, display face), the ground behind the cards, and small ornaments (a glint, the burst's shapes).
 - **What no theme may change:** clue photos (never tinted or filtered), what red, blue and gold mean, the postcard signature, sizes and tap targets, the copy, and the motion rule (transform and opacity only, all of it off under reduced motion).
 - **Text must pass on the theme's own ground:** 4.5:1 for body text, checked where the ground is brightest.

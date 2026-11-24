@@ -7,6 +7,7 @@ import { applyAction, countryClues, freshStop, stopPoints, type Action, type Eve
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
 import { addDays, streakInfo, weekOf } from "@/lib/game/streak";
+import { THEMES } from "@/lib/client/theme";
 import citiesData from "@/content/cities.json";
 import iso3Data from "@/content/iso3.json";
 import capitalsData from "@/content/capitals.json";
@@ -44,6 +45,11 @@ export async function setSource(db: Db, playerId: string, source: unknown) {
   if (!s) return;
   await db.update(players).set({ source: s })
     .where(and(eq(players.id, playerId), isNull(players.source), gt(players.createdAt, sql`now() - interval '1 hour'`)));
+}
+/** The look this player's browser is showing, so the admin page can count how many use each. Only known theme ids are kept; classic is stored as null. */
+export async function setLook(db: Db, playerId: string, look: unknown) {
+  if (!THEMES.some(t => t.id === look)) return;
+  await db.update(players).set({ look: look === "classic" ? null : (look as string) }).where(eq(players.id, playerId));
 }
 export async function setName(db: Db, playerId: string, name: unknown) {
   await db.update(players).set({ name: cleanName(name) }).where(eq(players.id, playerId));
@@ -308,7 +314,7 @@ export async function getMe(db: Db, playerId: string, today: string) {
     db.select({ email: purchases.email }).from(purchases).where(eq(purchases.playerId, playerId)).orderBy(desc(purchases.createdAt)).limit(1),
   ]);
   return {
-    id: playerId, name: p?.name ?? "", today, streak, unlocked: p?.unlocked ?? false, email: acct?.email ?? null, passEmail: bought?.email || null,   // passEmail: what they paid with, to prefill confirming it
+    id: playerId, name: p?.name ?? "", look: p?.look ?? "classic", today, streak, unlocked: p?.unlocked ?? false, email: acct?.email ?? null, passEmail: bought?.email || null,   // passEmail: what they paid with, to prefill confirming it
     vouchers: vouchersOf(p, today, streak.n),
     record: { flights: onTime.length, best: Math.max(0, ...onTime.map(r => r.score)) },
     passport: {
@@ -507,11 +513,12 @@ export async function retention(db: Db, today: string) {
     return { after, of: due.length, back: due.filter(([id, d]) => days.get(id)!.has(addDays(d, after))).length };
   });
   // each source's players through the funnel; "visited" counts only tagged sources, since untagged visits include every bot
-  const [tagged, done, sent] = await Promise.all([
-    db.select({ id: players.id, source: players.source }).from(players).where(sql`${players.source} is not null`),
+  const [marked, done, sent] = await Promise.all([
+    db.select({ id: players.id, source: players.source, look: players.look }).from(players).where(sql`${players.source} is not null or ${players.look} is not null`),
     db.selectDistinct({ id: results.playerId }).from(results),
     db.selectDistinct({ id: shares.playerId }).from(shares),
   ]);
+  const tagged = marked.filter(t => t.source), lookOf = new Map(marked.map(t => [t.id, t.look]));
   const sourceOf = new Map(tagged.map(t => [t.id, t.source!])), doneSet = new Set(done.map(d => d.id)), sentSet = new Set(sent.map(s => s.id));
   const bySource = new Map<string, { source: string; visited: number | null; started: number; finished: number; back: number; shared: number }>();
   const row = (source: string | undefined) => {
@@ -522,5 +529,10 @@ export async function retention(db: Db, today: string) {
   for (const t of tagged) row(t.source!).visited!++;
   for (const [id, set] of days) { const r = row(sourceOf.get(id)); r.started++; if (doneSet.has(id)) r.finished++; if (set.size > 1) r.back++; if (sentSet.has(id)) r.shared++; }
   const sources = [...bySource.values()].sort((a, b) => b.started - a.started || (b.visited ?? 0) - (a.visited ?? 0));
-  return { players: days.size, daily, rates, byVia: Object.fromEntries(byVia.map(r => [r.via, r.n])) as Record<string, number>, sources };
+  // which look each player who has started a flight is on; a browser that never reported one counts as classic
+  const looks = THEMES.map(t => {
+    const on = [...days].filter(([id]) => (lookOf.get(id) ?? "classic") === t.id);
+    return { look: t.name, players: on.length, back: on.filter(([, set]) => set.size > 1).length };
+  });
+  return { players: days.size, daily, rates, byVia: Object.fromEntries(byVia.map(r => [r.via, r.n])) as Record<string, number>, sources, looks };
 }

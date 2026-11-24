@@ -1,6 +1,7 @@
 "use client";
-// The look switch in the header: one button, a short menu of themes. The choice is kept in this browser (src/lib/client/theme.ts).
+// The look switch in the header: one button, a short menu of themes. The choice is kept in this browser (src/lib/client/theme.ts); the server is told too, only so the admin page can count each look.
 import { useEffect, useRef, useState } from "react";
+import { api } from "@/lib/client/api";
 import { applyTheme, getTheme, setTheme, THEMES, type ThemeId } from "@/lib/client/theme";
 
 export function ThemeMenu() {
@@ -15,7 +16,7 @@ export function ThemeMenu() {
     addEventListener("pointerdown", away); addEventListener("keydown", esc);
     return () => { removeEventListener("pointerdown", away); removeEventListener("keydown", esc); };
   }, [open]);
-  const pick = (id: ThemeId) => { setTheme(id); setChosen(id); setOpen(false); button.current?.focus(); };
+  const pick = (id: ThemeId) => { setTheme(id); setChosen(id); api.look(id).catch(() => {}); setOpen(false); button.current?.focus(); };
   return (
     <div className="theme" ref={box}>
       <button ref={button} className="btn btn--icon" type="button" aria-haspopup="menu" aria-expanded={open} aria-label="Choose a look" title="Choose a look" onClick={() => setOpen(o => !o)}>

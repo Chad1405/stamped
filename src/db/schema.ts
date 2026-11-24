@@ -10,6 +10,7 @@ export const players = pgTable("players", {
   voucherDates: jsonb("voucher_dates").$type<string[]>().notNull().default([]),   // days a streak milestone earned a boarding voucher
   voucherFlights: jsonb("voucher_flights").$type<string[]>().notNull().default([]),   // archive flights opened with one, for good
   source: text("source"),   // where this player first came from: a link's ?src= label or the site that sent them; null when unknown
+  look: text("look"),       // the theme this player's browser last reported; null is classic
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -39,7 +39,7 @@ export default function Privacy() {
         <ul>
           <li><strong>stamped_pid</strong>: your player ID. The game needs it to work; it lasts a year. Signing in points it at your account&apos;s progress; signing out removes it.</li>
           <li><strong>stamped:muted</strong>: saved in your browser if you turn the sound off. It never leaves your device.</li>
-          <li><strong>stamped:theme</strong>: saved in your browser if you choose a different look for the game. It never leaves your device.</li>
+          <li><strong>stamped:theme</strong>: saved in your browser if you choose a different look for the game. The game also notes which look you use alongside your progress, so we can count how many players use each.</li>
         </ul>
         <p>Both are needed for the game or remember a choice you made, so there&apos;s no consent banner. Their names come from the game&apos;s earlier name, Stamped.</p>
       </section>

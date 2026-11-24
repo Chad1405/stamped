@@ -132,6 +132,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <thead><tr><th>Source</th><th>Visited</th><th>Started a flight</th><th>Finished one</th><th>Came back another day</th><th>Shared</th></tr></thead>
           <tbody>{who.sources.map(r => <tr key={r.source}><td>{r.source}</td><td>{r.visited ?? "–"}</td><td>{r.started}</td><td>{r.finished}</td><td>{r.back}</td><td>{r.shared}</td></tr>)}</tbody>
         </table>
+        <h3>Which look players use</h3>
+        <p className="small">Of players who have started a flight, the look their browser last showed. Someone who tried a look and switched back counts under the one they kept.</p>
+        <table className="bank-table">
+          <thead><tr><th>Look</th><th>Players</th><th>Share</th><th>Came back another day</th></tr></thead>
+          <tbody>{who.looks.map(r => <tr key={r.look}><td>{r.look}</td><td>{r.players}</td><td>{who.players ? `${Math.round(100 * r.players / who.players)}%` : "–"}</td><td>{r.back}</td></tr>)}</tbody>
+        </table>
       </section>
 
       <section className="panel">

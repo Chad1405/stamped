@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { body, forget, handle } from "@/server/http";
-import { getMe, setName, setSource } from "@/server/service";
+import { getMe, setLook, setName, setSource } from "@/server/service";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,12 @@ export function DELETE(req: NextRequest) {
   return forget(req);
 }
 
-/** PATCH /api/me {name} sets the name friends see on league boards; {source} records where a new player came from. */
+/** PATCH /api/me {name} sets the name friends see on league boards; {source} records where a new player came from; {look} which theme their browser shows. */
 export function PATCH(req: NextRequest) {
   return handle(req, async ({ db, playerId, today }) => {
     const b = await body(req);
     if (b.source !== undefined) await setSource(db, playerId, b.source);
+    if (b.look !== undefined) await setLook(db, playerId, b.look);
     if (b.name !== undefined) await setName(db, playerId, b.name);
     return getMe(db, playerId, today);
   });
