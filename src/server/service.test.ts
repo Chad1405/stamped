@@ -187,14 +187,22 @@ describe("a day on the server", () => {
   });
   it("a country without a list of cities offers no city suggestions, so the list can't give the answer away", async () => {
     const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), base = rounds[0] as unknown as Round;
-    const lonely = { ...base, country: "Uruguay", cityName: "Montevideo", city: ["montevideo"] };   // no list of Uruguayan cities
-    await fresh.insert(itineraries).values({ date: TODAY, flight: "001", rounds: [lonely, ...(seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!.rounds.slice(1)] });
-    const t0 = Date.now();
-    await act(fresh, pid, TODAY, 0, { type: "start" }, TODAY, t0);
-    const banked = (await act(fresh, pid, TODAY, 0, { type: "guess", text: "Uruguay" }, TODAY, t0 + PREVIEW_MS)).stop;
+    const lonely = { ...base, country: "Tuvalu", cityName: "Funafuti", city: ["funafuti"] };   // too few places for a fair list
+    const listed = { ...base, country: "Uruguay", cityName: "Montevideo", city: ["montevideo"] };
+    const rest = (seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!.rounds.slice(2);
+    await fresh.insert(itineraries).values({ date: TODAY, flight: "001", rounds: [lonely, listed, ...rest] });
+    const t0 = Date.now(), play = async (stop: number, country: string) => {
+      await act(fresh, pid, TODAY, stop, { type: "start" }, TODAY, t0);
+      return (await act(fresh, pid, TODAY, stop, { type: "guess", text: country }, TODAY, t0 + PREVIEW_MS)).stop;
+    };
+    const banked = await play(0, "Tuvalu");
     expect(banked.state.banked).toBe("backpacker");
     expect(banked.cities).toEqual([]);
     expect((await getDay(fresh, pid, TODAY, TODAY)).stops[0].cities).toEqual([]);
+    await act(fresh, pid, TODAY, 0, { type: "decide", deeper: false }, TODAY, t0 + PREVIEW_MS);
+    const uruguay = (await play(1, "Uruguay")).cities;   // a listed country: the answer is one of many
+    expect(uruguay).toContain("Montevideo");
+    expect(uruguay.length).toBeGreaterThan(15);
   });
   it("the answers page shows yesterday's flight, never today's", async () => {
     const a = (await yesterdaysAnswers(db, TODAY))!;
