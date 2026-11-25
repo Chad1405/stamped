@@ -27,6 +27,7 @@ export const api = {
   rename: (name: string) => call<Me>("/api/me", { method: "PATCH", body: JSON.stringify({ name }) }),
   look: (look: string) => call<Me>("/api/me", { method: "PATCH", body: JSON.stringify({ look }) }),
   source: (source: string) => call<Me>("/api/me", { method: "PATCH", body: JSON.stringify({ source }) }),
+  feedback: (message: string, email: string, context: Record<string, string | number>) => call<{ ok: true }>("/api/feedback", { method: "POST", body: JSON.stringify({ message, email, context }) }),
   voucher: (date: string) => call<Me>("/api/voucher", { method: "POST", body: JSON.stringify({ date }) }),
   checkout: () => call<{ url: string }>("/api/checkout", { method: "POST" }),
   share: (date: string, via: string) => call<{ ok: true }>("/api/share", { method: "POST", body: JSON.stringify({ date, via }), keepalive: true }),

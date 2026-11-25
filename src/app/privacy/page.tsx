@@ -24,6 +24,7 @@ export default function Privacy() {
           <li>Your play: the guesses you type, your answers and choices, when you made them, and your scores.</li>
           <li>What that adds up to: your streak, lounge pass use, finished flights, and the countries, cities and stamps in your passport.</li>
           <li>If you use friends leagues: the name you choose and the leagues you join or start.</li>
+          <li>If you send feedback: your message, your email if you give one, and what we need to find a bug: the flight, stop and screen you were on, the look you use, your screen size and your browser&apos;s name and version. It is emailed to us so we can read it, and deleted with the rest of your data.</li>
           <li>If you buy the archive pass: the email you paid with and a reference to the payment. Once you confirm it with a code we email you, that email is your sign-in: it links to your progress, so signing in on another device brings your pass, streak and passport with it. When you ask for a code, we keep a scrambled copy of it for 15 minutes. We never see your card details.</li>
         </ul>
         <p>We don&apos;t ask for your name or location, or for an email unless you buy the pass, and we don&apos;t store your IP address in our database. Guesses are kept as you type them, so please don&apos;t type anything personal into the answer box.</p>
@@ -51,7 +52,7 @@ export default function Privacy() {
           <li><strong>Vercel</strong> hosts the game and protects it from abuse. To do that it handles your IP address and keeps request logs for a short time.</li>
           <li><strong>Neon</strong> runs the database where your progress is kept.</li>
           <li><strong>Stripe</strong> takes payment for the archive pass, as the seller through its merchant of record service (shown at checkout as Onelink). It handles your payment details and tax under its own privacy policy.</li>
-          <li><strong>Resend</strong> sends your sign-in code when you ask for one.</li>
+          <li><strong>Resend</strong> sends your sign-in code when you ask for one, and delivers any feedback you send to us.</li>
         </ul>
         <p>These services may store data outside your country, under their own data protection terms. Nobody else gets your data, and we never sell it.</p>
       </section>

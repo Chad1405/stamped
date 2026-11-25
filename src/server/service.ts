@@ -2,7 +2,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, scoreCounts, shares, stamps, stopBank, stopStats } from "@/db/schema";
+import { accounts, feedback, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, scoreCounts, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
 import { countryByName } from "@/lib/game/match";
 import { CONT, CONT3, NAMED_CITY, NAMED_COUNTRY, ROUNDS_PER_DAY, STOP_TYPES, VOUCHER_AT, type TierId, kmBetween } from "@/lib/game/rules";
@@ -511,6 +511,38 @@ export async function myLeagues(db: Db, playerId: string, today: string) {
     return { id: l.id, name: l.name, code: l.code, owner: l.ownerId === playerId, weekStart: week[0], members: rows };
   });
 }
+
+/* ---- feedback ---- */
+export const FEEDBACK_PER_DAY = 5;
+const oneLine = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+/** A message from the feedback link. Kept for the admin page; the context is only what a bug report needs, and only in known shapes. */
+export async function sendFeedback(db: Db, playerId: string, input: Record<string, unknown>, userAgent: string | null) {
+  const message = String(input.message ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").trim().slice(0, 1000);   // keeps line breaks
+  if (message.length < 3) throw new HttpError(400, "Write a few words first.");
+  const email = oneLine(input.email, 200).toLowerCase() || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, "That email doesn't look right. Leave it empty if you don't need a reply.");
+  const c = (input.context ?? {}) as Record<string, unknown>, context: Record<string, string> = {};
+  if (typeof c.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(c.date)) context.date = c.date;
+  if (typeof c.flight === "string" && /^\d{1,4}$/.test(c.flight)) context.flight = c.flight;
+  if (Number.isInteger(c.stop) && (c.stop as number) >= 1 && (c.stop as number) <= ROUNDS_PER_DAY) context.stop = String(c.stop);
+  if (typeof c.screen === "string" && /^[a-z]{1,12}$/.test(c.screen)) context.screen = c.screen;
+  if (typeof c.look === "string" && THEMES.some(t => t.id === c.look)) context.look = c.look;
+  if (typeof c.size === "string" && /^\d{2,5}x\d{2,5}$/.test(c.size)) context.size = c.size;
+  if (userAgent) context.browser = oneLine(userAgent, 200);
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(feedback)
+    .where(and(eq(feedback.playerId, playerId), gt(feedback.createdAt, sql`now() - interval '1 day'`)));
+  if (n >= FEEDBACK_PER_DAY) throw new HttpError(429, "Thanks, that's plenty for today. Send more tomorrow.");
+  const row = { id: newId(8), playerId, message, email, context };
+  await db.insert(feedback).values(row);
+  return row;
+}
+/** How many messages arrived in the last hour, from anyone: past a few dozen it's a flood, so the route stops emailing (all are still kept). */
+export async function feedbackLastHour(db: Db) {
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(feedback).where(gt(feedback.createdAt, sql`now() - interval '1 hour'`));
+  return n;
+}
+export const feedbackList = (db: Db) => db.select().from(feedback).orderBy(asc(feedback.done), desc(feedback.createdAt)).limit(100);
+export const markFeedback = (db: Db, id: string, done: boolean) => db.update(feedback).set({ done }).where(eq(feedback.id, id));
 
 /* ---- retention, for /admin ---- */
 const SHARE_VIA = ["native", "whatsapp", "messages", "x", "copy"] as const;

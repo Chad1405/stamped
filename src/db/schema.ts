@@ -49,6 +49,17 @@ export const itineraries = pgTable("itineraries", {
   listed: boolean("listed").notNull().default(true),   // false: a replay or a pre-launch sample. Playable on its own day, never in the archive
 });
 
+/** What players send from the feedback link: bugs, ideas, anything. Read and ticked off on the admin page. */
+export const feedback = pgTable("feedback", {
+  id: text("id").primaryKey(),
+  playerId: text("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  email: text("email"),   // only if they want a reply
+  context: jsonb("context").$type<Record<string, string>>().notNull().default({}),   // flight, stop, screen, look, browser: what a bug report needs
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Stops waiting to be used. A person approves each one; the calendar only ever draws from approved stops. */
 export const stopBank = pgTable("stop_bank", {
   id: text("id").primaryKey(),

@@ -469,6 +469,22 @@ dl.stats dd { margin: 0; font: var(--fs-xl)/1 var(--display); }
 /* ---------- footer, privacy, terms ---------- */
 footer { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted-cream); padding-top: var(--s3); border-top: 1px dashed rgb(251 243 226 / 0.3); }
 footer nav { display: flex; flex-wrap: wrap; column-gap: var(--s4); }
+/* the feedback form, in a native dialog on a card */
+.feedback:not([open]) { display: none; }   /* .card sets display, which would otherwise show a closed dialog */
+.feedback { width: min(100% - 2 * var(--s4), 30rem); max-height: calc(100dvh - 2 * var(--s4)); margin: auto; overflow: auto; font-size: var(--fs-md); }
+.feedback::backdrop { background: rgb(10 20 16 / 0.7); }
+.feedback h2 { margin: 0; font-size: var(--fs-xl); }
+.fb-body { display: flex; flex-direction: column; gap: var(--s2); }
+.fb-body label { font-weight: 700; }
+.feedback textarea.input { min-height: 7.5em; padding: var(--s2) var(--s3); font-size: var(--fs-md); font-weight: 500; resize: vertical; }
+.feedback .small { color: var(--muted-ink); }
+.feedback a { color: var(--ink); }
+.fb-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s1); }
+.feedback-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s3); }
+.feedback-list li { display: flex; flex-direction: column; gap: var(--s1); padding-bottom: var(--s3); border-bottom: 1px dashed var(--muted-ink); }
+.feedback-list li.is-done { opacity: 0.55; }
+.feedback-list .fb-msg { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.feedback-list .fb-ua { overflow-wrap: anywhere; }
 footer a { display: inline-flex; align-items: center; min-height: var(--tap); }
 footer a.social { min-width: var(--tap); justify-content: center; }
 .legal { max-width: 70ch; gap: var(--s5); padding-block: var(--s6) var(--s7); }

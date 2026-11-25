@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { eq, lte, sql } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers, playersSoFar, SHOW_PLAYERS_FROM } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers, playersSoFar, SHOW_PLAYERS_FROM, sendFeedback, feedbackList, markFeedback } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { accounts, itineraries, leagues, plays, players, purchases, results, stopBank } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -361,6 +361,28 @@ describe("share counts", () => {
     const r = await retention(db, gameToday());
     expect(r.byVia).toEqual({ whatsapp: 1, x: 1 });
     expect(r.daily[0].shared).toBe(1);   // one player shared, whatever the buttons
+  });
+});
+
+describe("feedback", () => {
+  it("keeps the message and only known context, checks the email, and stops at five a day", async () => {
+    const pid = await ensurePlayer(db, undefined);
+    await expect(sendFeedback(db, pid, { message: " hi " }, null)).rejects.toMatchObject({ status: 400 });   // too short
+    await expect(sendFeedback(db, pid, { message: "The map is wrong", email: "not an email" }, null)).rejects.toMatchObject({ status: 400 });
+    const f = await sendFeedback(db, pid, { message: "Stop 3 photo\nwon't load", email: " Me@Example.com ",
+      context: { date: TODAY, flight: "008", stop: 3, screen: "stop", look: "anime", size: "390x844", extra: "<script>", stopX: 99 } }, "Mozilla/5.0 (iPhone)");
+    expect(f.message).toBe("Stop 3 photo\nwon't load");
+    expect(f.email).toBe("me@example.com");
+    expect(f.context).toEqual({ date: TODAY, flight: "008", stop: "3", screen: "stop", look: "anime", size: "390x844", browser: "Mozilla/5.0 (iPhone)" });
+    expect((await sendFeedback(db, pid, { message: "Ok", context: { stop: 9, look: "nonsense" } }, null).catch(e => e)).status).toBe(400);
+    for (let k = 0; k < 4; k++) await sendFeedback(db, pid, { message: `idea ${k}`, context: { stop: 9, look: "nonsense" } }, null);
+    expect((await feedbackList(db)).find(x => x.message === "idea 0")!.context).toEqual({});   // out-of-range stop and unknown look dropped
+    await expect(sendFeedback(db, pid, { message: "one more" }, null)).rejects.toMatchObject({ status: 429 });
+    await markFeedback(db, f.id, true);
+    const list = await feedbackList(db);
+    expect(list.at(-1)?.id).toBe(f.id);   // done ones sink to the bottom
+    await forgetPlayer(db, pid);
+    expect((await feedbackList(db)).some(x => x.playerId === pid)).toBe(false);   // deleting a player deletes their feedback
   });
 });
 
