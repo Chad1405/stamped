@@ -69,7 +69,7 @@ export default function Game() {
   const merge = useCallback((r: ActResult) => {
     setOffset(r.serverNow - Date.now());
     setDay(d => { if (!d) return d; const stops = d.stops.map(s => s.stop === r.stop.stop ? r.stop : s); const next = { ...d, stops, field: r.field ?? d.field }; return { ...next, score: scoreOf(next) }; });
-    if (r.dayDone || r.event.kind === "finished") void refreshPlayer();
+    if (r.dayDone) void refreshPlayer();   // the record (streak, leagues) only changes when a flight ends; a stop's new stamps come back with it
   }, [refreshPlayer]);
 
   // drawing a card starts its stop on the server; the 3 s look-first preview covers the draw
@@ -82,7 +82,7 @@ export default function Game() {
   }, [merge]);
   const board = () => { if (!day) return; sfx("board"); const i = day.stops.findIndex(s => s.state.phase !== "done"); if (i < 0) setView("done"); else void startStop(day, i); };
   const next = () => { if (!day) return; if (idx >= day.stops.length - 1) setView("done"); else { sfx("takeoff"); void startStop(day, idx + 1); } };
-  const open = (v: View) => { backTo.current = view; setView(v); };
+  const open = (v: View) => { backTo.current = view; setView(v); void refreshPlayer(); };   // passport and leagues show the latest stamps and scores
   const back = () => setView(backTo.current === "stop" || !day ? (day && allDone(day) ? "done" : "home") : backTo.current);
   const playing = view === "stop" && !!day && ["input", "decide"].includes(day.stops[idx]?.state.phase);
 

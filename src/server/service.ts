@@ -284,7 +284,7 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
   if (!await canOpen(db, playerId, date, today)) throw new HttpError(402, "Older flights are part of the archive pass.");
   if (!Number.isInteger(stop) || stop < 0 || stop >= it.rounds.length) throw new HttpError(400, "No such stop.");
   const r = it.rounds[stop];
-  const res = await db.transaction(async (tx): Promise<ActResult> => {
+  const { state, event, gain, dayDone } = await db.transaction(async tx => {
     const done = await tx.select({ stop: plays.stop, state: plays.state }).from(plays).where(and(eq(plays.playerId, playerId), eq(plays.date, date))).for("update");
     for (let i = 0; i < stop; i++) if (done.find(d => d.stop === i)?.state.phase !== "done") throw new HttpError(409, "Finish the earlier stops first.");
     const before = done.find(d => d.stop === stop)?.state ?? freshStop();
@@ -293,10 +293,6 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
     let gain: ActResult["gain"] = null, dayDone = false;
     if (event.kind === "finished") {
       gain = await stampPassport(tx as Db, playerId, r, event.tier, date);
-      await tx.insert(stopStats).values({ date, stop, players: 1, country: +NAMED_COUNTRY.includes(event.tier), city: +NAMED_CITY.includes(event.tier), spot: +(event.tier === "native") })
-        .onConflictDoUpdate({ target: [stopStats.date, stopStats.stop], set: {
-          players: sql`${stopStats.players} + 1`, country: sql`${stopStats.country} + ${+NAMED_COUNTRY.includes(event.tier)}`,
-          city: sql`${stopStats.city} + ${+NAMED_CITY.includes(event.tier)}`, spot: sql`${stopStats.spot} + ${+(event.tier === "native")}` } });
       const all = it.rounds.map((_, i) => i === stop ? state : done.find(d => d.stop === i)?.state);
       if (all.every(s => s?.phase === "done")) {
         dayDone = true;
@@ -304,10 +300,20 @@ export async function act(db: Db, playerId: string, date: string, stop: number, 
         await tx.insert(results).values({ playerId, date, score: all.reduce((n, s) => n + stopPoints(s!), 0), tiers, onTime: date === today }).onConflictDoNothing();
       }
     }
-    const [stats] = state.phase === "done" ? await tx.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop))) : [];
-    return { stop: { ...publicRound(r, stop, state), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
+    return { state, event, gain, dayDone };
   });
-  return res.dayDone ? { ...res, field: await fieldFor(db, playerId, date) } : res;
+  // Every player finishing this stop writes the same row, so the tally runs after the transaction: one short statement,
+  // not a lock held through the rest of it. The player's own row lock above already makes a finish count once.
+  let stats: typeof stopStats.$inferSelect | undefined;
+  if (event.kind === "finished") {
+    [stats] = await db.insert(stopStats).values({ date, stop, players: 1, country: +NAMED_COUNTRY.includes(event.tier), city: +NAMED_CITY.includes(event.tier), spot: +(event.tier === "native") })
+      .onConflictDoUpdate({ target: [stopStats.date, stopStats.stop], set: {
+        players: sql`${stopStats.players} + 1`, country: sql`${stopStats.country} + ${+NAMED_COUNTRY.includes(event.tier)}`,
+        city: sql`${stopStats.city} + ${+NAMED_CITY.includes(event.tier)}`, spot: sql`${stopStats.spot} + ${+(event.tier === "native")}` } }).returning()
+      .catch(e => { console.error("[stats] tally failed", e); return []; });   // a missed count never costs the player their stop
+  } else if (state.phase === "done") [stats] = await db.select().from(stopStats).where(and(eq(stopStats.date, date), eq(stopStats.stop, stop)));
+  const res: ActResult = { stop: { ...publicRound(r, stop, state), state: stopView(r, state), reveal: state.phase === "done" && state.tier ? reveal(r, state.tier, stats, it.rounds[stop - 1], state.guesses) : null }, event, gain, dayDone, serverNow: now };
+  return dayDone ? { ...res, field: await fieldFor(db, playerId, date) } : res;
 }
 async function stampPassport(db: Db, playerId: string, r: Round, tier: TierId, date: string) {
   const want: (typeof stamps.$inferInsert)[] = [];
