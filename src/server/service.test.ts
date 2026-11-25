@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -149,6 +149,16 @@ describe("a day on the server", () => {
     await act(db, missed, TODAY, 0, { type: "start" }, TODAY, t0);
     for (const text of ["Japan", "China", "India"]) await act(db, missed, TODAY, 0, { type: "guess", text }, TODAY, t);
     expect((await getDay(db, missed, TODAY, TODAY)).stops[0].spotWord).toBe("Landmark");
+  });
+  it("the answers page shows yesterday's flight, never today's", async () => {
+    const a = (await yesterdaysAnswers(db, TODAY))!;
+    const [yesterday] = await db.select().from(itineraries).where(eq(itineraries.date, addDays(TODAY, -1)));
+    expect([a.date, a.flight]).toEqual([yesterday.date, yesterday.flight]);
+    expect(a.stops.map(s => s.round.country)).toEqual(yesterday.rounds.map(r => r.country));
+    const text = JSON.stringify(a);
+    for (const r of rounds) expect(text).not.toContain(r.spot[0]);
+    expect(a.stops.every(s => s.gotCountry === null)).toBe(true);   // too few players for a percentage
+    expect(await yesterdaysAnswers(db, "2020-01-01")).toBeNull();
   });
   it("refuses future dates and out-of-order stops", async () => {
     const pid = await ensurePlayer(db, undefined);
