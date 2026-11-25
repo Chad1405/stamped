@@ -1,11 +1,12 @@
 // Drives the service against an in-memory Postgres: the same SQL the hosted database runs.
 import { beforeAll, describe, expect, it } from "vitest";
-import { eq, lte } from "drizzle-orm";
+import fs from "node:fs";
+import { eq, lte, sql } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
 import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers, playersSoFar, SHOW_PLAYERS_FROM } from "./service";
 import { addDays } from "@/lib/game/streak";
-import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
+import { accounts, itineraries, leagues, plays, players, purchases, results, stopBank } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
 import type { Round } from "@/lib/game/engine";
 import { PREVIEW_MS } from "@/lib/game/rules";
@@ -41,10 +42,44 @@ describe("sample flights", () => {
     expect(await keepCalendar(fresh, TODAY, false)).toEqual({ ahead: 1, replayed: [TODAY, next] });
     const rows = async () => Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, r]));
     expect([(await rows())[TODAY].rounds, (await rows())[next].rounds]).toEqual([a, b]);
-    expect((await rows())[TODAY].flight).toBe("003");
+    expect([(await rows())[TODAY].flight, (await rows())[TODAY].listed]).toEqual(["001", false]);   // a replay keeps its number and stays out of the archive
     expect(await keepCalendar(fresh, next, false)).toEqual({ ahead: 1, replayed: [after] });   // today already exists; only the day after is new
     expect((await rows())[after].rounds).toEqual(a);   // a was last shown before b
     expect(await keepCalendar(await createDb(), TODAY, false)).toEqual({ ahead: 0, replayed: [] });   // an empty database has nothing to replay
+  });
+  it("a replay plays on its own day, then leaves no trace in the archive", async () => {
+    const fresh = await createDb(), sample = (seedDays as { rounds: Round[] }[]), pid = await ensurePlayer(fresh, undefined);
+    await fresh.update(players).set({ unlocked: true }).where(eq(players.id, pid));   // even the pass doesn't reach it
+    await fresh.insert(itineraries).values([{ date: addDays(TODAY, -2), flight: "001", rounds: sample[0].rounds }, { date: addDays(TODAY, -1), flight: "002", rounds: sample[1].rounds }]);
+    await keepCalendar(fresh, TODAY, false);   // replays on today and tomorrow
+    expect((await getDay(fresh, pid, TODAY, TODAY)).flight).toBe("001");
+    expect((await getMe(fresh, pid, TODAY)).days.map(d => d.flight)).toEqual(["001", "002", "001"]);   // today is listed while it's today
+    const later = addDays(TODAY, 2);
+    expect((await getMe(fresh, pid, later)).days.map(d => d.date)).toEqual([addDays(TODAY, -1), addDays(TODAY, -2)]);
+    await expect(getDay(fresh, pid, TODAY, later)).rejects.toMatchObject({ status: 404 });
+    await expect(spendVoucher(fresh, pid, TODAY, later)).rejects.toBeInstanceOf(HttpError);
+  });
+  it("new flights are numbered after the last listed one, skipping replays", async () => {
+    const fresh = await createDb(), rounds = (seedDays as { rounds: Round[] }[])[0].rounds;
+    await fresh.insert(itineraries).values([{ date: addDays(TODAY, -1), flight: "004", rounds }, { date: TODAY, flight: "002", rounds, listed: false }]);
+    const ids = await Promise.all(["Landmark", "Food", "Street View", "Close-up", "Language"].map((type, k) => fresh.insert(stopBank).values({ id: `s${k}`, status: "approved",
+      round: { ...rounds[0], type, country: ["Peru", "Chile", "Kenya", "Japan", "Fiji"][k], img: `https://x.example/${k}.jpg` } }).returning({ id: stopBank.id })));
+    expect(ids).toHaveLength(5);
+    await keepCalendar(fresh, TODAY, false);
+    const [tomorrow] = await fresh.select().from(itineraries).where(eq(itineraries.date, addDays(TODAY, 1)));
+    expect([tomorrow.flight, tomorrow.listed]).toEqual(["005", true]);
+  });
+  it("the launch migration hides sample flights and renumbers the rest, but leaves a samples-only database alone", async () => {
+    const fresh = await createDb(), s = (seedDays as { rounds: Round[] }[])[0].rounds, real = s.map((r, k) => ({ ...r, img: r.img && `https://blob.example/${k}.jpg` }));
+    const run = async () => { for (const stmt of fs.readFileSync("drizzle/0010_itinerary_listed.sql", "utf8").split("--> statement-breakpoint").slice(1)) await fresh.execute(sql.raw(stmt)); };
+    await fresh.insert(itineraries).values([1, 2, 3].map(k => ({ date: addDays(TODAY, k - 10), flight: String(k).padStart(3, "0"), rounds: s })));
+    await run();
+    expect((await fresh.select().from(itineraries)).every(r => r.listed)).toBe(true);   // local development: nothing real yet, keep the samples
+    await fresh.insert(itineraries).values([{ date: addDays(TODAY, -5), flight: "006", rounds: real }, { date: addDays(TODAY, -4), flight: "007", rounds: s }, { date: addDays(TODAY, -3), flight: "008", rounds: real }]);
+    await run();
+    const after = Object.fromEntries((await fresh.select().from(itineraries)).map(r => [r.date, [r.flight, r.listed]]));
+    expect(after).toEqual({ [addDays(TODAY, -9)]: ["001", false], [addDays(TODAY, -8)]: ["002", false], [addDays(TODAY, -7)]: ["003", false],
+      [addDays(TODAY, -5)]: ["001", true], [addDays(TODAY, -4)]: ["007", false], [addDays(TODAY, -3)]: ["002", true] });
   });
   it("warn once the calendar is running low, and not before", async () => {
     const sent: string[] = [], warn = async (subject: string) => { sent.push(subject); };
