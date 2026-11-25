@@ -218,7 +218,21 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
   const finished = stops.every(s => s.state.phase === "done");
   const field = finished ? await fieldFor(db, playerId, date) : null;
   return { date, flight: it.flight, isToday: date === today, serverNow: Date.now(), score, stops, field, tomorrow: finished && date === today ? await teaser(db, today) : null,
-    example: date === today ? await example(db, today) : null };
+    example: date === today ? await example(db, today) : null, playersSoFar: date === today ? await playersSoFar(db) : null };
+}
+
+export const SHOW_PLAYERS_FROM = 1000;   // "22 people have played" tells a visitor nobody's here; the line appears once the number helps
+const playerCounts = new WeakMap<Db, { n: number; at: number }>();
+/** How many people have started a flight, for the start screen; null until there are enough to be worth saying.
+ *  Counted at most every five minutes, since every visit asks. */
+// ponytail: per-process cache, so each server instance may lag a few minutes; fine for a headline number
+export async function playersSoFar(db: Db, now = Date.now()) {
+  let c = playerCounts.get(db);
+  if (!c || now - c.at > 5 * 60_000) {
+    const [r] = await db.select({ n: sql<number>`count(distinct ${plays.playerId})::int` }).from(plays);
+    playerCounts.set(db, c = { n: r.n, at: now });
+  }
+  return c.n >= SHOW_PLAYERS_FROM ? c.n : null;
 }
 
 /** Yesterday's flight with every answer, for the public answers page. Never today's: leagues and streaks count only flights

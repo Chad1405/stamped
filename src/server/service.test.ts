@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { eq, lte } from "drizzle-orm";
 import { createDb, type Db } from "@/db";
 import seedDays from "@/content/itineraries.json";
-import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers } from "./service";
+import { act, createLeague, dailyCalendarCheck, ensurePlayer, fieldFor, forgetPlayer, gameToday, getDay, retention, getMe, HttpError, joinLeague, keepCalendar, myLeagues, recordPurchase, recordShare, requestSignIn, seedSamples, verifySignIn, setLook, setName, setSource, spendVoucher, yesterdaysAnswers, playersSoFar, SHOW_PLAYERS_FROM } from "./service";
 import { addDays } from "@/lib/game/streak";
 import { accounts, itineraries, leagues, plays, players, purchases, results } from "@/db/schema";
 import { freshStop } from "@/lib/game/engine";
@@ -159,6 +159,20 @@ describe("a day on the server", () => {
     for (const r of rounds) expect(text).not.toContain(r.spot[0]);
     expect(a.stops.every(s => s.gotCountry === null)).toBe(true);   // too few players for a percentage
     expect(await yesterdaysAnswers(db, "2020-01-01")).toBeNull();
+  });
+  it("the player count stays hidden until it reaches the threshold", async () => {
+    const fresh = await createDb(), date = TODAY;
+    await seedSamples(fresh, TODAY);
+    const t0 = Date.now();
+    expect(await playersSoFar(fresh, t0)).toBeNull();
+    const ids = Array.from({ length: SHOW_PLAYERS_FROM }, (_, i) => i.toString(16).padStart(32, "0"));
+    await fresh.insert(players).values(ids.map(id => ({ id })));
+    await fresh.insert(plays).values(ids.flatMap(playerId => [0, 1].map(stop => ({ playerId, date, stop, state: freshStop() }))));   // two stops each still count once
+    expect(await playersSoFar(fresh, t0 + 60_000)).toBeNull();   // the cached count holds for five minutes
+    expect(await playersSoFar(fresh, t0 + 6 * 60_000)).toBe(SHOW_PLAYERS_FROM);
+    const pid = await ensurePlayer(fresh, undefined);
+    expect((await getDay(fresh, pid, TODAY, TODAY)).playersSoFar).toBe(SHOW_PLAYERS_FROM);
+    expect((await getDay(fresh, pid, addDays(TODAY, -1), TODAY)).playersSoFar).toBeNull();   // only on today's start screen
   });
   it("refuses future dates and out-of-order stops", async () => {
     const pid = await ensurePlayer(db, undefined);
