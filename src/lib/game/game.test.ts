@@ -26,6 +26,11 @@ describe("matching", () => {
   it("every city in every dropdown survives normalising", () => {
     for (const list of Object.values(citiesData as Record<string, string[]>)) for (const c of list) expect(norm(c)).toMatch(/^[a-z0-9 ]+$/);
   });
+  it("nearly every country has a list of cities, and every sample answer is in its country's list", () => {
+    const lists = citiesData as Record<string, string[]>;
+    expect(COUNTRIES.filter(c => lists[c.name]).length).toBeGreaterThan(180);   // only micro-states (Monaco, Tuvalu) go without
+    for (const r of rounds) expect(lists[r.country]).toContain(r.cityName);
+  });
 });
 
 describe("the stop engine", () => {

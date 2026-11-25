@@ -33,7 +33,7 @@ export default function Terms() {
 
       <section>
         <h2>Photos and facts</h2>
-        <p>Clue photos come from Wikimedia Commons under their own free licences, and each is credited once you&apos;ve played its stop. Facts are drawn from Wikipedia. Stops are drafted with help from AI and checked by a person before they go live, but mistakes can slip through. If you spot one, tell us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+        <p>Clue photos come from Wikimedia Commons under their own free licences, and each is credited once you&apos;ve played its stop. Facts are drawn from Wikipedia. The city names suggested as you type come from <a href="https://www.geonames.org">GeoNames</a>, under the <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> licence. Stops are drafted with help from AI and checked by a person before they go live, but mistakes can slip through. If you spot one, tell us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
       </section>
 
       <section>
