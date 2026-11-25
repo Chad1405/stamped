@@ -79,8 +79,8 @@ function useAboveKeyboard(inputRef: React.RefObject<HTMLInputElement | null>) {
 }
 
 /** The answer box with its own suggestion list (a combobox): the browser's <datalist> shows nothing on many phones and in-app browsers. */
-function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disabled, invalid }: {
-  inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (v: string) => void; options: string[]; openOnFocus: boolean; disabled: boolean; invalid: boolean;
+function SuggestInput({ inputRef, value, onChange, onEnter, options, openOnFocus, disabled, invalid }: {
+  inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (v: string) => void; onEnter: () => void; options: string[]; openOnFocus: boolean; disabled: boolean; invalid: boolean;
 }) {
   const [open, setOpen] = useState(false), [active, setActive] = useState(-1);
   useAboveKeyboard(inputRef);
@@ -91,13 +91,15 @@ function SuggestInput({ inputRef, value, onChange, options, openOnFocus, disable
   const pick = (o: string) => { onChange(o); setOpen(false); setActive(-1); };
   return (
     <div className="suggest">
-      <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false}
+      <input ref={inputRef} className="input" type="text" id="guess" name="guess" value={value} maxLength={80} autoCapitalize="words" autoComplete="off" spellCheck={false} enterKeyHint="go"
         role="combobox" aria-autocomplete="list" aria-expanded={shown.length > 0} aria-controls="guess-list" aria-activedescendant={active >= 0 && shown[active] ? `guess-opt-${active}` : undefined}
-        aria-describedby="msg" aria-invalid={invalid || undefined} readOnly={disabled} aria-busy={disabled || undefined}   // read-only, not disabled, while a guess is checked: a disabled box drops keyboard focus
+        aria-describedby="msg" aria-invalid={invalid || undefined} aria-busy={disabled || undefined}   // stays editable while a guess is checked (a second submit is ignored): a disabled box drops focus, and a read-only one makes Chrome on Android close the keyboard
         onChange={e => { onChange(e.target.value); setOpen(true); setActive(-1); }} onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onBlur={() => setOpen(false)}
         onKeyDown={e => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setOpen(true); const n = shown.length || matches.length; if (n) setActive(a => (a + (e.key === "ArrowDown" ? 1 : n - 1)) % n); }
-          else if (e.key === "Enter" && active >= 0 && shown[active]) { e.preventDefault(); pick(shown[active]); }   // Enter on a highlighted name fills it in; otherwise it submits
+          else if (e.key === "Enter" && active >= 0 && shown[active]) { e.preventDefault(); pick(shown[active]); }   // Enter on a highlighted name fills it in
+          // otherwise Enter sends the guess itself: a form submission makes Chrome on Android hide the keyboard, so after a miss the player had to tap the box again
+          else if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); onEnter(); }
           else if (e.key === "Escape") { setOpen(false); setActive(-1); }
         }} />
       {shown.length > 0 && (
@@ -196,6 +198,8 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
     } catch (e) { onError(e instanceof ApiError ? e.message : "Something went wrong."); }
     finally { setBusy(false); deciding.current = false; }
   }, [busy, day.date, idx, onResult, onError]);
+
+  const submitGuess = () => { if (draft.trim() && !busy) void send({ type: "guess", text: draft }); };
 
   // the clock: server deadline, shown in local time via the measured offset
   useEffect(() => { if (st.phase !== "input") return; const t = setInterval(() => setNow(Date.now() + offset), 100); return () => clearInterval(t); }, [st.phase, offset]);
@@ -305,10 +309,10 @@ export function StopScreen({ day, idx, offset, onResult, onNext, onError }: Prop
                 {preview && <p className="lead-help">Look first. Typing opens when the clock starts. You get three tries at the country.</p>}
                 {st.clues && <Clues c={st.clues} secs={secs} />}
                 {st.phase === "input" && !preview && (
-                  <form className="field" autoComplete="off" noValidate onSubmit={e => { e.preventDefault(); if (draft.trim()) void send({ type: "guess", text: draft }); }}>
+                  <form className="field" autoComplete="off" noValidate onSubmit={e => { e.preventDefault(); submitGuess(); }}>
                     <label htmlFor="guess">{label}</label>
                     <div className="entry-row" ref={rowRef}>
-                      <SuggestInput inputRef={inputRef} value={draft} onChange={setDraft} disabled={busy} invalid={!!msg?.warn}
+                      <SuggestInput inputRef={inputRef} value={draft} onChange={setDraft} onEnter={submitGuess} disabled={busy} invalid={!!msg?.warn}
                         options={st.step === "country" ? COUNTRY_NAMES : st.step === "city" ? s.cities : []} openOnFocus={st.step === "city"} />
                       <button className="btn btn--gold" type="submit" disabled={busy}>Stamp it</button>
                     </div>

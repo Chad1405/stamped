@@ -158,7 +158,13 @@ async function itinerary(db: Db, date: string, today: string) {
 }
 
 /* ---- what the browser may see ---- */
-const citiesFor = (r: Round) => [...new Set([...(CITIES[r.country] ?? []), r.cityName])].sort((a, b) => a.localeCompare(b));
+/** The city suggestions: the country's known cities plus the answer. A country without a real list gets none, and the player types
+ *  freely, since a list of one (or a handful) would hand over the answer. */
+const MIN_CITY_CHOICES = 8;
+const citiesFor = (r: Round) => {
+  const known = CITIES[r.country] ?? [];
+  return known.length < MIN_CITY_CHOICES ? [] : [...new Set([...known, r.cityName])].sort((a, b) => a.localeCompare(b));
+};
 /** Before a stop is finished: the clue and nothing that names the answer. The city list and the final question narrow down the country, so they wait until it is banked or the stop is over. */
 const publicRound = (r: Round, i: number, s: StopState) => {
   const known = s.banked !== null || s.phase === "done";

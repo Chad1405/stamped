@@ -185,6 +185,17 @@ describe("a day on the server", () => {
     for (const text of ["Japan", "China", "India"]) await act(db, missed, TODAY, 0, { type: "guess", text }, TODAY, t);
     expect((await getDay(db, missed, TODAY, TODAY)).stops[0].spotWord).toBe("Landmark");
   });
+  it("a country without a list of cities offers no city suggestions, so the list can't give the answer away", async () => {
+    const fresh = await createDb(), pid = await ensurePlayer(fresh, undefined), base = rounds[0] as unknown as Round;
+    const lonely = { ...base, country: "Uruguay", cityName: "Montevideo", city: ["montevideo"] };   // no list of Uruguayan cities
+    await fresh.insert(itineraries).values({ date: TODAY, flight: "001", rounds: [lonely, ...(seedDays as { offset: number; rounds: Round[] }[]).find(d => d.offset === 0)!.rounds.slice(1)] });
+    const t0 = Date.now();
+    await act(fresh, pid, TODAY, 0, { type: "start" }, TODAY, t0);
+    const banked = (await act(fresh, pid, TODAY, 0, { type: "guess", text: "Uruguay" }, TODAY, t0 + PREVIEW_MS)).stop;
+    expect(banked.state.banked).toBe("backpacker");
+    expect(banked.cities).toEqual([]);
+    expect((await getDay(fresh, pid, TODAY, TODAY)).stops[0].cities).toEqual([]);
+  });
   it("the answers page shows yesterday's flight, never today's", async () => {
     const a = (await yesterdaysAnswers(db, TODAY))!;
     const [yesterday] = await db.select().from(itineraries).where(eq(itineraries.date, addDays(TODAY, -1)));
