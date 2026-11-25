@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { addDrafts, applyReviewForm, bankOverview, reviewStop, stopProblems } from "@/server/bank";
 import { draftStops, writeTells } from "@/server/drafter";
-import { gameToday, retention } from "@/server/service";
+import { feedbackList, gameToday, markFeedback, retention } from "@/server/service";
 import type { Round } from "@/lib/game/engine";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +44,11 @@ async function decide(decision: "approve" | "reject", f: FormData) {
   revalidatePath("/admin");
 }
 // one action per button: a shared action reading the button's value got no value through React's form handling, and every Reject approved
+async function toggleFeedback(f: FormData) {
+  "use server";
+  await markFeedback(await db(), String(f.get("id")), f.get("done") === "1");
+  revalidatePath("/admin");
+}
 async function approve(f: FormData) { "use server"; await decide("approve", f); }
 async function reject(f: FormData) { "use server"; await decide("reject", f); }
 
@@ -100,7 +105,8 @@ function StopCard({ id, round: r, note, source, repeat }: { id: string; round: R
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
   const { msg } = await searchParams;
   const d = await db(), today = gameToday();
-  const [{ pending, waiting, calendar, realDays }, who] = await Promise.all([bankOverview(d, today), retention(d, today)]);
+  const [{ pending, waiting, calendar, realDays }, who, notes] = await Promise.all([bankOverview(d, today), retention(d, today), feedbackList(d)]);
+  const open = notes.filter(n => !n.done).length;
   const rate = (r: (typeof who.rates)[number]) => r.of ? `${r.back} of ${r.of} (${Math.round(100 * r.back / r.of)}%)` : "too early to tell";
   return (
     <main className="shell bank">
@@ -114,6 +120,30 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <section className="panel">
         <h2>To review</h2>
         {pending.length ? pending.map(s => <StopCard key={s.id} id={s.id} round={s.round} note={s.note} source={s.source} repeat={s.repeat} />) : <p>Nothing waiting.</p>}
+      </section>
+
+      <section className="panel">
+        <h2>Feedback</h2>
+        <p className="small">{open ? `${open} to read.` : "Nothing new."} Newest first; ticked-off messages sink to the bottom. The last 100 are shown.</p>
+        {notes.length > 0 && (
+          <ul className="feedback-list">
+            {notes.map(n => (
+              <li key={n.id} className={n.done ? "is-done" : undefined}>
+                <p className="fb-msg">{n.message}</p>
+                <p className="small">
+                  {n.createdAt.toLocaleString("en-GB", { timeZone: "Europe/London", dateStyle: "medium", timeStyle: "short" })}
+                  {n.email ? <> · reply to <a href={`mailto:${n.email}`}>{n.email}</a></> : null}
+                  {Object.keys(n.context).length ? ` · ${Object.entries(n.context).filter(([k]) => k !== "browser").map(([k, v]) => `${k} ${v}`).join(", ")}` : null}
+                </p>
+                {n.context.browser && <p className="small fb-ua">{n.context.browser}</p>}
+                <form action={toggleFeedback}>
+                  <input type="hidden" name="id" value={n.id} /><input type="hidden" name="done" value={n.done ? "0" : "1"} />
+                  <button className="btn btn--small" type="submit">{n.done ? "Mark as new" : "Done"}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="panel">
