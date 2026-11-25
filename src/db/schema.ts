@@ -44,8 +44,9 @@ export const restoreTokens = pgTable("restore_tokens", {
 /** One itinerary per day. `rounds` holds the answers and never leaves the server unredacted. */
 export const itineraries = pgTable("itineraries", {
   date: text("date").primaryKey(),   // YYYY-MM-DD in the game's time zone
-  flight: text("flight").notNull(),
+  flight: text("flight").notNull(),   // numbered among listed flights only, so the archive has no gaps; a replay keeps its original's number
   rounds: jsonb("rounds").$type<Round[]>().notNull(),
+  listed: boolean("listed").notNull().default(true),   // false: a replay or a pre-launch sample. Playable on its own day, never in the archive
 });
 
 /** Stops waiting to be used. A person approves each one; the calendar only ever draws from approved stops. */

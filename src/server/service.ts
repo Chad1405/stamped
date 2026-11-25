@@ -1,6 +1,6 @@
 // Everything the API does, as plain functions over a Db, so tests can drive them without HTTP.
 import { createHash, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { accounts, itineraries, leagueMembers, leagues, players, plays, purchases, restoreTokens, results, scoreCounts, shares, stamps, stopBank, stopStats } from "@/db/schema";
 import { applyAction, countryClues, freshStop, stopPoints, type Action, type Event, type Round, type StopState } from "@/lib/game/engine";
@@ -92,7 +92,6 @@ export async function fillFromBank(db: Db, today: string) {
     const ready = await tx.select().from(stopBank).where(and(eq(stopBank.status, "approved"), isNull(stopBank.usedOn))).orderBy(asc(stopBank.createdAt)).for("update");   // two servers filling at once must not use a stop twice
     const rows = await tx.select().from(itineraries);
     const byDate = new Map(rows.map(r => [r.date, r.rounds as Round[]]));
-    const first = rows.map(r => r.date).sort()[0];
     let made = 0;
     for (let k = 1; k <= DAYS_AHEAD; k++) {
       const date = addDays(today, k), existing = byDate.get(date);
@@ -110,23 +109,28 @@ export async function fillFromBank(db: Db, today: string) {
       }
       if (picks.length < STOP_TYPES.length) { for (const p of picks) p.usedOn = null; break; }   // later days can't be fuller than this one
       const flightRounds = picks.map(p => p.round).toSorted((a, b) => b.crowd[0] - a.crowd[0]);   // easy to hard
-      const flight = String(daysBetween(first ?? date, date) + 1).padStart(3, "0");
-      await tx.insert(itineraries).values({ date, flight, rounds: flightRounds }).onConflictDoUpdate({ target: itineraries.date, set: { rounds: flightRounds } });
+      const flight = nextFlightNo(rows, date);
+      await tx.insert(itineraries).values({ date, flight, rounds: flightRounds }).onConflictDoUpdate({ target: itineraries.date, set: { rounds: flightRounds, flight, listed: true } });
       await tx.update(stopBank).set({ usedOn: date }).where(inArray(stopBank.id, picks.map(p => p.id)));
       byDate.set(date, flightRounds);
+      rows.splice(0, rows.length, ...rows.filter(r => r.date !== date), { date, flight, rounds: flightRounds, listed: true });
       made++;
     }
     return made;
   });
 }
-/** The last resort for a date with no flight: replay the one that has gone longest without being shown, so a day is never missing or unvetted. */
+/** A new listed flight's number: one more than the last listed flight before it, so the archive counts 001, 002, ... with no gaps. */
+const nextFlightNo = (rows: { date: string; flight: string; listed: boolean }[], date: string) =>
+  String(Math.max(0, ...rows.filter(r => r.listed && r.date < date).map(r => Number(r.flight) || 0)) + 1).padStart(3, "0");
+/** The last resort for a date with no flight: replay the one that has gone longest without being shown, so a day is never missing or unvetted.
+ *  A replay keeps the original's number and stays out of the archive, so nobody who buys the pass finds the same flight twice. */
 async function replayIfMissing(db: Db, date: string) {
   if ((await db.select({ date: itineraries.date }).from(itineraries).where(eq(itineraries.date, date))).length) return false;
-  const [old] = await db.select({ rounds: itineraries.rounds }).from(itineraries).groupBy(itineraries.rounds).orderBy(sql`max(${itineraries.date})`).limit(1);
+  const [old] = await db.select({ rounds: itineraries.rounds, flight: sql<string>`min(${itineraries.flight}) filter (where ${itineraries.listed})` })
+    .from(itineraries).groupBy(itineraries.rounds).orderBy(sql`max(${itineraries.date})`).limit(1);
   if (!old) return false;
-  const [{ first }] = await db.select({ first: sql<string>`min(${itineraries.date})` }).from(itineraries);
-  const flight = String(daysBetween(first, date) + 1).padStart(3, "0");
-  return (await db.insert(itineraries).values({ date, flight, rounds: old.rounds }).onConflictDoNothing({ target: itineraries.date }).returning()).length > 0;   // two servers can race at midnight; one wins
+  const flight = old.flight ?? nextFlightNo(await db.select().from(itineraries), date);   // a flight that was never listed has no number of its own
+  return (await db.insert(itineraries).values({ date, flight, rounds: old.rounds, listed: false }).onConflictDoNothing({ target: itineraries.date }).returning()).length > 0;   // two servers can race at midnight; one wins
 }
 /** Fills the calendar and makes sure today and tomorrow exist. Returns how many days in a row are ready after today, and any dates that had to replay. */
 export async function keepCalendar(db: Db, today: string, seed = process.env.SEED_SAMPLE !== "false") {
@@ -149,7 +153,7 @@ export async function dailyCalendarCheck(db: Db, today: string, warn: (subject: 
 async function itinerary(db: Db, date: string, today: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) throw new HttpError(404, "No flight on that date.");
   const [it] = await db.select().from(itineraries).where(eq(itineraries.date, date));
-  if (!it) throw new HttpError(404, "No flight on that date.");
+  if (!it || (!it.listed && date !== today)) throw new HttpError(404, "No flight on that date.");   // a replay is only playable on its own day
   return it;
 }
 
@@ -253,7 +257,7 @@ export async function yesterdaysAnswers(db: Db, today: string) {
 /** For the start screen: one photo stop from a flight that has already been shown (two or more days ago), so it spoils nothing.
  *  Only the photo and the question go out, never the answer. */
 async function example(db: Db, today: string) {
-  const past = await db.select().from(itineraries).where(lte(itineraries.date, addDays(today, -2))).orderBy(desc(itineraries.date)).limit(3);
+  const past = await db.select().from(itineraries).where(and(lte(itineraries.date, addDays(today, -2)), eq(itineraries.listed, true))).orderBy(desc(itineraries.date)).limit(3);
   for (const it of past) {
     const r = it.rounds.find(x => x.type === "Landmark" && x.img) ?? it.rounds.find(x => x.img);
     if (r) return { img: r.img!, alt: r.alt ?? "", prompt: r.prompt, flight: it.flight };
@@ -334,7 +338,8 @@ export async function getMe(db: Db, playerId: string, today: string) {
     db.select().from(players).where(eq(players.id, playerId)),
     db.select().from(stamps).where(eq(stamps.playerId, playerId)).orderBy(asc(stamps.firstDate)),
     db.select().from(results).where(eq(results.playerId, playerId)),
-    db.select({ date: itineraries.date, flight: itineraries.flight }).from(itineraries).where(lte(itineraries.date, today)).orderBy(desc(itineraries.date)),
+    db.select({ date: itineraries.date, flight: itineraries.flight }).from(itineraries)
+      .where(and(lte(itineraries.date, today), or(eq(itineraries.listed, true), eq(itineraries.date, today)))).orderBy(desc(itineraries.date)),
     db.select({ date: plays.date, n: sql<number>`count(*) filter (where ${plays.state}->>'phase' = 'done')::int` }).from(plays).where(eq(plays.playerId, playerId)).groupBy(plays.date),
   ]);
   const onTime = myResults.filter(r => r.onTime);
@@ -370,7 +375,7 @@ function vouchersOf(p: { voucherDates: string[]; voucherFlights: string[] } | un
 export async function spendVoucher(db: Db, playerId: string, date: unknown, today: string) {
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, "Pick a flight.");
   if (await canOpen(db, playerId, date, today)) throw new HttpError(409, "That flight is already open.");
-  const [it] = await db.select({ date: itineraries.date }).from(itineraries).where(eq(itineraries.date, date));
+  const [it] = await db.select({ date: itineraries.date }).from(itineraries).where(and(eq(itineraries.date, date), eq(itineraries.listed, true)));
   if (!it) throw new HttpError(404, "No flight on that day.");
   const done = await db.update(players).set({ voucherFlights: sql`${players.voucherFlights} || ${JSON.stringify([date])}::jsonb` })
     .where(and(eq(players.id, playerId), sql`jsonb_array_length(${players.voucherFlights}) < jsonb_array_length(${players.voucherDates})`)).returning({ id: players.id });

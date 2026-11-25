@@ -71,6 +71,13 @@
       "when": 1795476980106,
       "tag": "0009_player_look",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795612048931,
+      "tag": "0010_itinerary_listed",
+      "breakpoints": true
     }
   ]
 }
