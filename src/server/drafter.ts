@@ -68,7 +68,7 @@ const WHAT: Record<string, string> = {
   Food: "a dish strongly tied to one city or region, shown on a plate.",
   "Street View": "a street scene whose look (architecture, colours, landscape) hints at the place: an old quarter, a neighbourhood, a canal, a hillside. The final question names that area.",
   "Close-up": "a close detail tied to one place: little statues, balconies, tiles, doors, a wharf's houses. The final question names the detail or the place it belongs to.",
-  Language: "no photo: a short text message from a local friend, written in the local language, arranging to meet at a named place (a stadium, market, square, district). The final question names that place.",
+  Language: "no photo: a short text message from a local friend, written in the local language, arranging to meet at a named place (a stadium, market, square, district). Most players read only English, so the message also mentions one everyday thing a non-speaker could recognise and place: a local dish or drink, the currency, a festival, a football club. It must not name the city or the country. The final question names that place.",
 };
 const example = (type: string) => { const { img: _i, credit: _c, ...r } = SAMPLES.flatMap(d => d.rounds).find(r => r.type === type)!; return JSON.stringify(r); };
 

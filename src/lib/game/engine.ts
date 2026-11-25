@@ -129,7 +129,17 @@ export function countryClues(r: Round, s: StopState) {
     const km = at ? kmBetween(at, r) : null;
     return { name, capital: cap?.[0] ?? null, km, ...(at && r.lat !== undefined && r.lng !== undefined && km ? heading(at, { lat: r.lat, lng: r.lng }) : { dir: null, arrow: null }) };
   });
-  return { tries, triesLeft: COUNTRY_TRIES - misses, continent: misses >= 2 ? CONT[countryByName(r.country)!.cont[0]] : null };
+  return { tries, triesLeft: COUNTRY_TRIES - misses, continent: misses >= 2 ? CONT[countryByName(r.country)!.cont[0]] : null, language: languageOf(r) };
+}
+
+const LANGUAGES = new Intl.DisplayNames(["en"], { type: "language" });
+/** A text message's language in plain English ("Swahili"), for players who can't read it. Only the base language,
+ *  so "pt-BR" says Portuguese, not Brazilian Portuguese. */
+// ponytail: dialect codes like "ary" still name the region ("Moroccan Arabic"); map them to their macrolanguage if that proves too easy
+export function languageOf(r: Pick<Round, "postcard">) {
+  const code = r.postcard?.lang?.split("-")[0];
+  if (!code) return null;
+  try { const name = LANGUAGES.of(code); return name && name !== code ? name : null; } catch { return null; }
 }
 
 /** A stop's points: the tier, less a little for each extra try at the country, never below a Tourist stamp's worth. */
