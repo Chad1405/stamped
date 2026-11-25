@@ -38,6 +38,7 @@ export function Home({ day, me, leagues, onBoard, onOpenDay, onFriends }: { day:
         <button className="btn btn--gold btn--big" type="button" onClick={onBoard}>{midStop || resume ? `Resume at stop ${open + 1}` : `Board flight ${day.flight}`}</button>
         <span className="small">{COUNTRY_MS / 1000} seconds for the country, then {ROUND_MS / 1000} a guess</span>
         <span className="small">{newcomer ? "A new flight every day, the same for everyone. Free, no sign-up." : `Flight ${day.flight} · ${shortDay} · top score ${MAX_DAY_SCORE} · your best ${best}`}</span>
+        {day.playersSoFar && <span className="small players-so-far">{day.playersSoFar.toLocaleString("en-GB")} players have flown so far</span>}
       </div>
       </div>
       <div className="col col-side">
