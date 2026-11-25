@@ -221,6 +221,21 @@ export async function getDay(db: Db, playerId: string, date: string, today: stri
     example: date === today ? await example(db, today) : null };
 }
 
+/** Yesterday's flight with every answer, for the public answers page. Never today's: leagues and streaks count only flights
+ *  played on their own day, so yesterday's answers can't lift anyone's league score. */
+export async function yesterdaysAnswers(db: Db, today: string) {
+  const date = addDays(today, -1);
+  const [[it], stats] = await Promise.all([
+    db.select().from(itineraries).where(eq(itineraries.date, date)),
+    db.select().from(stopStats).where(eq(stopStats.date, date)),
+  ]);
+  if (!it) return null;
+  return { date, flight: it.flight, stops: it.rounds.map((r, i) => {
+    const st = stats.find(x => x.stop === i);
+    return { round: r, gotCountry: st && st.players >= MIN_LIVE_PLAYERS ? Math.round(100 * st.country / st.players) : null };
+  }) };
+}
+
 /** For the start screen: one photo stop from a flight that has already been shown (two or more days ago), so it spoils nothing.
  *  Only the photo and the question go out, never the answer. */
 async function example(db: Db, today: string) {

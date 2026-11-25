@@ -143,7 +143,7 @@ export default function Game() {
         <footer>
           <p>Born There is a free daily geography game: five photos from real places, the same for everyone. Guess the country from the photo, then risk it for the city.</p>
           <p>Each photo is credited with its answer, once you have played that stop.</p>
-          <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a className="social" href={SITE.social.tiktok} target="_blank" rel="noopener me" aria-label="Born There on TikTok" title="TikTok"><Logo d={TIKTOK} /></a><a className="social" href={SITE.social.instagram} target="_blank" rel="noopener me" aria-label="Born There on Instagram" title="Instagram"><Logo d={INSTAGRAM} /></a></nav>
+          <nav aria-label="About"><Link href="/how-to-play">How to play</Link><Link href="/answers">Yesterday&apos;s answers</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a className="social" href={SITE.social.tiktok} target="_blank" rel="noopener me" aria-label="Born There on TikTok" title="TikTok"><Logo d={TIKTOK} /></a><a className="social" href={SITE.social.instagram} target="_blank" rel="noopener me" aria-label="Born There on Instagram" title="Instagram"><Logo d={INSTAGRAM} /></a></nav>
         </footer>
       )}
     </div>
