@@ -49,9 +49,10 @@ function GuessMapBody({ tries }: { tries: Try[] }) {
   const world = useWorld(), box = useRef<HTMLDivElement>(null);
   const [tapped, setTapped] = useState<string | null>(null);
   const pts = tries.flatMap(t => { const c = CAPITALS[t.name]; return c ? [{ name: t.name, at: project(c[1], c[2]) }] : []; });
-  const last = pts.at(-1)?.at;
-  // start centred on the latest guess
-  useEffect(() => { const el = box.current, svg = el?.querySelector("svg"); if (!el || !svg || !last) return; const k = svg.clientWidth / W; el.scrollLeft = last[0] * k - el.clientWidth / 2; el.scrollTop = last[1] * k - el.clientHeight / 2; }, [world, last]);
+  const [lx, ly] = pts.at(-1)?.at ?? [];
+  // start centred on the latest guess, once: the clock re-renders this every 100 ms, so it must key on the numbers, not a fresh array,
+  // or it snaps the map back each tick and the player can't scroll anywhere else
+  useEffect(() => { const el = box.current, svg = el?.querySelector("svg"); if (!el || !svg || lx === undefined || ly === undefined) return; const k = svg.clientWidth / W; el.scrollLeft = lx * k - el.clientWidth / 2; el.scrollTop = ly * k - el.clientHeight / 2; }, [world, lx, ly]);
   if (!world) return <p className="wm-wait">Unfolding the map…</p>;
   const guessed = new Set(tries.map(t => t.name));
   return (
