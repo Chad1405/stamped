@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import days from "@/content/itineraries.json";
 import citiesData from "@/content/cities.json";
-import { applyAction, countryClues, freshStop, stopPoints, type Round, type StopState } from "./engine";
+import { applyAction, countryClues, freshStop, languageOf, stopPoints, type Round, type StopState } from "./engine";
 import { COUNTRIES, match, norm } from "./match";
 import { COUNTRY_MS, GRACE_MS, kmBetween, legFlown, PREVIEW_MS, ROUND_MS } from "./rules";
 import { addDays, streakInfo, weekOf } from "./streak";
@@ -86,6 +86,16 @@ describe("three tries at the country", () => {
     expect(countryClues(r, go("Spain", "Mexico").state)!.continent).toBe("South America");   // after the second miss
     expect(go("Spain", "Mexico", "Japan").state.phase).toBe("done");
     expect(countryClues(r, go("Spain", "Mexico", "Japan").state)).toBeNull();
+  });
+  it("a text message names its language after the first miss, and never before", () => {
+    const m = rounds.find(x => x.type === "Language" && x.postcard?.lang === "sw")!;
+    const start = play(m, [{ t: T0, a: { type: "start" } }]);
+    expect(countryClues(m, start.state)).toBeNull();   // nothing before a miss
+    const miss = play(m, [{ t: T0, a: { type: "start" } }, { t, a: { type: "guess", text: "Spain" } }]);
+    expect(countryClues(m, miss.state)!.language).toBe("Swahili");
+    expect(countryClues(r, go("Spain").state)!.language).toBeNull();   // photo stops have no language
+    expect(languageOf({ postcard: { text: "", note: "", lang: "pt-BR" } })).toBe("Portuguese");   // the language, not the country's variety
+    expect(languageOf({ postcard: { text: "", note: "", lang: "zz-nonsense" } })).toBeNull();
   });
   it("trying the same country twice costs nothing", () => {
     const o = go("Spain", "Spain");

@@ -118,6 +118,7 @@ const clockText = (secs: number) => Math.floor(secs / 60) + ":" + String(secs % 
 function Clues({ c, secs }: { c: NonNullable<StopData["state"]["clues"]>; secs: number }) {
   return (
     <div className="clues" role="status" aria-live="polite">
+      {c.language && <p className="c-left">The message is in <strong>{c.language}</strong>.</p>}
       <ol>
         {c.tries.map(t => (
           <li key={t.name}>
